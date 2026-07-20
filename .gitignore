@@ -1,0 +1,8 @@
+# Ignore all files in the Results directory
+Results/*
+Results_reworked/*
+# But do not ignore png_visualisation files
+!Results/*/png_visualisation/*.png
+!Results_reworked/*/png_visualisation/*.png
+
+coherence_bias_simulation_full/**
