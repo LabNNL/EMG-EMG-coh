@@ -52,12 +52,13 @@ C.physio.gait_phases.mid_swing = struct('start_pct', 73, 'end_pct', 87);
 C.physio.gait_phases.terminal_swing = struct('start_pct', 87, 'end_pct', 100);
 
 %% ===================== PATHS =====================
+
 % !!!!!!!!!!!!!!!!!!!!!!!!!
 % UPDATE THE FOLLOWING PATHS TO YOUR FOLDER STRUCTURE
 % !!!!!!!!!!!!!!!!!!!!!!!!!
 
 C.paths.project_data_root = '/Users/liogr/Documents/Etudes/Intership_CherniLab'; %TODO: Update this to your project root directory
-C.paths.code_dir        = '/Users/liogr/Library/CloudStorage/OneDrive-Bibliothèquespartagées-UniversitedeMontreal/Yosra Cherni - Lio Grienenberger - MSc epfl/Codes/EMG_Gait_Analysis'; %TODO: Update this to your code directory
+C.paths.code_dir        = '/Users/liogr/Library/CloudStorage/OneDrive-Bibliothèquespartagées-UniversitedeMontreal/Yosra Cherni - Lio Grienenberger - MSc epfl/Codes/EMG-EMG-coh'; %TODO: Update this to your code directory
 C.paths.functions_dir = fullfile(C.paths.code_dir, 'Functions');
 
 if exist(C.paths.functions_dir, 'dir')

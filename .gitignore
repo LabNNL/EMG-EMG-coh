@@ -14,5 +14,8 @@ Results_reworked/*
 !Results_reworked/*/png_visualisation/
 !Results_reworked/*/png_visualisation/*.png
 
+# Metadata
+Metadata/*
+
 # Simulation outputs
 coherence_bias_simulation_full/**

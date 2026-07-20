@@ -29,7 +29,7 @@ plot_3d_path = true;                % plot X/Y/Z path for selected cycles
 % Marker units from BTK/Vicon are commonly mm. Keep mm for axis diagnostics.
 marker_units_label = 'mm';
 
-out_dir = fullfile(C.paths.results_dir, 'heel_marker_axis_diagnostics');
+out_dir = fullfile(C.kinematics_coherence.io.out_dir , 'heel_marker_axis_diagnostics');
 if ~exist(out_dir, 'dir'), mkdir(out_dir); end
 
 %% ===================== LOAD DATA =====================

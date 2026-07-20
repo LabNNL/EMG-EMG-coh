@@ -220,7 +220,7 @@ function K = get_kinematics_coherence_config(C)
 
     K.params.only_included_signals = get_nested_or_default(K, {'params','only_included_signals'}, true);
     K.params.include_bands = get_nested_or_default(K, {'params','include_bands'}, true);
-    K.params.forward_dim = get_nested_or_default(K, {'params','forward_dim'}, 1);
+    K.params.forward_dim = get_nested_or_default(K, {'params','forward_dim'}, 2);
     K.params.marker_units = string(get_nested_or_default(K, {'params','marker_units'}, 'mm'));
     K.params.use_abs_lengths = get_nested_or_default(K, {'params','use_abs_lengths'}, true);
     K.params.fs_marker_default = get_nested_or_default(C, {'general','fs_vicon'}, 100);
@@ -756,6 +756,7 @@ function [strideLen, strideSpeed, cycleDur] = compute_stride_metrics(ipsiHeel, r
     end
 
     dim = K.params.forward_dim;
+    %fprintf("Forward dimension for stride length: %d\n", dim);
     strideLen = ipsiHeel(f1, dim) - ipsiHeel(f0, dim);
 
     if ~isempty(refMarker) && f0 <= size(refMarker,1) && f1 <= size(refMarker,1)
@@ -817,6 +818,7 @@ function [stepDur1, stepDur2, stepLen1, stepLen2, contraHS, note] = compute_step
     fContraHS = analog_sample_to_marker_frame(contraHS, fsEmg, fsMarker);
 
     dim = K.params.forward_dim;
+    %fprintf("Forward dimension for step length: %d\n", dim);
 
     if fIpsiHS <= size(ipsiHeel,1) && fIpsiHS <= size(contraHeel,1)
         stepLen1 = ipsiHeel(fIpsiHS, dim) - contraHeel(fIpsiHS, dim);
