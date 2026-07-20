@@ -1,8 +1,18 @@
-# Ignore all files in the Results directory
+# macOS
+.DS_Store
+
+# MATLAB
+*.asv
+
+# Results
 Results/*
 Results_reworked/*
-# But do not ignore png_visualisation files
+
+# Keep visualization PNGs
+!Results/*/png_visualisation/
 !Results/*/png_visualisation/*.png
+!Results_reworked/*/png_visualisation/
 !Results_reworked/*/png_visualisation/*.png
 
+# Simulation outputs
 coherence_bias_simulation_full/**
