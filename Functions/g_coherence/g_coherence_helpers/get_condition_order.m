@@ -1,3 +1,3 @@
 function condOrder = get_condition_order()
-    condOrder = {'Plat','Medium','High'};
+    condOrder = {'Flat','Medium','High'};
 end

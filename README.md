@@ -28,11 +28,14 @@ Muscles currently tracked in the pipeline are:
 - ST
 - GMED
 
-Experimental conditions currently configured are:
+Experimental condition labels are not yet fully standardized across the
+pipeline:
 
-- Plat
-- Medium
-- High
+- raw-file parsing and coherence helpers use `Plat`
+- the general design, time-domain analysis, and plotting settings use `Flat`
+- `Medium` and `High` are used in both branches
+
+When adding or adapting data, use the label expected by the stage being run.
 
 ---
 
@@ -65,12 +68,20 @@ Path injection for each stage is done through `C.paths.functions.*`.
 
 [main_time_domain_analysis.m](main_time_domain_analysis.m) runs:
 
-1. time-domain dataset build
-2. time-domain statistics build
-3. time-domain plotting
-4. optional temporal coherence link step (controlled by a config flag)
+1. time-domain dataset build through `j_build_time_domain_analysis_datasets()`
+2. activation-profile plotting through `k_plot_activation_profiles()`
+3. SPM envelope analysis through `l_spm_envelope_analysis()`
+4. an optional temporal coherence link step through `i_temporal_coherence_link()`
 
-This branch uses `C.paths.functions.time_domain_analysis`.
+This branch uses `C.paths.functions.time_domain_analysis`. The first three
+steps currently run whenever this entry script is launched. The temporal
+coherence link is the only step controlled by a switch in this entry script:
+`C.parameters_running.run_temporal_coherence_link`.
+
+The time-domain analyses use the final burst-QC data, produce normalized
+activation profiles, and run SPM analyses for age, condition, pooled effects,
+age-condition interaction, and optional symmetry analyses according to the
+settings under `C.k_activation_profiles` and `C.l_spm`.
 
 ### Main kinematics pipeline
 
@@ -147,7 +158,7 @@ Before running the pipeline:
 
 1. Open [config/config_emg.m](config/config_emg.m) and set paths, flags, and analysis options.
 2. For EMG extraction/QC/coherence, run [main_coherence_analysis.m](main_coherence_analysis.m).
-3. For time-domain outcomes, run [main_time_domain_analysis.m](main_time_domain_analysis.m).
+3. For time-domain outcomes, run [main_time_domain_analysis.m](main_time_domain_analysis.m). This runs dataset construction, activation-profile plotting, and SPM analysis in sequence.
 4. For kinematics on coherence cycles, run [main_kinematics_analysis.m](main_kinematics_analysis.m).
 
 Tip: run the coherence pipeline first when downstream scripts depend on final paired signals or coherence outputs.
@@ -206,6 +217,12 @@ The project generates both intermediate and final outputs, including:
 
 Most figures and recap files are written under [Results](Results), with dedicated subfolders for each stage of the pipeline.
 
+When the time-domain branch is run, its outputs are written under:
+
+- `Results/j_time_domain_data`
+- `Results/k_activation_profiles`
+- `Results/l_spm_envelope_analysis`
+
 ---
 
 ## Methods in Brief
@@ -239,8 +256,8 @@ This project is designed for MATLAB and relies on standard signal-processing and
 Additional external resources used by the current codebase include:
 
 - BTK or compatible C3D-reading bridge for biomechanical files
-- SPM1D, available in [Functions/spm1dmatlab-master](Functions/spm1dmatlab-master)
-- wavelet coherence tools available in [Functions/wtc-r16](Functions/wtc-r16)
+- bundled SPM1D, available in [Functions/toolboxes/spm1dmatlab-master](Functions/toolboxes/spm1dmatlab-master)
+- bundled wavelet coherence tools, available in [Functions/toolboxes/wtc-r16](Functions/toolboxes/wtc-r16)
 
 If a script fails at startup, first verify that your local MATLAB path and the toolbox paths in [config/config_emg.m](config/config_emg.m) are correct.
 
