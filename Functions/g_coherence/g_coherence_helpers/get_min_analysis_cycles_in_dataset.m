@@ -1,4 +1,5 @@
-function Nmin = get_min_analysis_cycles_in_dataset(FINAL_PAIRED_SIGNALS, W)
+function Nmin = get_min_analysis_cycles_in_dataset( ...
+    FINAL_PAIRED_SIGNALS, W, targetPair)
 
     allN = [];
 
@@ -15,23 +16,34 @@ function Nmin = get_min_analysis_cycles_in_dataset(FINAL_PAIRED_SIGNALS, W)
             for il = 1:numel(legs)
                 leg = legs{il};
 
-                pairNames = fieldnames(FINAL_PAIRED_SIGNALS.(subjID).(cond).(leg));
+                pairNames = fieldnames( ...
+                    FINAL_PAIRED_SIGNALS.(subjID).(cond).(leg));
+
                 for ip = 1:numel(pairNames)
                     pairName = pairNames{ip};
 
-                    P = FINAL_PAIRED_SIGNALS.(subjID).(cond).(leg).(pairName);
-
-                    if ~isfield(P, 'included_for_analysis') || ~P.included_for_analysis
+                    % Only calculate minimum for requested pair
+                    if ~strcmp(pairName, targetPair)
                         continue;
                     end
 
-                    if ~isfield(P, 'final_cycle_segments_table') || isempty(P.final_cycle_segments_table)
+                    P = FINAL_PAIRED_SIGNALS.(subjID).(cond).(leg).(pairName);
+
+                    % Match actual coherence inclusion criterion
+                    if ~isfield(P, 'included_after_crosstalk') || ...
+                            ~P.included_after_crosstalk
+                        continue;
+                    end
+
+                    if ~isfield(P, 'final_cycle_segments_table') || ...
+                            isempty(P.final_cycle_segments_table)
                         continue;
                     end
 
                     Tseg = P.final_cycle_segments_table;
 
-                    [analysis_cycle_mask, ~, ~, ~] = build_analysis_cycle_masks( ...
+                    [analysis_cycle_mask, ~, ~, ~] = ...
+                        build_analysis_cycle_masks( ...
                         Tseg, W, subjID, cond, leg, pairName);
 
                     if isempty(analysis_cycle_mask)
@@ -49,12 +61,9 @@ function Nmin = get_min_analysis_cycles_in_dataset(FINAL_PAIRED_SIGNALS, W)
     end
 
     if isempty(allN)
-        error('Could not determine N_common_equalized: no included entries with valid cycles.');
+        error('Could not determine common cycle count for pair %s.', ...
+            targetPair);
     end
 
     Nmin = min(allN);
-
-    if Nmin < 2
-        warning('N_common_equalized is very low: %d cycles. Significant coherence threshold may be unstable.', Nmin);
-    end
 end

@@ -1,3 +1,6 @@
+% Main script for EMG-EMG coherence analysis
+% main_coherence_analysis.m
+
 C = config_emg();
 
 if C.parameters_running.run_data_extraction

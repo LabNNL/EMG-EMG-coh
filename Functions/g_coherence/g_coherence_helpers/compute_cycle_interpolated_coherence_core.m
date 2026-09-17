@@ -151,24 +151,28 @@ function core = compute_cycle_interpolated_coherence_core( ...
             Ncycle_analysis_middle = Ncycle_analysis_middle + 1;
         end
 
-        % Extract the COI for this cycle from the full-signal COI vectors.
-        coi_cycle_1 = coi1(s1:e1);
-        coi_cycle_2 = coi2(s2:e2);
+        % Accumulate COI only for cycles contributing to the main coherence estimate
+        if analysis_cycle_mask(iC)
 
-        % Interpolate the COI to the same normalized time axis as the cycle TFRs.
-        coi_int_1 = interp1(1:numel(coi_cycle_1), coi_cycle_1, ...
-            linspace(1, numel(coi_cycle_1), W.n_interp_time), 'linear');
+            coi_cycle_1 = coi1(s1:e1);
+            coi_cycle_2 = coi2(s2:e2);
 
-        coi_int_2 = interp1(1:numel(coi_cycle_2), coi_cycle_2, ...
-            linspace(1, numel(coi_cycle_2), W.n_interp_time), 'linear');
+            coi_int_1 = interp1( ...
+                1:numel(coi_cycle_1), coi_cycle_1, ...
+                linspace(1, numel(coi_cycle_1), W.n_interp_time), ...
+                'linear');
 
-        % For the pair, use the more conservative COI at each time point.
-        coi_pair_int = min(coi_int_1, coi_int_2);
-        coi_freq_int = 1 ./ coi_pair_int;
+            coi_int_2 = interp1( ...
+                1:numel(coi_cycle_2), coi_cycle_2, ...
+                linspace(1, numel(coi_cycle_2), W.n_interp_time), ...
+                'linear');
 
-        % Accumulate mean COI across cycles for later QC / masking.
-        COI_period_accum = COI_period_accum + coi_pair_int;
-        COI_freq_accum   = COI_freq_accum + coi_freq_int;
+            coi_pair_int = min(coi_int_1, coi_int_2);
+            coi_freq_int = 1 ./ coi_pair_int;
+
+            COI_period_accum = COI_period_accum + coi_pair_int;
+            COI_freq_accum   = COI_freq_accum + coi_freq_int;
+        end
     end
 
     % Build the FINAL coherence map from the retained cycles only.

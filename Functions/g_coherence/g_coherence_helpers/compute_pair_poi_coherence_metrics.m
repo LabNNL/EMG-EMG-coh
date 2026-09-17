@@ -1,5 +1,5 @@
 function poiMetrics = compute_pair_poi_coherence_metrics( ...
-    Coherence_sig, Freq, pairName, C, FreqBands_this, FullBandRange_this, computeFullBandMetrics)
+    CoherenceMap, Freq, pairName, C, FreqBands_this, FullBandRange_this, computeFullBandMetrics)
 
     poiMetrics = struct();
 
@@ -48,7 +48,7 @@ function poiMetrics = compute_pair_poi_coherence_metrics( ...
     poiMetrics.poi_start_pct = start_pct;
     poiMetrics.poi_end_pct   = end_pct;
 
-    nTime = size(Coherence_sig, 2);
+    nTime = size(CoherenceMap, 2);
     time_percent = linspace(0, 100, nTime);
 
     if start_pct <= end_pct
@@ -64,7 +64,7 @@ function poiMetrics = compute_pair_poi_coherence_metrics( ...
     poiMetrics.poi_indices = poi_idx;
     poiMetrics.has_poi = true;
 
-    mean_curve_poi = mean(Coherence_sig(:, poi_idx), 2, 'omitnan');
+    mean_curve_poi = mean(CoherenceMap(:, poi_idx), 2, 'omitnan');
 
     for bandName = fieldnames(FreqBands_this)'
         band = bandName{1};

@@ -31,11 +31,16 @@ Muscles currently tracked in the pipeline are:
 Experimental condition labels are not yet fully standardized across the
 pipeline:
 
-- raw-file parsing and coherence helpers use `Plat`
-- the general design, time-domain analysis, and plotting settings use `Flat`
+- raw `.c3d` filenames and the visual-QC spreadsheet use `Plat`
+- `a_extract_raw_cycles_concat()` converts `Plat` to the internal condition
+  name `Flat` when it builds saved structures
+- downstream design, time-domain analysis, kinematics, and plotting settings
+  use `Flat`
 - `Medium` and `High` are used in both branches
 
-When adding or adapting data, use the label expected by the stage being run.
+Do not rename raw `Plat` files to `Flat` unless the filename regex and the
+visual-QC mapping parser are updated as well. For new code operating on saved
+pipeline outputs, use `Flat`.
 
 ---
 
@@ -154,6 +159,13 @@ Before running the pipeline:
 3. Verify that the metadata files in [Metadata](Metadata) match your dataset
 4. Ensure the required dependencies are available in MATLAB
 
+The repository contains the MATLAB code, metadata, and bundled toolboxes, but
+the raw data and most intermediate `.mat` files are stored outside the
+repository. `config_emg.m` defines these locations through
+`C.paths.project_data_root`, `C.paths.data_dir`, and `C.paths.mat_dir`.
+`C.paths.code_dir` must point to this repository. The default paths in the
+configuration are machine-specific and must be changed on another computer.
+
 ### Typical execution order
 
 1. Open [config/config_emg.m](config/config_emg.m) and set paths, flags, and analysis options.
@@ -194,6 +206,11 @@ The pipeline expects the following main inputs:
 - EMG channel mapping information
 - project-specific path and parameter configuration in [config/config_emg.m](config/config_emg.m)
 
+Raw C3D files are searched recursively under `C.paths.data_dir`. By default,
+the extraction regex expects filenames of the form
+`SUBJECT_Plat_TRIAL.c3d`, `SUBJECT_Medium_TRIAL.c3d`, or
+`SUBJECT_High_TRIAL.c3d`, with a two-digit trial identifier.
+
 Important metadata resources in this repository include:
 
 - [Metadata/participants_metadata_EMG.csv](Metadata/participants_metadata_EMG.csv)
@@ -222,6 +239,10 @@ When the time-domain branch is run, its outputs are written under:
 - `Results/j_time_domain_data`
 - `Results/k_activation_profiles`
 - `Results/l_spm_envelope_analysis`
+
+Intermediate MAT datasets are written under `C.paths.mat_dir`, including
+preprocessed signals, detected bursts, QC decisions, final paired signals,
+coherence data, and time-domain data.
 
 ---
 

@@ -3,25 +3,23 @@
 %
 % GOAL
 % -------------------------------------------------------------------------
-% Test the effect of:
-%   - age_group
+% Test developmental and surface-related differences in EMG-EMG coherence.
+%
+% Primary analysis:
+%   - continuous age
 %   - condition
-%   - age_group x condition
+%   - continuous age x condition
 %
-% On pair-specific coherence metrics extracted from signals that were
-% already cleaned upstream using the pair-specific phase of interest
-% and wavelet-aware contamination exclusion.
-%
-% CURRENT ANALYSIS CHOICES
+% CURRENT PRIMARY ANALYSIS
 % -------------------------------------------------------------------------
-% - use pair-specific phase-aware dataset already produced upstream
-% - use true pair-specific POI scalar summaries saved in COHERENCE_RESULTS
-% - analyze each muscle pair separately
-% - use band-specific POI mean coherence and POI normalized AUC
-% - average left/right legs first within:
-%       subject x age_group x condition x pair_name
-% - run one LME per dependent variable:
-%       DV ~ age_group * condition + (1|subject)
+% - pair-specific, wavelet-QC band-specific datasets
+% - unthresholded coherence computed from equalized cycle subsets
+% - bandwidth-normalized AUC within pair-specific phase of interest
+% - TAprox-TAdist and SOL-GM analyzed separately
+% - alpha, beta, and gamma analyzed separately
+% - left/right legs averaged within participant and condition
+% - primary LME:
+%       AUC ~ AgeYears_z * condition + (1|subject)
 %
 % OUTPUT
 % -------------------------------------------------------------------------
@@ -194,11 +192,6 @@ function h_coherence_stats()
                     R_beta  = get_nested_result(COH_BETA,  subjID, cond, leg, pairName);
                     R_gamma = get_nested_result(COH_GAMMA, subjID, cond, leg, pairName);
 
-                    % Fallback to default if the band-specific entry is missing
-                    if isempty(R_alpha), R_alpha = get_nested_result(COH_DEFAULT, subjID, cond, leg, pairName); end
-                    if isempty(R_beta),  R_beta  = get_nested_result(COH_DEFAULT, subjID, cond, leg, pairName); end
-                    if isempty(R_gamma), R_gamma = get_nested_result(COH_DEFAULT, subjID, cond, leg, pairName); end
-
                     % ---------- Source-specific cycle counts for each band ----------
                     cycleRef   = get_metric_cycle_count_info(R_ref,   HC.analysis.coherence_source);
                     cycleAlpha = get_metric_cycle_count_info(R_alpha, HC.analysis.coherence_source);
@@ -286,13 +279,46 @@ function h_coherence_stats()
 
     T_subj.AgeYears = T_subj.AgeMonths ./ 12;
 
-    T_subj.AgeMonths_z = nan(height(T_subj), 1);
-    validAgeMonths = isfinite(T_subj.AgeMonths);
-    T_subj.AgeMonths_z(validAgeMonths) = (T_subj.AgeMonths(validAgeMonths) - mean(T_subj.AgeMonths(validAgeMonths), 'omitnan')) ./ std(T_subj.AgeMonths(validAgeMonths), 'omitnan');
+    % ---------------------------------------------------------
+    % Standardize age using ONE observation per participant
+    % ---------------------------------------------------------
+    T_age_unique = unique( ...
+        T_subj(:, {'subject','AgeMonths','AgeYears'}), ...
+        'rows');
 
-    T_subj.AgeYears_z = nan(height(T_subj), 1);
-    validAgeYears = isfinite(T_subj.AgeYears);
-    T_subj.AgeYears_z(validAgeYears) = (T_subj.AgeYears(validAgeYears) - mean(T_subj.AgeYears(validAgeYears), 'omitnan')) ./ std(T_subj.AgeYears(validAgeYears), 'omitnan');
+    % Age in months
+    validAgeMonthsUnique = isfinite(T_age_unique.AgeMonths);
+
+    muAgeMonths = mean( ...
+        T_age_unique.AgeMonths(validAgeMonthsUnique), ...
+        'omitnan');
+
+    sdAgeMonths = std( ...
+        T_age_unique.AgeMonths(validAgeMonthsUnique), ...
+        'omitnan');
+
+    T_subj.AgeMonths_z = ...
+        (T_subj.AgeMonths - muAgeMonths) ./ sdAgeMonths;
+
+    % Age in years
+    validAgeYearsUnique = isfinite(T_age_unique.AgeYears);
+
+    muAgeYears = mean( ...
+        T_age_unique.AgeYears(validAgeYearsUnique), ...
+        'omitnan');
+
+    sdAgeYears = std( ...
+        T_age_unique.AgeYears(validAgeYearsUnique), ...
+        'omitnan');
+
+    T_subj.AgeYears_z = ...
+        (T_subj.AgeYears - muAgeYears) ./ sdAgeYears;
+
+    fprintf('\n=== Age standardization ===\n');
+    fprintf('Unique participants used: %d\n', ...
+        sum(validAgeYearsUnique));
+    fprintf('Age mean: %.3f years\n', muAgeYears);
+    fprintf('Age SD:   %.3f years\n', sdAgeYears);
 
     % Keep metadata as non-averaged constant columns
     T_subj.metric_scope = repmat(string(HC.analysis.metric_scope), height(T_subj), 1);
@@ -342,405 +368,843 @@ function h_coherence_stats()
     % Optional latest-copy file
     writetable(T_subj, fullfile(HC.io.tables_dir, 'T_subject_after_leg_average.csv'));
 
-    %% ===================== AGE VS COHERENCE METRICS: ONE POINT PER SUBJECT =====================
+    %% ===================== AGE CORRELATIONS =====================
 
-    fprintf('\nRunning age-vs-coherence correlations: one point per subject...\n');
+    runAgeCorrelations = ...
+        isfield(HC.analysis, 'run_age_correlations') && ...
+        HC.analysis.run_age_correlations;
 
-    agePeakDir = fullfile(HC.io.plots_dir, 'age_metric_correlations_one_point_per_subject');
-    if ~exist(agePeakDir, 'dir')
-        mkdir(agePeakDir);
-    end
+    % Initialize outputs for robustness
+    AGE_METRIC_TABLE = table();
+    AGE_COND_TABLE   = table();
 
-    AGE_METRIC_ROWS = {};
-    riAP = 0;
+    if runAgeCorrelations
 
-    ageCorrMetrics = HC.analysis.age_corr_metrics;
+        % Common settings for both age-correlation blocks
+        ageCorrMetrics = HC.analysis.age_corr_metrics;
 
-    useCycleCorr = isfield(HC.analysis, 'include_cycle_count_in_correlations') && HC.analysis.include_cycle_count_in_correlations;
+        useCycleCorr = ...
+            isfield(HC.analysis, 'include_cycle_count_in_correlations') && ...
+            HC.analysis.include_cycle_count_in_correlations;
 
-    if useCycleCorr
-        corrTag = "partialcyclecorr";
-    else
-        corrTag = "simplecorr";
-    end
-
-    for ip = 1:numel(HC.analysis.pairs_to_analyze)
-
-        pairName = string(HC.analysis.pairs_to_analyze{ip});
-        Tp = T_subj(T_subj.pair_name == pairName, :);
-
-        if isempty(Tp)
-            continue;
+        if useCycleCorr
+            corrTag = "partialcyclecorr";
+        else
+            corrTag = "simplecorr";
         end
 
-        for im = 1:numel(ageCorrMetrics)
 
-            dv = ageCorrMetrics{im};
+        %% ===================== AGE VS COHERENCE METRICS:
+        %                       ONE POINT PER SUBJECT =====================
 
-            if ~ismember(dv, Tp.Properties.VariableNames)
+        fprintf('\nRunning age-vs-coherence correlations: one point per subject...\n');
+
+        agePeakDir = fullfile( ...
+            HC.io.plots_dir, ...
+            'age_metric_correlations_one_point_per_subject');
+
+        if ~exist(agePeakDir, 'dir')
+            mkdir(agePeakDir);
+        end
+
+        AGE_METRIC_ROWS = {};
+        riAP = 0;
+
+        for ip = 1:numel(HC.analysis.pairs_to_analyze)
+
+            pairName = string(HC.analysis.pairs_to_analyze{ip});
+
+            Tp = T_subj(T_subj.pair_name == pairName, :);
+
+            if isempty(Tp)
                 continue;
             end
 
-            Tm = Tp(~isnan(Tp.AgeMonths) & ~isnan(Tp.(dv)), :);
+            for im = 1:numel(ageCorrMetrics)
 
-            % Add DV-specific log_n_cycles for partial correlations
-            [Tm, useCycleCorrThisMetric, cycleCovSource] = add_log_cycle_covariate_for_dv(Tm, dv, useCycleCorr);
+                dv = ageCorrMetrics{im};
 
-            if height(Tm) < 5
-                continue;
-            end
-
-            % ---------- collapse to 1 row per subject ----------
-            groupVars = {'subject','age_group','AgeMonths','AgeYears'};
-            G = findgroups(Tm(:, groupVars));
-            T_age = unique(Tm(:, groupVars), 'rows');
-
-            T_age.metric_value = splitapply(@(x) mean(x, 'omitnan'), Tm.(dv), G);
-            T_age.n_observations_collapsed = splitapply(@(x) sum(~isnan(x)), Tm.(dv), G);
-
-            % Keep cycle-count covariate after collapse if available
-            if ismember('log_n_cycles', Tm.Properties.VariableNames)
-                T_age.log_n_cycles = splitapply(@(x) mean(x, 'omitnan'), Tm.log_n_cycles, G);
-            end
-
-            T_age = T_age(~isnan(T_age.metric_value) & ~isnan(T_age.AgeYears), :);
-
-            if height(T_age) < 5
-                continue;
-            end
-
-            ageYears = T_age.AgeYears;
-            y = T_age.metric_value;
-
-            [rPearson, pPearson] = corr(ageYears, y, 'Type', 'Pearson', 'Rows', 'complete');
-
-            [rhoSpearman, pSpearman] = corr(ageYears, y, 'Type', 'Spearman', 'Rows', 'complete');
-
-            % ---------- optional partial correlation controlling for log_n_cycles ----------
-            rPartialCycle = NaN;
-            pPartialCycle = NaN;
-            nPartialCycle = 0;
-
-            if useCycleCorrThisMetric && ismember('log_n_cycles', T_age.Properties.VariableNames)
-
-                zCycle = T_age.log_n_cycles;
-
-                validPartial = isfinite(ageYears) & isfinite(y) & isfinite(zCycle);
-                nPartialCycle = sum(validPartial);
-
-                if nPartialCycle >= 5
-                    [rPartialCycle, pPartialCycle] = partialcorr( ageYears(validPartial), y(validPartial), zCycle(validPartial), 'Rows', 'complete');
-                end
-            end
-
-            riAP = riAP + 1;
-            AGE_METRIC_ROWS(riAP,:) = { pairName, string(dv), height(T_age), rPearson, pPearson, rhoSpearman, pSpearman, rPartialCycle, pPartialCycle, nPartialCycle, useCycleCorrThisMetric};
-
-            % ---------- Plot ----------
-            fig = figure('Visible', HC.plot.visible, 'Color', 'w', 'Position', [100 100 650 520]);
-
-            hold on;
-
-            ageLevels = categories(removecats(T_age.age_group));
-            for ia = 1:numel(ageLevels)
-                ag = ageLevels{ia};
-                idx = T_age.age_group == ag;
-
-                col = get_age_color(ag, C);
-
-                scatter(ageYears(idx), y(idx), 50, 'filled', 'MarkerFaceColor', col, 'MarkerEdgeColor', col, 'DisplayName', char(ag));
-            end
-
-            mdl = fitlm(ageYears, y);
-            xfit = linspace(min(ageYears), max(ageYears), 100)';
-            yfit = predict(mdl, xfit);
-
-            plot(xfit, yfit, 'k-', 'LineWidth', 1.5, 'HandleVisibility', 'off');
-
-            xlabel('Age (years)');
-            ylabel(strrep(dv, '_', ' '));
-
-            title(sprintf('%s | %s | %s %s | 1 point/subject', pairName, strrep(dv, '_', ' '), string(HC.analysis.coherence_source), get_metric_scope_label(HC.analysis.metric_scope)), 'Interpreter', 'none');
-
-            if useCycleCorrThisMetric && isfinite(rPartialCycle)
-                txt = sprintf('r = %.2f, p = %.3g, n = %d\npartial r = %.2f, p = %.3g', rPearson, pPearson, height(T_age), rPartialCycle, pPartialCycle);
-            else
-                txt = sprintf('r = %.2f, p = %.3g, n = %d', rPearson, pPearson, height(T_age));
-            end
-
-            text(0.05, 0.95, txt, 'Units', 'normalized', 'Parent', gca, 'HorizontalAlignment', 'left', 'VerticalAlignment', 'top', 'FontSize', 11, 'FontWeight', 'bold', 'BackgroundColor', 'w', 'Margin', 3);
-
-            lgd = legend('Location', 'southoutside', 'Orientation', 'horizontal', 'Interpreter', 'none');
-
-            lgd.Box = 'off';
-            grid on;
-            apply_correlation_ylim(gca, HC, dv);
-
-            if exist('ANALYSIS_TAG', 'var')
-                outName = sprintf('AGE_VS_%s__%s__%s__%s__ONE_POINT_PER_SUBJECT.png', dv, pairName, ANALYSIS_TAG, corrTag);
-            else
-                outName = sprintf('AGE_VS_%s__%s__%s__%s__%s__ONE_POINT_PER_SUBJECT.png', dv, pairName, lower(char(string(HC.analysis.metric_scope))), lower(char(string(HC.analysis.coherence_source))), corrTag);
-            end
-
-            saveas(fig, fullfile(agePeakDir, outName));
-            close(fig);
-        end
-    end
-
-    if ~isempty(AGE_METRIC_ROWS)
-        AGE_METRIC_TABLE = cell2table(AGE_METRIC_ROWS, 'VariableNames', { 'pair_name','metric','n_subjects', 'r_pearson','p_pearson', 'rho_spearman','p_spearman', 'r_partial_log_n_cycles','p_partial_log_n_cycles','n_partial_log_n_cycles', 'cycle_count_control_requested'});
-
-        if exist('ANALYSIS_TAG', 'var')
-            writetable(AGE_METRIC_TABLE, fullfile(HC.io.tables_dir, sprintf('AGE_METRIC_CORRELATIONS_ONE_POINT_PER_SUBJECT__%s__%s.csv', ANALYSIS_TAG, corrTag)));
-        end
-
-        % Optional latest-copy file
-        writetable(AGE_METRIC_TABLE, fullfile(HC.io.tables_dir, 'AGE_METRIC_CORRELATIONS_ONE_POINT_PER_SUBJECT.csv'));
-
-        disp(AGE_METRIC_TABLE);
-    else
-        warning('No age-metric correlations were computed.');
-    end
-
-    %% ===================== AGE VS METRIC BY CONDITION TRIPLETS =====================
-
-    fprintf('\nRunning age-vs-coherence by-condition triplets...\n');
-
-    ageCondDir = fullfile(HC.io.plots_dir, 'age_metric_correlations_by_condition_triplets');
-    if ~exist(ageCondDir, 'dir')
-        mkdir(ageCondDir);
-    end
-
-    AGE_COND_ROWS = {};
-    riAC = 0;
-
-    condOrder = cellstr(C.plotting.condition_order);
-
-    useCycleCorr = isfield(HC.analysis, 'include_cycle_count_in_correlations') && HC.analysis.include_cycle_count_in_correlations;
-
-    if useCycleCorr
-        corrTag = "partialcyclecorr";
-    else
-        corrTag = "simplecorr";
-    end
-
-    for ip = 1:numel(HC.analysis.pairs_to_analyze)
-
-        pairName = string(HC.analysis.pairs_to_analyze{ip});
-        Tp_pair = T_subj(T_subj.pair_name == pairName, :);
-
-        if isempty(Tp_pair)
-            continue;
-        end
-
-        for im = 1:numel(ageCorrMetrics)
-
-            dv = ageCorrMetrics{im};
-
-            if ~ismember(dv, Tp_pair.Properties.VariableNames)
-                continue;
-            end
-
-            fig = figure('Visible', HC.plot.visible, 'Color', 'w', 'Position', [100 100 1650 600]);
-
-            tl = tiledlayout(fig, 1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
-            tl.OuterPosition = [0.04 0.08 0.94 0.78];
-
-            axAll = gobjects(1, numel(condOrder));
-
-            for ic = 1:numel(condOrder)
-
-                condName = condOrder{ic};
-
-                ax = nexttile(tl, ic);
-                axAll(ic) = ax;
-                hold(ax, 'on');
-
-                Tp = Tp_pair(Tp_pair.condition == condName, :);
-                Tm = Tp(~isnan(Tp.AgeMonths) & ~isnan(Tp.(dv)), :);
-
-                % Add DV-specific log_n_cycles for partial correlations
-                [Tm, useCycleCorrThisMetric, cycleCovSource] = add_log_cycle_covariate_for_dv(Tm, dv, useCycleCorr);
-
-                if isempty(Tm)
-                    title(ax, condName, 'Interpreter', 'none');
-                    axis(ax, 'off');
+                if ~ismember(dv, Tp.Properties.VariableNames)
                     continue;
                 end
 
-                % ---------- collapse to 1 row per subject WITHIN this condition ----------
-                groupVars = {'subject','age_group','AgeMonths','AgeYears'};
+                % Keep rows with valid age and metric
+                Tm = Tp( ...
+                    ~isnan(Tp.AgeMonths) & ...
+                    ~isnan(Tp.(dv)), :);
+
+                % Optional DV-specific cycle-count covariate
+                [Tm, useCycleCorrThisMetric, ~] = ...
+                    add_log_cycle_covariate_for_dv( ...
+                        Tm, ...
+                        dv, ...
+                        useCycleCorr);
+
+                if height(Tm) < 5
+                    continue;
+                end
+
+                % ---------------------------------------------------------
+                % Collapse to one point per subject
+                % Conditions are averaged here
+                % ---------------------------------------------------------
+                groupVars = { ...
+                    'subject', ...
+                    'age_group', ...
+                    'AgeMonths', ...
+                    'AgeYears'};
+
                 G = findgroups(Tm(:, groupVars));
+
                 T_age = unique(Tm(:, groupVars), 'rows');
 
-                T_age.metric_value = splitapply(@(x) mean(x, 'omitnan'), Tm.(dv), G);
-                T_age.n_observations_collapsed = splitapply(@(x) sum(~isnan(x)), Tm.(dv), G);
+                T_age.metric_value = splitapply( ...
+                    @(x) mean(x, 'omitnan'), ...
+                    Tm.(dv), ...
+                    G);
+
+                T_age.n_observations_collapsed = splitapply( ...
+                    @(x) sum(~isnan(x)), ...
+                    Tm.(dv), ...
+                    G);
 
                 % Keep cycle-count covariate after collapse if available
                 if ismember('log_n_cycles', Tm.Properties.VariableNames)
-                    T_age.log_n_cycles = splitapply(@(x) mean(x, 'omitnan'), Tm.log_n_cycles, G);
+
+                    T_age.log_n_cycles = splitapply( ...
+                        @(x) mean(x, 'omitnan'), ...
+                        Tm.log_n_cycles, ...
+                        G);
                 end
 
-                T_age = T_age(~isnan(T_age.metric_value) & ~isnan(T_age.AgeYears), :);
+                % Remove invalid observations
+                T_age = T_age( ...
+                    ~isnan(T_age.metric_value) & ...
+                    ~isnan(T_age.AgeYears), :);
 
                 if height(T_age) < 5
-                    title(ax, sprintf('%s | n=%d', condName, height(T_age)), 'Interpreter', 'none');
-                    axis(ax, 'off');
                     continue;
                 end
 
+                % ---------------------------------------------------------
+                % Correlations
+                % ---------------------------------------------------------
                 ageYears = T_age.AgeYears;
                 y = T_age.metric_value;
 
-                [rPearson, pPearson] = corr(ageYears, y, 'Type', 'Pearson', 'Rows', 'complete');
+                [rPearson, pPearson] = corr( ...
+                    ageYears, ...
+                    y, ...
+                    'Type', 'Pearson', ...
+                    'Rows', 'complete');
 
-                [rhoSpearman, pSpearman] = corr(ageYears, y, 'Type', 'Spearman', 'Rows', 'complete');
+                [rhoSpearman, pSpearman] = corr( ...
+                    ageYears, ...
+                    y, ...
+                    'Type', 'Spearman', ...
+                    'Rows', 'complete');
 
-                % ---------- optional partial correlation controlling for log_n_cycles ----------
+                % ---------------------------------------------------------
+                % Optional partial correlation controlling for cycle count
+                % ---------------------------------------------------------
                 rPartialCycle = NaN;
                 pPartialCycle = NaN;
                 nPartialCycle = 0;
 
-                if useCycleCorrThisMetric && ismember('log_n_cycles', T_age.Properties.VariableNames)
+                if useCycleCorrThisMetric && ...
+                        ismember('log_n_cycles', T_age.Properties.VariableNames)
 
                     zCycle = T_age.log_n_cycles;
 
-                    validPartial = isfinite(ageYears) & isfinite(y) & isfinite(zCycle);
+                    validPartial = ...
+                        isfinite(ageYears) & ...
+                        isfinite(y) & ...
+                        isfinite(zCycle);
+
                     nPartialCycle = sum(validPartial);
 
                     if nPartialCycle >= 5
-                        [rPartialCycle, pPartialCycle] = partialcorr( ageYears(validPartial), y(validPartial), zCycle(validPartial), 'Rows', 'complete');
+
+                        [rPartialCycle, pPartialCycle] = partialcorr( ...
+                            ageYears(validPartial), ...
+                            y(validPartial), ...
+                            zCycle(validPartial), ...
+                            'Rows', 'complete');
                     end
                 end
 
-                riAC = riAC + 1;
-                AGE_COND_ROWS(riAC,:) = { pairName, string(dv), string(condName), height(T_age), rPearson, pPearson, rhoSpearman, pSpearman, rPartialCycle, pPartialCycle, nPartialCycle, useCycleCorrThisMetric};
+                % ---------------------------------------------------------
+                % Save result row
+                % ---------------------------------------------------------
+                riAP = riAP + 1;
+
+                AGE_METRIC_ROWS(riAP,:) = { ...
+                    pairName, ...
+                    string(dv), ...
+                    height(T_age), ...
+                    rPearson, ...
+                    pPearson, ...
+                    rhoSpearman, ...
+                    pSpearman, ...
+                    rPartialCycle, ...
+                    pPartialCycle, ...
+                    nPartialCycle, ...
+                    useCycleCorrThisMetric ...
+                    };
+
+                % ---------------------------------------------------------
+                % Plot
+                % ---------------------------------------------------------
+                fig = figure( ...
+                    'Visible', HC.plot.visible, ...
+                    'Color', 'w', ...
+                    'Position', [100 100 650 520]);
+
+                hold on;
 
                 ageLevels = categories(removecats(T_age.age_group));
 
                 for ia = 1:numel(ageLevels)
+
                     ag = ageLevels{ia};
                     idx = T_age.age_group == ag;
 
                     col = get_age_color(ag, C);
 
-                    scatter(ax, ageYears(idx), y(idx), 50, 'filled', 'MarkerFaceColor', col, 'MarkerEdgeColor', col, 'DisplayName', char(ag));
+                    scatter( ...
+                        ageYears(idx), ...
+                        y(idx), ...
+                        50, ...
+                        'filled', ...
+                        'MarkerFaceColor', col, ...
+                        'MarkerEdgeColor', col, ...
+                        'DisplayName', char(ag));
                 end
 
+                % Simple linear fit for visualization only
                 mdl = fitlm(ageYears, y);
-                xfit = linspace(min(ageYears), max(ageYears), 100)';
+
+                xfit = linspace( ...
+                    min(ageYears), ...
+                    max(ageYears), ...
+                    100)';
+
                 yfit = predict(mdl, xfit);
 
-                plot(ax, xfit, yfit, 'k-', 'LineWidth', 1.5, 'HandleVisibility', 'off');
+                plot( ...
+                    xfit, ...
+                    yfit, ...
+                    'k-', ...
+                    'LineWidth', 1.5, ...
+                    'HandleVisibility', 'off');
 
-                xlabel(ax, 'Age (years)');
-                ylabel(ax, strrep(dv, '_', ' '));
-                title(ax, condName, 'Interpreter', 'none');
+                xlabel('Age (years)');
+                ylabel(strrep(dv, '_', ' '));
+
+                title( ...
+                    sprintf( ...
+                        '%s | %s | %s %s | 1 point/subject', ...
+                        pairName, ...
+                        strrep(dv, '_', ' '), ...
+                        string(HC.analysis.coherence_source), ...
+                        get_metric_scope_label(HC.analysis.metric_scope)), ...
+                    'Interpreter', 'none');
 
                 if useCycleCorrThisMetric && isfinite(rPartialCycle)
-                    txt = sprintf('r = %.2f, p = %.3g, n = %d\npartial r = %.2f, p = %.3g', rPearson, pPearson, height(T_age), rPartialCycle, pPartialCycle);
+
+                    txt = sprintf( ...
+                        ['r = %.2f, p = %.3g, n = %d\n' ...
+                        'partial r = %.2f, p = %.3g'], ...
+                        rPearson, ...
+                        pPearson, ...
+                        height(T_age), ...
+                        rPartialCycle, ...
+                        pPartialCycle);
+
                 else
-                    txt = sprintf('r = %.2f, p = %.3g, n = %d', rPearson, pPearson, height(T_age));
+
+                    txt = sprintf( ...
+                        'r = %.2f, p = %.3g, n = %d', ...
+                        rPearson, ...
+                        pPearson, ...
+                        height(T_age));
                 end
 
-                text(ax, 0.05, 0.95, txt, 'Units', 'normalized', 'HorizontalAlignment', 'left', 'VerticalAlignment', 'top', 'FontSize', 10, 'FontWeight', 'bold', 'BackgroundColor', 'w', 'Margin', 3);
+                text( ...
+                    0.05, ...
+                    0.95, ...
+                    txt, ...
+                    'Units', 'normalized', ...
+                    'Parent', gca, ...
+                    'HorizontalAlignment', 'left', ...
+                    'VerticalAlignment', 'top', ...
+                    'FontSize', 11, ...
+                    'FontWeight', 'bold', ...
+                    'BackgroundColor', 'w', ...
+                    'Margin', 3);
 
-                grid(ax, 'on');
-            end
-
-            validAx = axAll(isgraphics(axAll));
-
-            allY = [];
-            for iax = 1:numel(validAx)
-                yl = ylim(validAx(iax));
-                allY = [allY yl]; %#ok<AGROW>
-            end
-
-            if isfield(HC, 'plot') && isfield(HC.plot, 'correlation_use_fixed_ylim') && HC.plot.correlation_use_fixed_ylim
-
-                for iax = 1:numel(validAx)
-                    apply_correlation_ylim(validAx(iax), HC, dv);
-                end
-
-            else
-                allY = [];
-                for iax = 1:numel(validAx)
-                    yl = ylim(validAx(iax));
-                    allY = [allY yl]; %#ok<AGROW>
-                end
-
-                if ~isempty(allY)
-                    yMin = min(allY);
-                    yMax = max(allY);
-                    yRange = yMax - yMin;
-                    if yRange <= 0
-                        yRange = 0.1;
-                    end
-
-                    sharedYLims = [yMin - 0.03*yRange, yMax + 0.08*yRange];
-
-                    for iax = 1:numel(validAx)
-                        ylim(validAx(iax), sharedYLims);
-                    end
-                end
-            end
-
-            sgtitle(fig, sprintf('%s | %s | %s %s | one point/subject/condition', pairName, strrep(dv, '_', ' '), string(HC.analysis.coherence_source), get_metric_scope_label(HC.analysis.metric_scope)), 'Interpreter', 'none');
-
-            % ---------- shared legend ----------
-            allAxes = findall(fig, 'Type', 'axes');
-            hScat = findobj(allAxes, 'Type', 'Scatter');
-
-            if ~isempty(hScat)
-                labels = get(hScat, 'DisplayName');
-                if ischar(labels)
-                    labels = {labels};
-                end
-
-                valid = ~cellfun(@isempty, labels);
-                hScat = hScat(valid);
-                labels = labels(valid);
-
-                [uniqueLabels, ia] = unique(labels, 'stable');
-                hScat = hScat(ia);
-
-                legendAx = axes(fig, 'Position', [0.70 0.91 0.27 0.06], 'Visible', 'off');
-
-                lgd = legend(legendAx, hScat, uniqueLabels, 'Orientation', 'horizontal', 'Interpreter', 'none');
+                lgd = legend( ...
+                    'Location', 'southoutside', ...
+                    'Orientation', 'horizontal', ...
+                    'Interpreter', 'none');
 
                 lgd.Box = 'off';
-                lgd.FontSize = 12;
-                lgd.ItemTokenSize = [18 12];
-                lgd.Units = 'normalized';
-                lgd.Position = [0.70 0.91 0.27 0.06];
+
+                grid on;
+
+                apply_correlation_ylim(gca, HC, dv);
+
+                if exist('ANALYSIS_TAG', 'var')
+
+                    outName = sprintf( ...
+                        'AGE_VS_%s__%s__%s__%s__ONE_POINT_PER_SUBJECT.png', ...
+                        dv, ...
+                        pairName, ...
+                        ANALYSIS_TAG, ...
+                        corrTag);
+
+                else
+
+                    outName = sprintf( ...
+                        'AGE_VS_%s__%s__%s__%s__%s__ONE_POINT_PER_SUBJECT.png', ...
+                        dv, ...
+                        pairName, ...
+                        lower(char(string(HC.analysis.metric_scope))), ...
+                        lower(char(string(HC.analysis.coherence_source))), ...
+                        corrTag);
+                end
+
+                saveas(fig, fullfile(agePeakDir, outName));
+                close(fig);
+
             end
+        end
+
+        % ---------------------------------------------------------
+        % Save one-point-per-subject correlation table
+        % ---------------------------------------------------------
+        if ~isempty(AGE_METRIC_ROWS)
+
+            AGE_METRIC_TABLE = cell2table( ...
+                AGE_METRIC_ROWS, ...
+                'VariableNames', { ...
+                    'pair_name', ...
+                    'metric', ...
+                    'n_subjects', ...
+                    'r_pearson', ...
+                    'p_pearson', ...
+                    'rho_spearman', ...
+                    'p_spearman', ...
+                    'r_partial_log_n_cycles', ...
+                    'p_partial_log_n_cycles', ...
+                    'n_partial_log_n_cycles', ...
+                    'cycle_count_control_requested' ...
+                    });
 
             if exist('ANALYSIS_TAG', 'var')
-                outName = sprintf('AGE_VS_%s__%s__BY_CONDITION_TRIPLET__%s__%s.png', dv, pairName, ANALYSIS_TAG, corrTag);
-            else
-                outName = sprintf('AGE_VS_%s__%s__BY_CONDITION_TRIPLET__%s__%s_%s.png', dv, pairName, lower(char(string(HC.analysis.metric_scope))), lower(char(string(HC.analysis.coherence_source))), corrTag);
+
+                writetable( ...
+                    AGE_METRIC_TABLE, ...
+                    fullfile( ...
+                        HC.io.tables_dir, ...
+                        sprintf( ...
+                            'AGE_METRIC_CORRELATIONS_ONE_POINT_PER_SUBJECT__%s__%s.csv', ...
+                            ANALYSIS_TAG, ...
+                            corrTag)));
             end
 
-            saveas(fig, fullfile(ageCondDir, outName));
-            close(fig);
+            % Optional latest-copy file
+            writetable( ...
+                AGE_METRIC_TABLE, ...
+                fullfile( ...
+                    HC.io.tables_dir, ...
+                    'AGE_METRIC_CORRELATIONS_ONE_POINT_PER_SUBJECT.csv'));
+
+            disp(AGE_METRIC_TABLE);
+
+        else
+
+            warning('No age-metric correlations were computed.');
         end
-    end
 
-    if ~isempty(AGE_COND_ROWS)
-        AGE_COND_TABLE = cell2table(AGE_COND_ROWS, 'VariableNames', { 'pair_name','metric','condition','n_subjects', 'r_pearson','p_pearson', 'rho_spearman','p_spearman', 'r_partial_log_n_cycles','p_partial_log_n_cycles','n_partial_log_n_cycles', 'cycle_count_control_requested'});
 
-        if exist('ANALYSIS_TAG', 'var')
-            writetable(AGE_COND_TABLE, fullfile(HC.io.tables_dir, sprintf('AGE_METRIC_CORRELATIONS_BY_CONDITION__%s__%s.csv', ANALYSIS_TAG, corrTag)));
+        %% ===================== AGE VS METRIC BY CONDITION TRIPLETS =====================
+
+        fprintf('\nRunning age-vs-coherence by-condition triplets...\n');
+
+        ageCondDir = fullfile( ...
+            HC.io.plots_dir, ...
+            'age_metric_correlations_by_condition_triplets');
+
+        if ~exist(ageCondDir, 'dir')
+            mkdir(ageCondDir);
         end
 
-        % Optional latest-copy file
-        writetable(AGE_COND_TABLE, fullfile(HC.io.tables_dir, 'AGE_METRIC_CORRELATIONS_BY_CONDITION.csv'));
+        AGE_COND_ROWS = {};
+        riAC = 0;
 
-        disp(AGE_COND_TABLE);
+        condOrder = cellstr(C.plotting.condition_order);
+
+        for ip = 1:numel(HC.analysis.pairs_to_analyze)
+
+            pairName = string(HC.analysis.pairs_to_analyze{ip});
+
+            Tp_pair = T_subj(T_subj.pair_name == pairName, :);
+
+            if isempty(Tp_pair)
+                continue;
+            end
+
+            for im = 1:numel(ageCorrMetrics)
+
+                dv = ageCorrMetrics{im};
+
+                if ~ismember(dv, Tp_pair.Properties.VariableNames)
+                    continue;
+                end
+
+                fig = figure( ...
+                    'Visible', HC.plot.visible, ...
+                    'Color', 'w', ...
+                    'Position', [100 100 1650 600]);
+
+                tl = tiledlayout( ...
+                    fig, ...
+                    1, ...
+                    3, ...
+                    'TileSpacing', 'compact', ...
+                    'Padding', 'compact');
+
+                tl.OuterPosition = [0.04 0.08 0.94 0.78];
+
+                axAll = gobjects(1, numel(condOrder));
+
+                for ic = 1:numel(condOrder)
+
+                    condName = condOrder{ic};
+
+                    ax = nexttile(tl, ic);
+                    axAll(ic) = ax;
+
+                    hold(ax, 'on');
+
+                    Tp = Tp_pair(Tp_pair.condition == condName, :);
+
+                    Tm = Tp( ...
+                        ~isnan(Tp.AgeMonths) & ...
+                        ~isnan(Tp.(dv)), :);
+
+                    % Optional DV-specific cycle-count covariate
+                    [Tm, useCycleCorrThisMetric, ~] = ...
+                        add_log_cycle_covariate_for_dv( ...
+                            Tm, ...
+                            dv, ...
+                            useCycleCorr);
+
+                    if isempty(Tm)
+
+                        title(ax, condName, 'Interpreter', 'none');
+                        axis(ax, 'off');
+
+                        continue;
+                    end
+
+                    % -----------------------------------------------------
+                    % Collapse to one row per subject WITHIN condition
+                    % -----------------------------------------------------
+                    groupVars = { ...
+                        'subject', ...
+                        'age_group', ...
+                        'AgeMonths', ...
+                        'AgeYears'};
+
+                    G = findgroups(Tm(:, groupVars));
+
+                    T_age = unique(Tm(:, groupVars), 'rows');
+
+                    T_age.metric_value = splitapply( ...
+                        @(x) mean(x, 'omitnan'), ...
+                        Tm.(dv), ...
+                        G);
+
+                    T_age.n_observations_collapsed = splitapply( ...
+                        @(x) sum(~isnan(x)), ...
+                        Tm.(dv), ...
+                        G);
+
+                    if ismember('log_n_cycles', Tm.Properties.VariableNames)
+
+                        T_age.log_n_cycles = splitapply( ...
+                            @(x) mean(x, 'omitnan'), ...
+                            Tm.log_n_cycles, ...
+                            G);
+                    end
+
+                    T_age = T_age( ...
+                        ~isnan(T_age.metric_value) & ...
+                        ~isnan(T_age.AgeYears), :);
+
+                    if height(T_age) < 5
+
+                        title( ...
+                            ax, ...
+                            sprintf('%s | n=%d', ...
+                                condName, ...
+                                height(T_age)), ...
+                            'Interpreter', 'none');
+
+                        axis(ax, 'off');
+
+                        continue;
+                    end
+
+                    % -----------------------------------------------------
+                    % Correlations
+                    % -----------------------------------------------------
+                    ageYears = T_age.AgeYears;
+                    y = T_age.metric_value;
+
+                    [rPearson, pPearson] = corr( ...
+                        ageYears, ...
+                        y, ...
+                        'Type', 'Pearson', ...
+                        'Rows', 'complete');
+
+                    [rhoSpearman, pSpearman] = corr( ...
+                        ageYears, ...
+                        y, ...
+                        'Type', 'Spearman', ...
+                        'Rows', 'complete');
+
+                    % -----------------------------------------------------
+                    % Optional partial correlation controlling cycle count
+                    % -----------------------------------------------------
+                    rPartialCycle = NaN;
+                    pPartialCycle = NaN;
+                    nPartialCycle = 0;
+
+                    if useCycleCorrThisMetric && ...
+                            ismember('log_n_cycles', T_age.Properties.VariableNames)
+
+                        zCycle = T_age.log_n_cycles;
+
+                        validPartial = ...
+                            isfinite(ageYears) & ...
+                            isfinite(y) & ...
+                            isfinite(zCycle);
+
+                        nPartialCycle = sum(validPartial);
+
+                        if nPartialCycle >= 5
+
+                            [rPartialCycle, pPartialCycle] = partialcorr( ...
+                                ageYears(validPartial), ...
+                                y(validPartial), ...
+                                zCycle(validPartial), ...
+                                'Rows', 'complete');
+                        end
+                    end
+
+                    % -----------------------------------------------------
+                    % Save result row
+                    % -----------------------------------------------------
+                    riAC = riAC + 1;
+
+                    AGE_COND_ROWS(riAC,:) = { ...
+                        pairName, ...
+                        string(dv), ...
+                        string(condName), ...
+                        height(T_age), ...
+                        rPearson, ...
+                        pPearson, ...
+                        rhoSpearman, ...
+                        pSpearman, ...
+                        rPartialCycle, ...
+                        pPartialCycle, ...
+                        nPartialCycle, ...
+                        useCycleCorrThisMetric ...
+                        };
+
+                    % -----------------------------------------------------
+                    % Plot
+                    % -----------------------------------------------------
+                    ageLevels = categories(removecats(T_age.age_group));
+
+                    for ia = 1:numel(ageLevels)
+
+                        ag = ageLevels{ia};
+
+                        idx = T_age.age_group == ag;
+
+                        col = get_age_color(ag, C);
+
+                        scatter( ...
+                            ax, ...
+                            ageYears(idx), ...
+                            y(idx), ...
+                            50, ...
+                            'filled', ...
+                            'MarkerFaceColor', col, ...
+                            'MarkerEdgeColor', col, ...
+                            'DisplayName', char(ag));
+                    end
+
+                    mdl = fitlm(ageYears, y);
+
+                    xfit = linspace( ...
+                        min(ageYears), ...
+                        max(ageYears), ...
+                        100)';
+
+                    yfit = predict(mdl, xfit);
+
+                    plot( ...
+                        ax, ...
+                        xfit, ...
+                        yfit, ...
+                        'k-', ...
+                        'LineWidth', 1.5, ...
+                        'HandleVisibility', 'off');
+
+                    xlabel(ax, 'Age (years)');
+                    ylabel(ax, strrep(dv, '_', ' '));
+
+                    title( ...
+                        ax, ...
+                        condName, ...
+                        'Interpreter', 'none');
+
+                    if useCycleCorrThisMetric && isfinite(rPartialCycle)
+
+                        txt = sprintf( ...
+                            ['r = %.2f, p = %.3g, n = %d\n' ...
+                            'partial r = %.2f, p = %.3g'], ...
+                            rPearson, ...
+                            pPearson, ...
+                            height(T_age), ...
+                            rPartialCycle, ...
+                            pPartialCycle);
+
+                    else
+
+                        txt = sprintf( ...
+                            'r = %.2f, p = %.3g, n = %d', ...
+                            rPearson, ...
+                            pPearson, ...
+                            height(T_age));
+                    end
+
+                    text( ...
+                        ax, ...
+                        0.05, ...
+                        0.95, ...
+                        txt, ...
+                        'Units', 'normalized', ...
+                        'HorizontalAlignment', 'left', ...
+                        'VerticalAlignment', 'top', ...
+                        'FontSize', 10, ...
+                        'FontWeight', 'bold', ...
+                        'BackgroundColor', 'w', ...
+                        'Margin', 3);
+
+                    grid(ax, 'on');
+
+                end
+
+                % ---------------------------------------------------------
+                % Shared y limits
+                % ---------------------------------------------------------
+                validAx = axAll(isgraphics(axAll));
+
+                if isfield(HC, 'plot') && ...
+                        isfield(HC.plot, 'correlation_use_fixed_ylim') && ...
+                        HC.plot.correlation_use_fixed_ylim
+
+                    for iax = 1:numel(validAx)
+
+                        apply_correlation_ylim( ...
+                            validAx(iax), ...
+                            HC, ...
+                            dv);
+                    end
+
+                else
+
+                    allY = [];
+
+                    for iax = 1:numel(validAx)
+
+                        yl = ylim(validAx(iax));
+
+                        allY = [allY yl]; %#ok<AGROW>
+                    end
+
+                    if ~isempty(allY)
+
+                        yMin = min(allY);
+                        yMax = max(allY);
+
+                        yRange = yMax - yMin;
+
+                        if yRange <= 0
+                            yRange = 0.1;
+                        end
+
+                        sharedYLims = [ ...
+                            yMin - 0.03*yRange, ...
+                            yMax + 0.08*yRange];
+
+                        for iax = 1:numel(validAx)
+
+                            ylim( ...
+                                validAx(iax), ...
+                                sharedYLims);
+                        end
+                    end
+                end
+
+                sgtitle( ...
+                    fig, ...
+                    sprintf( ...
+                        '%s | %s | %s %s | one point/subject/condition', ...
+                        pairName, ...
+                        strrep(dv, '_', ' '), ...
+                        string(HC.analysis.coherence_source), ...
+                        get_metric_scope_label(HC.analysis.metric_scope)), ...
+                    'Interpreter', 'none');
+
+                % ---------------------------------------------------------
+                % Shared legend
+                % ---------------------------------------------------------
+                allAxes = findall(fig, 'Type', 'axes');
+
+                hScat = findobj( ...
+                    allAxes, ...
+                    'Type', 'Scatter');
+
+                if ~isempty(hScat)
+
+                    labels = get(hScat, 'DisplayName');
+
+                    if ischar(labels)
+                        labels = {labels};
+                    end
+
+                    valid = ~cellfun(@isempty, labels);
+
+                    hScat = hScat(valid);
+                    labels = labels(valid);
+
+                    [uniqueLabels, ia] = unique( ...
+                        labels, ...
+                        'stable');
+
+                    hScat = hScat(ia);
+
+                    legendAx = axes( ...
+                        fig, ...
+                        'Position', [0.70 0.91 0.27 0.06], ...
+                        'Visible', 'off');
+
+                    lgd = legend( ...
+                        legendAx, ...
+                        hScat, ...
+                        uniqueLabels, ...
+                        'Orientation', 'horizontal', ...
+                        'Interpreter', 'none');
+
+                    lgd.Box = 'off';
+                    lgd.FontSize = 12;
+                    lgd.ItemTokenSize = [18 12];
+                    lgd.Units = 'normalized';
+                    lgd.Position = [0.70 0.91 0.27 0.06];
+                end
+
+                % ---------------------------------------------------------
+                % Save figure
+                % ---------------------------------------------------------
+                if exist('ANALYSIS_TAG', 'var')
+
+                    outName = sprintf( ...
+                        'AGE_VS_%s__%s__BY_CONDITION_TRIPLET__%s__%s.png', ...
+                        dv, ...
+                        pairName, ...
+                        ANALYSIS_TAG, ...
+                        corrTag);
+
+                else
+
+                    outName = sprintf( ...
+                        'AGE_VS_%s__%s__BY_CONDITION_TRIPLET__%s__%s_%s.png', ...
+                        dv, ...
+                        pairName, ...
+                        lower(char(string(HC.analysis.metric_scope))), ...
+                        lower(char(string(HC.analysis.coherence_source))), ...
+                        corrTag);
+                end
+
+                saveas( ...
+                    fig, ...
+                    fullfile(ageCondDir, outName));
+
+                close(fig);
+
+            end
+        end
+
+        % ---------------------------------------------------------
+        % Save by-condition correlation table
+        % ---------------------------------------------------------
+        if ~isempty(AGE_COND_ROWS)
+
+            AGE_COND_TABLE = cell2table( ...
+                AGE_COND_ROWS, ...
+                'VariableNames', { ...
+                    'pair_name', ...
+                    'metric', ...
+                    'condition', ...
+                    'n_subjects', ...
+                    'r_pearson', ...
+                    'p_pearson', ...
+                    'rho_spearman', ...
+                    'p_spearman', ...
+                    'r_partial_log_n_cycles', ...
+                    'p_partial_log_n_cycles', ...
+                    'n_partial_log_n_cycles', ...
+                    'cycle_count_control_requested' ...
+                    });
+
+            if exist('ANALYSIS_TAG', 'var')
+
+                writetable( ...
+                    AGE_COND_TABLE, ...
+                    fullfile( ...
+                        HC.io.tables_dir, ...
+                        sprintf( ...
+                            'AGE_METRIC_CORRELATIONS_BY_CONDITION__%s__%s.csv', ...
+                            ANALYSIS_TAG, ...
+                            corrTag)));
+            end
+
+            % Optional latest-copy file
+            writetable( ...
+                AGE_COND_TABLE, ...
+                fullfile( ...
+                    HC.io.tables_dir, ...
+                    'AGE_METRIC_CORRELATIONS_BY_CONDITION.csv'));
+
+            disp(AGE_COND_TABLE);
+
+        else
+
+            warning('No by-condition age-metric correlations were computed.');
+        end
+
     else
-        warning('No by-condition age-metric correlations were computed.');
-    end
 
+        fprintf('\nAge correlations are disabled.\n');
+
+    end
     %% ===================== CONTINUOUS AGE LME MODELS =====================
     C = config_emg();
     HC = C.h_stats;
@@ -1000,64 +1464,114 @@ function h_coherence_stats()
 
     %% ===================== COHERENCE-POWER CORRELATIONS =====================
 
-    fprintf('\nRunning coherence-power correlations...\n');
+    runPowerCorrelations = ...
+        isfield(HC.analysis, 'run_power_correlations') && ...
+        HC.analysis.run_power_correlations;
 
-    corrOutDir = fullfile(HC.io.tables_dir, 'power_correlations');
-    if ~exist(corrOutDir, 'dir')
-        mkdir(corrOutDir);
-    end
+    % Initialize for robustness
+    CORR_TABLE = table();
 
-    corrPairs = HC.analysis.correlation_pairs;
+    if runPowerCorrelations
 
-    CORR_ROWS = {};
-    riC = 0;
+        fprintf('\nRunning coherence-power correlations...\n');
 
-    for ip = 1:numel(HC.analysis.pairs_to_analyze)
-
-        pairName = string(HC.analysis.pairs_to_analyze{ip});
-        Tp = T_subj(T_subj.pair_name == pairName, :);
-
-        if isempty(Tp)
-            continue;
+        corrOutDir = fullfile(HC.io.tables_dir, 'power_correlations');
+        if ~exist(corrOutDir, 'dir')
+            mkdir(corrOutDir);
         end
 
-        for im = 1:size(corrPairs,1)
+        corrPairs = HC.analysis.correlation_pairs;
 
-            dv = corrPairs{im,1};
-            powVar = corrPairs{im,2};
+        CORR_ROWS = {};
+        riC = 0;
 
-            if ~ismember(dv, Tp.Properties.VariableNames) || ~ismember(powVar, Tp.Properties.VariableNames)
+        for ip = 1:numel(HC.analysis.pairs_to_analyze)
+
+            pairName = string(HC.analysis.pairs_to_analyze{ip});
+            Tp = T_subj(T_subj.pair_name == pairName, :);
+
+            if isempty(Tp)
                 continue;
             end
 
-            Tm = Tp(~isnan(Tp.(dv)) & ~isnan(Tp.(powVar)), :);
+            for im = 1:size(corrPairs,1)
 
-            if height(Tm) < 5
-                continue;
+                dv = corrPairs{im,1};
+                powVar = corrPairs{im,2};
+
+                if ~ismember(dv, Tp.Properties.VariableNames) || ...
+                        ~ismember(powVar, Tp.Properties.VariableNames)
+                    continue;
+                end
+
+                Tm = Tp(~isnan(Tp.(dv)) & ~isnan(Tp.(powVar)), :);
+
+                if height(Tm) < 5
+                    continue;
+                end
+
+                x = Tm.(powVar);
+                y = Tm.(dv);
+
+                [rPearson, pPearson] = corr( ...
+                    x, y, ...
+                    'Type', 'Pearson', ...
+                    'Rows', 'complete');
+
+                [rSpearman, pSpearman] = corr( ...
+                    x, y, ...
+                    'Type', 'Spearman', ...
+                    'Rows', 'complete');
+
+                riC = riC + 1;
+
+                CORR_ROWS(riC,:) = { ...
+                    pairName, ...
+                    string(dv), ...
+                    string(powVar), ...
+                    height(Tm), ...
+                    rPearson, ...
+                    pPearson, ...
+                    rSpearman, ...
+                    pSpearman ...
+                    };
             end
-
-            x = Tm.(powVar);
-            y = Tm.(dv);
-
-            [rPearson, pPearson] = corr(x, y, 'Type', 'Pearson', 'Rows', 'complete');
-            [rSpearman, pSpearman] = corr(x, y, 'Type', 'Spearman', 'Rows', 'complete');
-
-            riC = riC + 1;
-            CORR_ROWS(riC,:) = { pairName, string(dv), string(powVar), height(Tm), rPearson, pPearson, rSpearman, pSpearman };
         end
-    end
 
-    if isempty(CORR_ROWS)
-        warning('No coherence-power correlations computed. Power variables may be unavailable for metric_scope = %s.', string(HC.analysis.metric_scope));
+        if isempty(CORR_ROWS)
 
-        CORR_TABLE = table();
+            warning( ...
+                'No coherence-power correlations computed. Power variables may be unavailable for metric_scope = %s.', ...
+                string(HC.analysis.metric_scope));
+
+        else
+
+            CORR_TABLE = cell2table( ...
+                CORR_ROWS, ...
+                'VariableNames', { ...
+                    'pair_name', ...
+                    'coherence_metric', ...
+                    'power_metric', ...
+                    'n', ...
+                    'r_pearson', ...
+                    'p_pearson', ...
+                    'rho_spearman', ...
+                    'p_spearman' ...
+                    });
+
+            writetable( ...
+                CORR_TABLE, ...
+                fullfile( ...
+                    corrOutDir, ...
+                    'COHERENCE_POWER_CORRELATIONS.csv'));
+
+            disp(CORR_TABLE);
+        end
 
     else
-        CORR_TABLE = cell2table(CORR_ROWS, 'VariableNames', { 'pair_name','coherence_metric','power_metric','n', 'r_pearson','p_pearson','rho_spearman','p_spearman'});
 
-        writetable(CORR_TABLE, fullfile(corrOutDir, 'COHERENCE_POWER_CORRELATIONS.csv'));
+        fprintf('\nCoherence-power correlations are disabled.\n');
 
-        disp(CORR_TABLE);
     end
 
     %% ===================== SAMPLE RECAP =====================
@@ -1175,214 +1689,456 @@ function h_coherence_stats()
 
     writetable(DESCRIPTIVE_ALL, fullfile(HC.io.tables_dir, 'DESCRIPTIVE_TABLE_ALL.csv'));
 
-    %% ===================== MODELING =====================
+    % %% ===================== MODELING =====================
 
-    fprintf('\nRunning pair-specific models...\n');
+    % fprintf('\nRunning pair-specific models...\n');
 
-    OMNIBUS_ROWS = {};
-    riO = 0;
+    % OMNIBUS_ROWS = {};
+    % riO = 0;
 
-    POSTHOC_ROWS = {};
-    riP = 0;
+    % POSTHOC_ROWS = {};
+    % riP = 0;
 
-    for ip = 1:numel(HC.analysis.pairs_to_analyze)
-        pairName = string(HC.analysis.pairs_to_analyze{ip});
-        Tp = T_subj(T_subj.pair_name == pairName, :);
+    % for ip = 1:numel(HC.analysis.pairs_to_analyze)
+    %     pairName = string(HC.analysis.pairs_to_analyze{ip});
+    %     Tp = T_subj(T_subj.pair_name == pairName, :);
 
-        if isempty(Tp)
-            continue;
-        end
+    %     if isempty(Tp)
+    %         continue;
+    %     end
 
-        Tp.age_group = removecats(Tp.age_group);
-        Tp.condition = removecats(Tp.condition);
-        Tp.subject   = removecats(Tp.subject);
+    %     Tp.age_group = removecats(Tp.age_group);
+    %     Tp.condition = removecats(Tp.condition);
+    %     Tp.subject   = removecats(Tp.subject);
 
-        for idv = 1:numel(dvList)
-            dv = dvList{idv};
+    %     for idv = 1:numel(dvList)
+    %         dv = dvList{idv};
 
-            if ~ismember(dv, Tp.Properties.VariableNames)
+    %         if ~ismember(dv, Tp.Properties.VariableNames)
+    %             continue;
+    %         end
+
+    %         Tm = Tp(~isnan(Tp.(dv)), :);
+    %         if isempty(Tm)
+    %             continue;
+    %         end
+
+    %         outTxt = fullfile(HC.io.models_dir, sprintf('MODEL__%s__%s__%s.txt', char(pairName), dv, ANALYSIS_TAG));
+
+    %         includeCycleCovRequested = isfield(HC.analysis, 'include_cycle_count_covariate') && HC.analysis.include_cycle_count_covariate;
+
+    %         [Tm, useCycleCovInThisModel, cycleCovSource] = add_log_cycle_covariate_for_dv(Tm, dv, includeCycleCovRequested);
+
+    %         if useCycleCovInThisModel
+    %             formula = sprintf('%s ~ age_group * condition + log_n_cycles + (1|subject)', dv);
+    %         else
+    %             formula = sprintf('%s ~ age_group * condition + (1|subject)', dv);
+    %         end
+
+    %         fprintf('\nRunning LME for %s | %s\n', string(pairName), string(dv));
+    %         fprintf('Formula: %s\n', formula);
+
+    %         if useCycleCovInThisModel
+    %             fprintf('Cycle-count control: ENABLED using %s\n', cycleCovSource);
+    %         else
+    %             fprintf('Cycle-count control: DISABLED or skipped for this model\n');
+    %         end
+
+    %         Tm = Tm(~isnan(Tm.(dv)), :);
+
+    %         if useCycleCovInThisModel
+    %             Tm = Tm(isfinite(Tm.log_n_cycles), :);
+    %         end
+
+    %         lme = write_lme_report(Tm, dv, formula, outTxt);
+
+    %         % ---------- omnibus p-values ----------
+    %         p_age = get_term_pvalue_from_lme_formula(Tm, formula, 'age_group');
+    %         p_condition = get_term_pvalue_from_lme_formula(Tm, formula, 'condition');
+    %         p_interaction = get_term_pvalue_from_lme_formula(Tm, formula, 'age_group:condition');
+
+    %         if useCycleCovInThisModel
+    %             cycleCovariate = "log_n_cycles";
+    %         else
+    %             cycleCovariate = "";
+    %         end
+
+    %         riO = riO + 1;
+    %         OMNIBUS_ROWS(riO,:) = { pairName, string(dv), string(HC.analysis.coherence_source), string(HC.analysis.metric_scope), useCycleCovInThisModel, cycleCovariate, string(cycleCovSource), string(formula), height(Tm), numel(unique(Tm.subject)), p_age, p_condition, p_interaction };
+    %         % ---------- post hoc: condition within age ----------
+    %         stats_cond_within_age = get_condition_pairwise_stats_within_age_simple(Tm, dv, HC.posthoc);
+
+    %         if ~isempty(stats_cond_within_age)
+    %             stats_cond_within_age = apply_pairwise_p_correction(stats_cond_within_age, HC.posthoc.correction);
+
+    %             for k = 1:numel(stats_cond_within_age)
+    %                 riP = riP + 1;
+    %                 POSTHOC_ROWS(riP,:) = { pairName, string(dv), "condition_within_age", string(stats_cond_within_age(k).group), string(stats_cond_within_age(k).g1), string(stats_cond_within_age(k).g2), stats_cond_within_age(k).p_raw, stats_cond_within_age(k).p, string(stats_cond_within_age(k).test_used), mat2str(stats_cond_within_age(k).n) };
+    %             end
+    %         end
+
+    %         % ---------- post hoc: age within condition ----------
+    %         stats_age_within_condition = get_age_pairwise_stats_within_condition_simple(Tm, dv, HC.posthoc);
+
+    %         if ~isempty(stats_age_within_condition)
+    %             stats_age_within_condition = apply_pairwise_p_correction(stats_age_within_condition, HC.posthoc.correction);
+
+    %             for k = 1:numel(stats_age_within_condition)
+    %                 riP = riP + 1;
+    %                 POSTHOC_ROWS(riP,:) = { pairName, string(dv), "age_within_condition", string(stats_age_within_condition(k).group), string(stats_age_within_condition(k).g1), string(stats_age_within_condition(k).g2), stats_age_within_condition(k).p_raw, stats_age_within_condition(k).p, string(stats_age_within_condition(k).test_used), mat2str(stats_age_within_condition(k).n) };
+    %             end
+    %         end
+    %     end
+    % end
+
+    % OMNIBUS_TABLE = cell2table(OMNIBUS_ROWS, 'VariableNames', { 'pair_name','metric', 'coherence_source','metric_scope', 'include_cycle_count_covariate','cycle_count_covariate', 'cycle_count_source', 'model_formula', 'n_rows','n_subjects', 'p_age_group','p_condition','p_age_condition'});
+
+    % writetable(OMNIBUS_TABLE, fullfile(HC.io.tables_dir, sprintf('OMNIBUS_TABLE__%s.csv', ANALYSIS_TAG)));
+
+    % % Optional latest-copy file
+    % writetable(OMNIBUS_TABLE, fullfile(HC.io.tables_dir, 'OMNIBUS_TABLE.csv'));
+
+    % if ~isempty(POSTHOC_ROWS)
+    %     POSTHOC_TABLE = cell2table(POSTHOC_ROWS, 'VariableNames', { 'pair_name','metric','comparison_family','stratification_group', 'level_1','level_2','p_raw','p_adj','test_used','n_used'});
+    % else
+    %     POSTHOC_TABLE = table();
+    % end
+
+    % if ~isempty(POSTHOC_TABLE)
+    %     POSTHOC_TABLE.coherence_source = repmat(string(HC.analysis.coherence_source), height(POSTHOC_TABLE), 1);
+    %     POSTHOC_TABLE.metric_scope = repmat(string(HC.analysis.metric_scope), height(POSTHOC_TABLE), 1);
+    %     POSTHOC_TABLE.include_cycle_count_covariate = repmat(includeCycleCov, height(POSTHOC_TABLE), 1);
+
+    %     if includeCycleCov
+    %         POSTHOC_TABLE.cycle_count_covariate = repmat("log_n_cycles", height(POSTHOC_TABLE), 1);
+    %     else
+    %         POSTHOC_TABLE.cycle_count_covariate = repmat("", height(POSTHOC_TABLE), 1);
+    %     end
+    % end
+
+    % writetable(POSTHOC_TABLE, fullfile(HC.io.tables_dir, sprintf('POSTHOC_TABLE__%s.csv', ANALYSIS_TAG)));
+
+    % % Optional latest-copy file
+    % writetable(POSTHOC_TABLE, fullfile(HC.io.tables_dir, 'POSTHOC_TABLE.csv'));
+
+    %% ===================== CATEGORICAL AGE MODELING =====================
+
+    runCategoricalAgeLME = ...
+        isfield(HC.analysis, 'run_categorical_age_lme') && ...
+        HC.analysis.run_categorical_age_lme;
+
+    % Initialize so later workspace saving still works
+    OMNIBUS_TABLE = table();
+    POSTHOC_TABLE = table();
+
+    if runCategoricalAgeLME
+
+        fprintf('\nRunning categorical-age pair-specific models...\n');
+
+        OMNIBUS_ROWS = {};
+        riO = 0;
+
+        POSTHOC_ROWS = {};
+        riP = 0;
+
+        for ip = 1:numel(HC.analysis.pairs_to_analyze)
+
+            pairName = string(HC.analysis.pairs_to_analyze{ip});
+            Tp = T_subj(T_subj.pair_name == pairName, :);
+
+            if isempty(Tp)
                 continue;
             end
 
-            Tm = Tp(~isnan(Tp.(dv)), :);
-            if isempty(Tm)
-                continue;
-            end
+            Tp.age_group = removecats(Tp.age_group);
+            Tp.condition = removecats(Tp.condition);
+            Tp.subject   = removecats(Tp.subject);
 
-            outTxt = fullfile(HC.io.models_dir, sprintf('MODEL__%s__%s__%s.txt', char(pairName), dv, ANALYSIS_TAG));
+            for idv = 1:numel(dvList)
 
-            includeCycleCovRequested = isfield(HC.analysis, 'include_cycle_count_covariate') && HC.analysis.include_cycle_count_covariate;
+                dv = dvList{idv};
 
-            [Tm, useCycleCovInThisModel, cycleCovSource] = add_log_cycle_covariate_for_dv(Tm, dv, includeCycleCovRequested);
-
-            if useCycleCovInThisModel
-                formula = sprintf('%s ~ age_group * condition + log_n_cycles + (1|subject)', dv);
-            else
-                formula = sprintf('%s ~ age_group * condition + (1|subject)', dv);
-            end
-
-            fprintf('\nRunning LME for %s | %s\n', string(pairName), string(dv));
-            fprintf('Formula: %s\n', formula);
-
-            if useCycleCovInThisModel
-                fprintf('Cycle-count control: ENABLED using %s\n', cycleCovSource);
-            else
-                fprintf('Cycle-count control: DISABLED or skipped for this model\n');
-            end
-
-            Tm = Tm(~isnan(Tm.(dv)), :);
-
-            if useCycleCovInThisModel
-                Tm = Tm(isfinite(Tm.log_n_cycles), :);
-            end
-
-            lme = write_lme_report(Tm, dv, formula, outTxt);
-
-            % ---------- omnibus p-values ----------
-            p_age = get_term_pvalue_from_lme_formula(Tm, formula, 'age_group');
-            p_condition = get_term_pvalue_from_lme_formula(Tm, formula, 'condition');
-            p_interaction = get_term_pvalue_from_lme_formula(Tm, formula, 'age_group:condition');
-
-            if useCycleCovInThisModel
-                cycleCovariate = "log_n_cycles";
-            else
-                cycleCovariate = "";
-            end
-
-            riO = riO + 1;
-            OMNIBUS_ROWS(riO,:) = { pairName, string(dv), string(HC.analysis.coherence_source), string(HC.analysis.metric_scope), useCycleCovInThisModel, cycleCovariate, string(cycleCovSource), string(formula), height(Tm), numel(unique(Tm.subject)), p_age, p_condition, p_interaction };
-            % ---------- post hoc: condition within age ----------
-            stats_cond_within_age = get_condition_pairwise_stats_within_age_simple(Tm, dv, HC.posthoc);
-
-            if ~isempty(stats_cond_within_age)
-                stats_cond_within_age = apply_pairwise_p_correction(stats_cond_within_age, HC.posthoc.correction);
-
-                for k = 1:numel(stats_cond_within_age)
-                    riP = riP + 1;
-                    POSTHOC_ROWS(riP,:) = { pairName, string(dv), "condition_within_age", string(stats_cond_within_age(k).group), string(stats_cond_within_age(k).g1), string(stats_cond_within_age(k).g2), stats_cond_within_age(k).p_raw, stats_cond_within_age(k).p, string(stats_cond_within_age(k).test_used), mat2str(stats_cond_within_age(k).n) };
+                if ~ismember(dv, Tp.Properties.VariableNames)
+                    continue;
                 end
-            end
 
-            % ---------- post hoc: age within condition ----------
-            stats_age_within_condition = get_age_pairwise_stats_within_condition_simple(Tm, dv, HC.posthoc);
+                Tm = Tp(~isnan(Tp.(dv)), :);
 
-            if ~isempty(stats_age_within_condition)
-                stats_age_within_condition = apply_pairwise_p_correction(stats_age_within_condition, HC.posthoc.correction);
+                if isempty(Tm)
+                    continue;
+                end
 
-                for k = 1:numel(stats_age_within_condition)
-                    riP = riP + 1;
-                    POSTHOC_ROWS(riP,:) = { pairName, string(dv), "age_within_condition", string(stats_age_within_condition(k).group), string(stats_age_within_condition(k).g1), string(stats_age_within_condition(k).g2), stats_age_within_condition(k).p_raw, stats_age_within_condition(k).p, string(stats_age_within_condition(k).test_used), mat2str(stats_age_within_condition(k).n) };
+                outTxt = fullfile( ...
+                    HC.io.models_dir, ...
+                    sprintf('MODEL__%s__%s__%s.txt', ...
+                    char(pairName), dv, ANALYSIS_TAG));
+
+                includeCycleCovRequested = ...
+                    isfield(HC.analysis, 'include_cycle_count_covariate') && ...
+                    HC.analysis.include_cycle_count_covariate;
+
+                [Tm, useCycleCovInThisModel, cycleCovSource] = ...
+                    add_log_cycle_covariate_for_dv( ...
+                    Tm, dv, includeCycleCovRequested);
+
+                if useCycleCovInThisModel
+                    formula = sprintf( ...
+                        '%s ~ age_group * condition + log_n_cycles + (1|subject)', ...
+                        dv);
+                else
+                    formula = sprintf( ...
+                        '%s ~ age_group * condition + (1|subject)', ...
+                        dv);
+                end
+
+                fprintf('\nRunning categorical-age LME for %s | %s\n', ...
+                    pairName, string(dv));
+                fprintf('Formula: %s\n', formula);
+
+                if useCycleCovInThisModel
+                    Tm = Tm(isfinite(Tm.log_n_cycles), :);
+                end
+
+                lme = write_lme_report(Tm, dv, formula, outTxt);
+
+                % ---------- omnibus ----------
+                p_age = get_term_pvalue_from_lme_formula( ...
+                    Tm, formula, 'age_group');
+
+                p_condition = get_term_pvalue_from_lme_formula( ...
+                    Tm, formula, 'condition');
+
+                p_interaction = get_term_pvalue_from_lme_formula( ...
+                    Tm, formula, 'age_group:condition');
+
+                if useCycleCovInThisModel
+                    cycleCovariate = "log_n_cycles";
+                else
+                    cycleCovariate = "";
+                end
+
+                riO = riO + 1;
+
+                OMNIBUS_ROWS(riO,:) = { ...
+                    pairName, string(dv), ...
+                    string(HC.analysis.coherence_source), ...
+                    string(HC.analysis.metric_scope), ...
+                    useCycleCovInThisModel, ...
+                    cycleCovariate, ...
+                    string(cycleCovSource), ...
+                    string(formula), ...
+                    height(Tm), ...
+                    numel(unique(Tm.subject)), ...
+                    p_age, ...
+                    p_condition, ...
+                    p_interaction };
+
+                % ---------- post hoc: condition within age ----------
+                stats_cond_within_age = ...
+                    get_condition_pairwise_stats_within_age_simple( ...
+                    Tm, dv, HC.posthoc);
+
+                if ~isempty(stats_cond_within_age)
+
+                    stats_cond_within_age = ...
+                        apply_pairwise_p_correction( ...
+                        stats_cond_within_age, ...
+                        HC.posthoc.correction);
+
+                    for k = 1:numel(stats_cond_within_age)
+
+                        riP = riP + 1;
+
+                        POSTHOC_ROWS(riP,:) = { ...
+                            pairName, ...
+                            string(dv), ...
+                            "condition_within_age", ...
+                            string(stats_cond_within_age(k).group), ...
+                            string(stats_cond_within_age(k).g1), ...
+                            string(stats_cond_within_age(k).g2), ...
+                            stats_cond_within_age(k).p_raw, ...
+                            stats_cond_within_age(k).p, ...
+                            string(stats_cond_within_age(k).test_used), ...
+                            mat2str(stats_cond_within_age(k).n) };
+                    end
+                end
+
+                % ---------- post hoc: age within condition ----------
+                stats_age_within_condition = ...
+                    get_age_pairwise_stats_within_condition_simple( ...
+                    Tm, dv, HC.posthoc);
+
+                if ~isempty(stats_age_within_condition)
+
+                    stats_age_within_condition = ...
+                        apply_pairwise_p_correction( ...
+                        stats_age_within_condition, ...
+                        HC.posthoc.correction);
+
+                    for k = 1:numel(stats_age_within_condition)
+
+                        riP = riP + 1;
+
+                        POSTHOC_ROWS(riP,:) = { ...
+                            pairName, ...
+                            string(dv), ...
+                            "age_within_condition", ...
+                            string(stats_age_within_condition(k).group), ...
+                            string(stats_age_within_condition(k).g1), ...
+                            string(stats_age_within_condition(k).g2), ...
+                            stats_age_within_condition(k).p_raw, ...
+                            stats_age_within_condition(k).p, ...
+                            string(stats_age_within_condition(k).test_used), ...
+                            mat2str(stats_age_within_condition(k).n) };
+                    end
                 end
             end
         end
-    end
 
-    OMNIBUS_TABLE = cell2table(OMNIBUS_ROWS, 'VariableNames', { 'pair_name','metric', 'coherence_source','metric_scope', 'include_cycle_count_covariate','cycle_count_covariate', 'cycle_count_source', 'model_formula', 'n_rows','n_subjects', 'p_age_group','p_condition','p_age_condition'});
+        if ~isempty(OMNIBUS_ROWS)
+            OMNIBUS_TABLE = cell2table( ...
+                OMNIBUS_ROWS, ...
+                'VariableNames', { ...
+                'pair_name','metric', ...
+                'coherence_source','metric_scope', ...
+                'include_cycle_count_covariate', ...
+                'cycle_count_covariate', ...
+                'cycle_count_source', ...
+                'model_formula', ...
+                'n_rows','n_subjects', ...
+                'p_age_group','p_condition','p_age_condition'});
+        end
 
-    writetable(OMNIBUS_TABLE, fullfile(HC.io.tables_dir, sprintf('OMNIBUS_TABLE__%s.csv', ANALYSIS_TAG)));
+        writetable(OMNIBUS_TABLE, ...
+            fullfile(HC.io.tables_dir, ...
+            sprintf('OMNIBUS_TABLE__%s.csv', ANALYSIS_TAG)));
 
-    % Optional latest-copy file
-    writetable(OMNIBUS_TABLE, fullfile(HC.io.tables_dir, 'OMNIBUS_TABLE.csv'));
+        writetable(OMNIBUS_TABLE, ...
+            fullfile(HC.io.tables_dir, 'OMNIBUS_TABLE.csv'));
 
-    if ~isempty(POSTHOC_ROWS)
-        POSTHOC_TABLE = cell2table(POSTHOC_ROWS, 'VariableNames', { 'pair_name','metric','comparison_family','stratification_group', 'level_1','level_2','p_raw','p_adj','test_used','n_used'});
+        if ~isempty(POSTHOC_ROWS)
+
+            POSTHOC_TABLE = cell2table( ...
+                POSTHOC_ROWS, ...
+                'VariableNames', { ...
+                'pair_name','metric','comparison_family', ...
+                'stratification_group', ...
+                'level_1','level_2', ...
+                'p_raw','p_adj','test_used','n_used'});
+
+            POSTHOC_TABLE.coherence_source = ...
+                repmat(string(HC.analysis.coherence_source), ...
+                height(POSTHOC_TABLE), 1);
+
+            POSTHOC_TABLE.metric_scope = ...
+                repmat(string(HC.analysis.metric_scope), ...
+                height(POSTHOC_TABLE), 1);
+
+            POSTHOC_TABLE.include_cycle_count_covariate = ...
+                repmat(includeCycleCov, height(POSTHOC_TABLE), 1);
+
+        end
+
+        writetable(POSTHOC_TABLE, ...
+            fullfile(HC.io.tables_dir, ...
+            sprintf('POSTHOC_TABLE__%s.csv', ANALYSIS_TAG)));
+
+        writetable(POSTHOC_TABLE, ...
+            fullfile(HC.io.tables_dir, 'POSTHOC_TABLE.csv'));
+
     else
-        POSTHOC_TABLE = table();
+
+        fprintf('\nCategorical-age LME disabled.\n');
+
     end
 
-    if ~isempty(POSTHOC_TABLE)
-        POSTHOC_TABLE.coherence_source = repmat(string(HC.analysis.coherence_source), height(POSTHOC_TABLE), 1);
-        POSTHOC_TABLE.metric_scope = repmat(string(HC.analysis.metric_scope), height(POSTHOC_TABLE), 1);
-        POSTHOC_TABLE.include_cycle_count_covariate = repmat(includeCycleCov, height(POSTHOC_TABLE), 1);
+%% ===================== POWER-CONTROL MODELS =====================
 
-        if includeCycleCov
-            POSTHOC_TABLE.cycle_count_covariate = repmat("log_n_cycles", height(POSTHOC_TABLE), 1);
-        else
-            POSTHOC_TABLE.cycle_count_covariate = repmat("", height(POSTHOC_TABLE), 1);
-        end
-    end
+    runPowerControlModels = ...
+        isfield(HC.analysis, 'run_power_control_models') && ...
+        HC.analysis.run_power_control_models;
 
-    writetable(POSTHOC_TABLE, fullfile(HC.io.tables_dir, sprintf('POSTHOC_TABLE__%s.csv', ANALYSIS_TAG)));
+    if runPowerControlModels
 
-    % Optional latest-copy file
-    writetable(POSTHOC_TABLE, fullfile(HC.io.tables_dir, 'POSTHOC_TABLE.csv'));
+        fprintf('\nRunning power-control models...\n');
 
-    %% ===================== POWER-CONTROL MODELS =====================
+        powerPairs = HC.analysis.power_pairs;
 
-    fprintf('\nRunning power-control models...\n');
+        includeCycleCov = ...
+            isfield(HC.analysis, 'include_cycle_count_covariate') && ...
+            HC.analysis.include_cycle_count_covariate;
 
-    powerPairs = HC.analysis.power_pairs;
+        for ip = 1:numel(HC.analysis.pairs_to_analyze)
 
-    includeCycleCov = isfield(HC.analysis, 'include_cycle_count_covariate') && HC.analysis.include_cycle_count_covariate;
+            fprintf('\nPair: %s\n', HC.analysis.pairs_to_analyze{ip});
 
-    for ip = 1:numel(HC.analysis.pairs_to_analyze)
-        fprintf('\nPair: %s\n', HC.analysis.pairs_to_analyze{ip});
+            pairName = string(HC.analysis.pairs_to_analyze{ip});
+            Tp = T_subj(T_subj.pair_name == pairName, :);
 
-        pairName = string(HC.analysis.pairs_to_analyze{ip});
-        Tp = T_subj(T_subj.pair_name == pairName, :);
-
-        if isempty(Tp)
-            continue;
-        end
-
-        Tp.age_group = removecats(Tp.age_group);
-        Tp.condition = removecats(Tp.condition);
-        Tp.subject   = removecats(Tp.subject);
-
-        for im = 1:size(powerPairs,1)
-
-            dv = powerPairs{im,1};
-            powVar = powerPairs{im,2};
-
-            if ~ismember(dv, Tp.Properties.VariableNames) || ~ismember(powVar, Tp.Properties.VariableNames)
-
-                fprintf('Missing variable(s) for power control model, skipping: %s or %s\n', dv, powVar);
+            if isempty(Tp)
                 continue;
             end
 
-            Tm = Tp(~isnan(Tp.(dv)) & ~isnan(Tp.(powVar)), :);
+            Tp.age_group = removecats(Tp.age_group);
+            Tp.condition = removecats(Tp.condition);
+            Tp.subject   = removecats(Tp.subject);
 
-            includeCycleCovRequested = isfield(HC.analysis, 'include_cycle_count_covariate') && HC.analysis.include_cycle_count_covariate;
+            for im = 1:size(powerPairs,1)
+                dv = powerPairs{im,1};
+                powVar = powerPairs{im,2};
 
-            [Tm, useCycleCovInThisModel, cycleCovSource] = add_log_cycle_covariate_for_dv(Tm, dv, includeCycleCovRequested);
+                if ~ismember(dv, Tp.Properties.VariableNames) || ~ismember(powVar, Tp.Properties.VariableNames)
 
-            if useCycleCovInThisModel
-                Tm = Tm(isfinite(Tm.log_n_cycles), :);
+                    fprintf('Missing variable(s) for power control model, skipping: %s or %s\n', dv, powVar);
+                    continue;
+                end
+
+                Tm = Tp(~isnan(Tp.(dv)) & ~isnan(Tp.(powVar)), :);
+
+                includeCycleCovRequested = isfield(HC.analysis, 'include_cycle_count_covariate') && HC.analysis.include_cycle_count_covariate;
+
+                [Tm, useCycleCovInThisModel, cycleCovSource] = add_log_cycle_covariate_for_dv(Tm, dv, includeCycleCovRequested);
+
+                if useCycleCovInThisModel
+                    Tm = Tm(isfinite(Tm.log_n_cycles), :);
+                end
+
+                if height(Tm) < 10
+                    fprintf('Not enough data for modeling (n = %d), skipping power-control model for this pair and DV.\n', height(Tm));
+                    continue;
+                end
+
+                % z-score power so coefficient is interpretable
+                Tm.(powVar) = zscore(Tm.(powVar));
+
+                if useCycleCovInThisModel
+                    formula = sprintf('%s ~ age_group * condition + %s + log_n_cycles + (1|subject)', dv, powVar);
+
+                    fprintf('Power-control model WITH cycle-count covariate:\n');
+                    fprintf('Formula: %s\n', formula);
+                    fprintf('Cycle-count source: %s\n', cycleCovSource);
+
+                    cycleTag = "cyclecov";
+                else
+                    formula = sprintf('%s ~ age_group * condition + %s + (1|subject)', dv, powVar);
+
+                    fprintf('Power-control model WITHOUT cycle-count covariate:\n');
+                    fprintf('Formula: %s\n', formula);
+
+                    cycleTag = "nocyclecov";
+                end
+
+                if exist('ANALYSIS_TAG', 'var')
+                    outTxt = fullfile(HC.io.models_dir, sprintf('MODEL_POWER_CONTROL__%s__%s__%s.txt', char(pairName), dv, ANALYSIS_TAG));
+                else
+                    outTxt = fullfile(HC.io.models_dir, sprintf('MODEL_POWER_CONTROL__%s__%s__%s_%s.txt', char(pairName), dv, string(HC.analysis.coherence_source), cycleTag));
+                end
+
+                lme = write_lme_report(Tm, dv, formula, outTxt);
             end
-
-            if height(Tm) < 10
-                fprintf('Not enough data for modeling (n = %d), skipping power-control model for this pair and DV.\n', height(Tm));
-                continue;
-            end
-
-            % z-score power so coefficient is interpretable
-            Tm.(powVar) = zscore(Tm.(powVar));
-
-            if useCycleCovInThisModel
-                formula = sprintf('%s ~ age_group * condition + %s + log_n_cycles + (1|subject)', dv, powVar);
-
-                fprintf('Power-control model WITH cycle-count covariate:\n');
-                fprintf('Formula: %s\n', formula);
-                fprintf('Cycle-count source: %s\n', cycleCovSource);
-
-                cycleTag = "cyclecov";
-            else
-                formula = sprintf('%s ~ age_group * condition + %s + (1|subject)', dv, powVar);
-
-                fprintf('Power-control model WITHOUT cycle-count covariate:\n');
-                fprintf('Formula: %s\n', formula);
-
-                cycleTag = "nocyclecov";
-            end
-
-            if exist('ANALYSIS_TAG', 'var')
-                outTxt = fullfile(HC.io.models_dir, sprintf('MODEL_POWER_CONTROL__%s__%s__%s.txt', char(pairName), dv, ANALYSIS_TAG));
-            else
-                outTxt = fullfile(HC.io.models_dir, sprintf('MODEL_POWER_CONTROL__%s__%s__%s_%s.txt', char(pairName), dv, string(HC.analysis.coherence_source), cycleTag));
-            end
-
-            lme = write_lme_report(Tm, dv, formula, outTxt);
         end
+    else
+        fprintf('Power-control models are disabled.\n');
     end
 
     %% ===================== PLOTS =====================
@@ -1633,11 +2389,14 @@ function h_coherence_stats()
                 if isfield(HS, 'spectrum_source') && strcmpi(HS.spectrum_source, "sig")
                     yLabelTxt = 'Significant coherence';
                     spectrumTxt = 'significant coherence spectrum';
+                elseif isfield(HS, 'spectrum_source') && strcmpi(HS.spectrum_source, "equalized")
+                    yLabelTxt = 'Equalized unthresholded coherence';
+                    spectrumTxt = 'equalized unthresholded coherence spectrum';
                 elseif isfield(HS, 'spectrum_source') && strcmpi(HS.spectrum_source, "sig_equalized")
                     yLabelTxt = 'Equalized significant coherence';
                     spectrumTxt = 'equalized significant coherence spectrum';
                 elseif isfield(HS, 'spectrum_source') && strcmpi(HS.spectrum_source, "sig_common_threshold")
-                    yLabelTxt = 'Significant coherence (common threshold substracted)';
+                    yLabelTxt = 'Significant coherence (common threshold subtracted)';
                     spectrumTxt = 'significant coherence spectrum';
                 elseif isfield(HS, 'spectrum_source') && strcmpi(HS.spectrum_source, "zcoh_bokil")
                     yLabelTxt = 'Z-scored coherence (Bokil method)';

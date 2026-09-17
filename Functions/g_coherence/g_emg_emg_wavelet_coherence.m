@@ -102,33 +102,12 @@ function g_emg_emg_wavelet_coherence()
         % ---------------- Load paired signals ----------------
         FINAL_PAIRED_SIGNALS = load_final_paired_signals_file(inFile);
 
-        % ---------------- Determine common cycle count for sig_equalized ----------------
+        % ---------------- Cycle equalization settings ----------------
         EQ = W.cycle_equalization;
 
-        N_common_equalized = NaN;
-
-        if isfield(EQ, 'enable') && EQ.enable
-
-            switch lower(string(EQ.mode))
-
-                case "global_min"
-                    N_common_equalized = get_min_analysis_cycles_in_dataset(FINAL_PAIRED_SIGNALS, W);
-
-                case "manual"
-                    if isempty(EQ.manual_n_cycles)
-                        error('cycle_equalization.mode = "manual" but manual_n_cycles is empty.');
-                    end
-                    N_common_equalized = EQ.manual_n_cycles;
-
-                otherwise
-                    error('Unknown cycle_equalization.mode: %s', string(EQ.mode));
-            end
-
-            fprintf('\n=== Cycle equalization ===\n');
-            fprintf('Mode: %s\n', string(EQ.mode));
-            fprintf('Selection: %s\n', string(EQ.selection));
-            fprintf('N_common_equalized = %d cycles\n', N_common_equalized);
-        end
+        % Pair-specific common cycle counts will be computed on demand
+        % and cached here.
+        N_common_by_pair = struct();
 
         % ---------------- Initialize dataset outputs ----------------
         COHERENCE_RESULTS = struct();
@@ -184,6 +163,51 @@ function g_emg_emg_wavelet_coherence()
                     pairNames = fieldnames(FINAL_PAIRED_SIGNALS.(subjID).(cond).(leg));
                     for ip = 1:numel(pairNames)
                         pairName = pairNames{ip};
+
+                        % ---------- Pair-specific cycle equalization ----------
+                        N_common_equalized = NaN;
+
+                        if isfield(EQ, 'enable') && EQ.enable
+
+                            pairKey = matlab.lang.makeValidName(pairName);
+
+                            % Compute only once per pair, then reuse for every subject/condition/leg
+                            if ~isfield(N_common_by_pair, pairKey)
+
+                                switch lower(string(EQ.mode))
+
+                                    case "global_min"
+
+                                        N_common_by_pair.(pairKey) = ...
+                                            get_min_analysis_cycles_in_dataset( ...
+                                                FINAL_PAIRED_SIGNALS, W, pairName);
+
+                                    case "manual"
+
+                                        if isempty(EQ.manual_n_cycles)
+                                            error(['cycle_equalization.mode = "manual" ' ...
+                                                'but manual_n_cycles is empty.']);
+                                        end
+
+                                        N_common_by_pair.(pairKey) = EQ.manual_n_cycles;
+
+                                    otherwise
+                                        error('Unknown cycle_equalization.mode: %s', ...
+                                            string(EQ.mode));
+                                end
+
+                                fprintf('\n=== Cycle equalization: %s | %s ===\n', ...
+                                    datasetName, pairName);
+                                fprintf('Mode: %s\n', string(EQ.mode));
+                                fprintf('Selection: %s\n', string(EQ.selection));
+                                fprintf('N_common_equalized = %d cycles\n', ...
+                                    N_common_by_pair.(pairKey));
+                            end
+
+                            N_common_equalized = N_common_by_pair.(pairKey);
+                        end
+
+                        P = FINAL_PAIRED_SIGNALS.(subjID).(cond).(leg).(pairName);
 
                         P = FINAL_PAIRED_SIGNALS.(subjID).(cond).(leg).(pairName);
 
@@ -728,7 +752,7 @@ function g_emg_emg_wavelet_coherence()
                         R.Metrics.info.SignificanceThreshold_equalized = seuil_equalized;
                         R.Metrics.info.common_threshold_enabled = ~isnan(seuil_common);
                         R.Metrics.info.SignificanceThreshold_common = seuil_common;
-                        R.Metrics.info.common_threshold_source = "minimum retained cycle count in dataset";
+                        R.Metrics.info.common_threshold_source = "minimum retained cycle count for this pair within dataset";
                         R.Metrics.info.equalized_source = "raw coherence computed from equalized cycle subset";
                         R.Metrics.info.N_equalized_used = sum(analysis_cycle_mask_equalized);
                         R.Metrics.info.N_available_before_equalization = sum(analysis_cycle_mask);

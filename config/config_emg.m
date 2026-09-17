@@ -1186,11 +1186,11 @@ C.g_coherence.params.WaveNumber = C.shared_wavelet.WaveNumber;         % comprom
 %   "cycle_bias_corrected" = coherence after correcting for bias due to different number of cycles, using a formula derived from simulations
 
 % C.g_coherence.params.metric_sources_to_save = ["raw", "equalized", "sig", "sig_equalized", "sig_common_threshold", "zcoh_bokil"];
-C.g_coherence.params.metric_sources_to_save = ["raw", "equalized", "sig", "sig_equalized","zcoh_bokil", "cycle_bias_corrected"];
+C.g_coherence.params.metric_sources_to_save = ["equalized"];
 
 % Which source is used by default for summary tables / group plots
 % Options: "raw", "equalized", "sig", "sig_equalized", "sig_common_threshold", "zcoh_bokil", "surrogate_delta"
-C.g_coherence.params.default_metric_source_for_tables = "raw";
+C.g_coherence.params.default_metric_source_for_tables = "equalized";
 
 C.g_coherence.params.store_sig_common_threshold_coherence = true;
 C.g_coherence.params.store_equalized_coherence = true;
@@ -1556,7 +1556,7 @@ C.h_stats.analysis.include_cycle_count_covariate = false;
 C.h_stats.analysis.cycle_count_covariate_name = "log_n_cycles";
 C.h_stats.analysis.cycle_count_covariate_source = "mean_cycles_used_across_legs";
 
-C.h_stats.analysis.include_cycle_count_in_correlations = true;
+C.h_stats.analysis.include_cycle_count_in_correlations = false;
 
 % ===================== PLOT =====================
 C.h_stats.plot = struct();
@@ -1672,16 +1672,20 @@ C.h_stats.spectrum.fixed_ylim = [0 1];
 
 % Continuous-age LME sensitivity models
 C.h_stats.analysis.run_continuous_age_lme = true;
+C.h_stats.analysis.run_categorical_age_lme = false;
+C.h_stats.analysis.run_power_control_models = false;
+C.h_stats.analysis.run_age_correlations = false;
+C.h_stats.analysis.run_power_correlations = false;
 
 % If true: DV ~ AgeYears_z * condition
 % If false: DV ~ AgeYears_z + condition
 C.h_stats.analysis.continuous_age_condition_interaction = true;
 
 % Add power covariate matching the band: Alpha_LogPower / Beta_LogPower / Gamma_LogPower
-C.h_stats.analysis.continuous_age_include_power = true;
+C.h_stats.analysis.continuous_age_include_power = false;
 
 % Add log_n_cycles using the same band-specific helper as main models
-C.h_stats.analysis.continuous_age_include_cycle_count = true;
+C.h_stats.analysis.continuous_age_include_cycle_count = false;
 
 % Optional nonlinear age sensitivity
 C.h_stats.analysis.continuous_age_include_quadratic = false;
