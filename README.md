@@ -84,6 +84,7 @@ EMG-EMG-coh/
 │   └── reproduce.md                 # how to regenerate and check the reported results
 ├── Tools/
 │   ├── check_repo.m                 # static checks over the project code
+│   ├── check_against_baseline.m     # are the f/g/h tables still the same numbers?
 │   ├── audit_c3d_acquisition.m      # what the .c3d files say about the recording
 │   ├── audit_wavelet_transform_scope.m  # coherence under per-trial vs concatenated transforms
 │   ├── test_compute_pair_tfr.m      # synthetic checks of the stage-g transform

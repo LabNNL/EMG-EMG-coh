@@ -1474,6 +1474,7 @@ C.h_stats.spectrum = struct();
 % SPM / SnPM switch for all spectrum profile analyses
 C.h_stats.spectrum.use_nonparametric = true;
 C.h_stats.spectrum.nonparam_iterations = 5000;
+C.h_stats.spectrum.nonparam_seed = 0;             % seed of the SnPM permutations: a rerun reproduces the p-values
 C.h_stats.spectrum.two_tailed = true;
 
 C.h_stats.spectrum.enable = true;

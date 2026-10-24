@@ -21,6 +21,13 @@ function spmi = infer_spm_object_switch(spm, P, isTTest)
 
         nIter = P.nonparam_iterations;
 
+        % Seeded permutations (P.nonparam_seed); the caller's random state is restored on exit
+        if isfield(P, 'nonparam_seed') && ~isempty(P.nonparam_seed)
+            rngBefore = rng;
+            restoreRng = onCleanup(@() rng(rngBefore));
+            rng(P.nonparam_seed, 'twister');
+        end
+
         if isTTest
             try
                 spmi = spm.inference(alpha, 'two_tailed', P.two_tailed, 'iterations', nIter);
