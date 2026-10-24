@@ -115,6 +115,12 @@ Each stage folder has one entry function named after the folder plus a `*_helper
 
 `Metadata/` and `Results/` are git-ignored, so a fresh clone has neither.
 
+### How the data was recorded
+
+`docs/acquisition.md` records what the `.c3d` files reveal about the EMG hardware: Vicon Nexus, 16 Delsys Trigno-family sensors, 2000 Hz, +/-11 mV input range and a 2 g accelerometer, with the gyroscope and magnetometer unused. It separates what is written in the files from what was measured off the signals and what is only inferred. Regenerate it all with `audit_c3d_acquisition` (see below).
+
+One finding belongs in any write-up: the Alpha band (8-12 Hz) sits on the rising flank of the EMG spectrum, so it carries less signal than Beta or Gamma and alpha-band coherence is correspondingly the least reliable of the three.
+
 ### Checking the repository
 
 `Tools/check_repo.m` runs static checks over the project code and prints a report:
@@ -127,6 +133,16 @@ check_repo('Save', 'report.txt')            % also write it to a file
 ```
 
 It reports config settings read by code but not defined, config fields assigned twice or never read, duplicate `.m` filenames, project function names that also resolve outside the repository, functions called but not resolvable, and Code Analyzer messages.
+
+`Tools/audit_c3d_acquisition.m` is the companion tool for the recordings rather than the code:
+
+```matlab
+startup
+audit_c3d_acquisition                               % one file per participant x condition
+audit_c3d_acquisition('Scope','sample','N',6)       % quick check
+```
+
+It writes `Results/acquisition_audit/` and two figures under `Results/png_visualisation/acquisition_audit/`.
 
 The `shadowed` check is worth watching: if an older copy of this project is still on your saved MATLAB path, its files sit alongside these ones and which copy runs depends on path order. Remove such copies with `pathtool`. `Tools/baseline/CHECK_REPO_BASELINE.txt` holds the reference output to compare against. It lives outside `Functions/` on purpose, since `config_emg()` genpaths that whole tree.
 
