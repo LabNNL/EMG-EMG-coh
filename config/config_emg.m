@@ -20,8 +20,8 @@ C.parameters_running.run_spm = false; % If true, run l_spm_envelope_analysis.m
 C.parameters_running.run_temporal_coherence_link = false; % If true, run i_temporal_coherence_link.m
 
 % Kinematics : main_kinematics_analysis.m
-C.parameters_running.run_kinematics_build = true;    % If true, run build_kinematics_for_coherence_cycles.m
-C.parameters_running.run_kinematics_analysis = true; % If true, run analyze_kinematics_for_coherence_cycles.m
+C.parameters_running.run_kinematics_build = false;    % If true, run build_kinematics_for_coherence_cycles.m
+C.parameters_running.run_kinematics_analysis = false; % If true, run analyze_kinematics_for_coherence_cycles.m
 
 %% ===================== PHYSIOLOGICAL CONSTANTS =====================
 
@@ -1038,7 +1038,7 @@ C.g_coherence.params.WaveNumber = C.shared_wavelet.WaveNumber;         % comprom
 %   "cycle_bias_corrected" = coherence after correcting for bias due to different number of cycles, using a formula derived from simulations
 
 % C.g_coherence.params.metric_sources_to_save = ["raw", "equalized", "sig", "sig_equalized", "sig_common_threshold", "zcoh_bokil"];
-C.g_coherence.params.metric_sources_to_save = ["equalized"];
+C.g_coherence.params.metric_sources_to_save = ["equalized", "raw", "cycle_bias_corrected"]; % raw and cycle_bias_corrected feed the h sensitivity table
 
 % Which source is used by default for summary tables / group plots
 % Options: "raw", "equalized", "sig", "sig_equalized", "sig_common_threshold", "zcoh_bokil", "surrogate_delta"
@@ -1154,7 +1154,21 @@ C.g_coherence.params.store_sig_coherence = true;      % true = garde aussi la co
 C.g_coherence.params.use_toeoff_segmentation = true; % true = stance/swing basés sur toe-off moyen
 C.g_coherence.params.default_toeoff_percent = 60;    % utilisé si pas de toe-off disponible
 
-% ===================== Padding for wavelet edge effects =====================
+% ===================== Wavelet transform scope =====================
+% "per_trial"    = one transform per stretch of continuous recording, so the wavelet
+%                  never runs across the glue point between two kept cycles that
+%                  were not consecutive (trial boundary or rejected cycle in between)
+% "concatenated" = one transform over the glued kept cycles (results before 2026-10)
+C.g_coherence.params.transform_scope = "per_trial";
+% Rejected cycles kept as real context around kept ones:
+% "trial_run_safe" = only if they pass the general QC in both muscles and have no bad burst
+%                    within overall_contamination_half_width_sec of a kept sample
+% "kept_blocks"    = never;  "trial_run" = always (audit only)
+C.g_coherence.params.per_trial.context_policy = "trial_run_safe";
+% Minimum symmetric-extension padding at segment edges (s); 0.6 s = 3x the 8 Hz e-folding time
+C.g_coherence.params.per_trial.min_pad_sec = 0.6;
+
+% ===================== Padding for wavelet edge effects (transform_scope = "concatenated") =====================
 C.g_coherence.params.padding = struct();
 
 % Options: 'zero', 'cycle_wrap', 'mirror'

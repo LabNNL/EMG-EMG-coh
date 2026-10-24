@@ -246,27 +246,16 @@ function g_emg_emg_wavelet_coherence()
                         % ---------- Toe-off summary ----------
                         [toeoff_percentages, toeoff_percent, toeoff_index, stance_phase_indices, swing_phase_indices] = compute_toeoff_segmentation(P, Tseg, W);
 
-                        % ---------- Padding + wavelet ----------
-                        [x1_for_wav, idx_orig_1, padInfo1] = build_padded_signal_for_wavelet(x1, Tseg, W.padding, 1);
-                        [x2_for_wav, idx_orig_2, padInfo2] = build_padded_signal_for_wavelet(x2, Tseg, W.padding, 2);
-
+                        % ---------- Wavelet transforms (W.transform_scope: per trial run or whole concatenation) ----------
                         Args = WaveletParameters( DS.FreqMin_this, DS.FreqMax_this, W.Resolution, W.WaveNumber, fs);
 
-                        [TFR1_pad, period, ~, coi1_pad] = wavelet( x1_for_wav, Args.DT, Args.Pad, Args.DJ, Args.S0, Args.J1, Args.Mother, Args.Cycles);
-
-                        [TFR2_pad, ~, ~, coi2_pad] = wavelet( x2_for_wav, Args.DT, Args.Pad, Args.DJ, Args.S0, Args.J1, Args.Mother, Args.Cycles);
-
-                        TFR1 = TFR1_pad(:, idx_orig_1);
-                        TFR2 = TFR2_pad(:, idx_orig_2);
-
-                        coi1 = coi1_pad(idx_orig_1);
-                        coi2 = coi2_pad(idx_orig_2);
+                        [TFR1, TFR2, coi1, coi2, period, padInfo1, padInfo2, transformInfo] = compute_pair_tfr(x1, x2, Tseg, P, W, Args);
 
                         Freq = 1 ./ period;
                         nFreq = numel(Freq);
 
                         % ---------- Optional padding-vs-no-padding wavelet QC ----------
-                        if PL.enable && isfield(PL, 'padding_qc') && PL.padding_qc.enable
+                        if PL.enable && isfield(PL, 'padding_qc') && PL.padding_qc.enable && transformInfo.scope == "concatenated"
 
                             [doPlot, plotTracker.padding_qc] = should_make_limited_subject_plot( subjID, plotTracker.padding_qc, PL.padding_qc.max_plots);
 
@@ -326,7 +315,7 @@ function g_emg_emg_wavelet_coherence()
                         end
 
                         % ---------- Optional storage for COI examples ----------
-                        if isfield(PL, 'coi_examples') && PL.coi_examples.enable
+                        if isfield(PL, 'coi_examples') && PL.coi_examples.enable && transformInfo.scope == "concatenated"
                             ii = numel(COI_EXAMPLES) + 1;
                             COI_EXAMPLES(ii).subject = string(subjID);
                             COI_EXAMPLES(ii).condition = string(cond);
@@ -824,6 +813,9 @@ function g_emg_emg_wavelet_coherence()
                         R.padding_mode = string(W.padding.mode);
                         R.padding_info_signal1 = padInfo1;
                         R.padding_info_signal2 = padInfo2;
+                        R.transform_scope = transformInfo.scope;
+                        R.transform_policy = transformInfo.policy;
+                        R.transform_info = transformInfo;
 
                         R.analysis_cycle_mask = analysis_cycle_mask;
                         R.n_cycles_total_before_edge_exclusion = height(Tseg);
