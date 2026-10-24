@@ -119,7 +119,7 @@ Each stage folder has one entry function named after the folder plus a `*_helper
 
 `docs/acquisition.md` records what the `.c3d` files reveal about the EMG hardware: Vicon Nexus, 16 Delsys Trigno-family sensors, 2000 Hz, +/-11 mV input range and a 2 g accelerometer, with the gyroscope and magnetometer unused. It separates what is written in the files from what was measured off the signals and what is only inferred. Regenerate it all with `audit_c3d_acquisition` (see below).
 
-One finding belongs in any write-up: the Alpha band (8-12 Hz) sits on the rising flank of the EMG spectrum, so it carries less signal than Beta or Gamma and alpha-band coherence is correspondingly the least reliable of the three.
+It also measures how much signal each analysis band carries, reporting both a median and a mean because the two disagree and the disagreement is informative. Which band looks weakest depends on that choice, so `docs/acquisition.md` argues against ranking the bands from raw power at all — judge a band from the coherence results instead.
 
 ### Checking the repository
 

@@ -64,7 +64,7 @@ if opt.SpectrumFiles > 0
     spec = ac_spectra(files(1:min(opt.SpectrumFiles, numel(files))));
 end
 
-txt = ac_summary(T, spec, numel(files) - sum(ok));
+txt = ac_summary(T, spec, numel(files) - sum(ok), C);
 fprintf('%s', txt);
 
 csvPath = fullfile(outDir, 'C3D_ACQUISITION_AUDIT.csv');
@@ -237,7 +237,11 @@ end
 function S = ac_spectra(files)
 S = struct('ok', false);
 nfft = 4096;
-accum = []; fr = []; nSeg = 0; fs = NaN;
+% Collect every channel-spectrum and take the MEDIAN across them. A linear
+% mean is dominated by the few trials with the most low-frequency movement
+% artifact, which made the reported levels swing by more than 10 dB between
+% samples. The median is stable.
+store = {}; fr = []; nSeg = 0; fs = NaN;
 
 for i = 1:numel(files)
     try
@@ -252,7 +256,7 @@ for i = 1:numel(files)
             if numel(x) < nfft, continue; end
             x = x - mean(x);
             [pxx, fr] = pwelch(x, hann(nfft), nfft/2, nfft, fs);
-            if isempty(accum), accum = pxx; else, accum = accum + pxx; end
+            store{end+1, 1} = pxx; %#ok<AGROW>
             nSeg = nSeg + 1;
         end
         clear c
@@ -267,8 +271,12 @@ if nSeg == 0
     return
 end
 
-p = 10 * log10(accum / nSeg + eps);
-p = p - max(p);
+M = cell2mat(store');
+pMed  = 10 * log10(median(M, 2) + eps);
+pMean = 10 * log10(mean(M, 2) + eps);
+pMed  = pMed  - max(pMed);
+pMean = pMean - max(pMean);
+p = pMed;   % the median is the stable one; the mean is kept for comparison
 
 sm       = movmean(p, 5);
 [~, ip]  = max(sm);
@@ -326,7 +334,7 @@ end
 S = struct('ok', true, 'f', fr, 'p', p, 'fs', fs, 'nSeg', nSeg, ...
     'nFiles', numel(files), 'peakHz', peakHz, 'cornerHz', cornerHz, ...
     'cutHz', cutHz, 'floorDb', floorDb, 'nfft', nfft, 'floorThr', floorThr, ...
-    'combHz', combHz, 'combLines', combLines);
+    'combHz', combHz, 'combLines', combLines, 'pMean', pMean);
 end
 
 % ======================================================================
@@ -379,7 +387,7 @@ xlabel(ax, 'Frequency (Hz)');
 ylabel(ax, 'Power (dB relative to peak)');
 title(ax, {'Mean raw EMG spectrum against the analysis bands', ...
     sprintf('%d channel-spectra from %d files', S.nSeg, S.nFiles), ...
-    'Alpha sits on the rising flank: less signal there than in Beta or Gamma'}, ...
+    ac_band_power_line(S, C)}, ...
     'FontSize', 11);
 legend(ax, 'Location', 'southwest');
 
@@ -444,7 +452,7 @@ end
 % Summary
 % ======================================================================
 
-function txt = ac_summary(T, S, nFailed)
+function txt = ac_summary(T, S, nFailed, C)
 L = strings(0, 1);
 L(end+1) = "===== C3D ACQUISITION AUDIT =====";
 L(end+1) = sprintf("files read      : %d", height(T));
@@ -523,17 +531,25 @@ if S.ok
     end
     L(end+1) = "";
     L(end+1) = "--- HOW TO READ THE SPECTRUM NUMBERS ---";
+    L(end+1) = "power per analysis band, dB relative to the strongest band:";
+    [bn, bMed]  = ac_band_powers(S.f, S.p, C);
+    [~,  bMean] = ac_band_powers(S.f, S.pMean, C);
+    L(end+1) = sprintf("   %-7s %8s %8s", "band", "median", "mean");
+    for i = 1:numel(bn)
+        L(end+1) = sprintf("   %-7s %8.2f %8.2f", bn(i), bMed(i), bMean(i)); %#ok<AGROW>
+    end
+    [gap, ig] = max(abs(bMed - bMean));
     L(end+1) = sprintf([ ...
-        'The Alpha band (8-12 Hz) sits between %.0f and %.0f dB below the peak of the ' ...
-        'mean spectrum, on its rising flank. Part of that is the sensor high-pass and ' ...
-        'part is simply that surface EMG carries little power that low. The two cannot ' ...
-        'be separated from a power spectrum, so read this as "less signal here", ' ...
-        'not as a measured filter corner.'], ...
-        -ac_level(S, 12), -ac_level(S, 8));
+        'Two estimators because they disagree, and the disagreement is the point. The ' ...
+        'median describes a typical channel-trial; the mean is pulled by the minority ' ...
+        'of trials with extreme power. They differ most in %s (%.1f dB), which is ' ...
+        'therefore the band whose power is most driven by a few outlying trials ' ...
+        'rather than by what a typical recording looks like.'], bn(ig), gap);
     L(end+1) = sprintf([ ...
-        'That still matters for the analysis: a lower signal-to-noise ratio in the Alpha ' ...
-        'band biases alpha coherence downward relative to Beta and Gamma, so alpha is ' ...
-        'the least reliable of the three bands.']);
+        'Do not read either as a filter corner: the sensor high-pass and the EMG''s own ' ...
+        'spectrum both shape this curve and cannot be separated from a power spectrum. ' ...
+        'Which band looks weakest depends on the estimator, so do not rank them from ' ...
+        'this alone - judge a band from the coherence results themselves.']);
     L(end+1) = sprintf([ ...
         'At 10 Hz the mean spectrum is %.1f dB below its peak. A 20 Hz hardware ' ...
         'high-pass would put 8-12 Hz considerably further down than that, so these ' ...
@@ -565,6 +581,26 @@ if S.ok
 end
 
 txt = strjoin(L, newline) + newline;
+end
+
+function [names, reldb] = ac_band_powers(f, pdb, C)
+% Power in each analysis band, in dB relative to the strongest band.
+bands = C.shared_wavelet.FreqBands;
+names = string(fieldnames(bands));
+pw = zeros(numel(names), 1);
+lin = 10 .^ (pdb / 10);
+for i = 1:numel(names)
+    b = bands.(names(i));
+    m = f >= b(1) & f <= b(2);
+    pw(i) = mean(lin(m));
+end
+reldb = 10 * log10(pw / max(pw));
+end
+
+function s = ac_band_power_line(S, C)
+[names, reldb] = ac_band_powers(S.f, S.p, C);
+parts = compose('%s %.1f dB', names, reldb);
+s = ['Median power per band, relative to the strongest: ' strjoin(parts', ',  ')];
 end
 
 function v = ac_level(S, hz)

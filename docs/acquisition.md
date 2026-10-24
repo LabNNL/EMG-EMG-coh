@@ -140,19 +140,73 @@ have been changed since.
 ## What this means for the analysis
 
 **Use 2000 Hz.** That is the spacing of the stored samples and what
-`C.general.fs_emg` is set to. The possible 1926 Hz native rate would only mean
-that samples above ~963 Hz carry no information, which is irrelevant to an
-analysis that stops at 60 Hz.
+`C.general.fs_emg` is set to. No native rate is recoverable from these files,
+and in any case it would only concern frequencies far above the 60 Hz ceiling
+of this analysis.
 
-**Alpha is the weakest of the three bands.** The Alpha band (8–12 Hz) sits on
-the rising flank of the EMG spectrum, roughly 1–4 dB below its peak, whereas
-Beta and Gamma sit on the broad plateau and upper slope. Part of that deficit
-is the sensor high-pass and part is the physiology; they cannot be separated
-from a power spectrum. Either way the signal-to-noise ratio is lower there,
-and since coherence is biased downward by noise, **alpha-band coherence is
-systematically less reliable than beta or gamma**. This belongs in the
-limitations rather than being discovered later.
+### Signal available in each band
 
-A shared linear filter on both channels of a pair largely cancels in the
-coherence estimate, so this is an SNR argument, not a claim that the filter
-itself distorts coherence.
+How much raw signal each band carries turns out to depend on how you average,
+so the tool reports both. Typical values (dB relative to the strongest band):
+
+| Band | median | mean |
+|---|---|---|
+| Alpha 8–12 Hz | −3.3 | −3.0 |
+| Beta 13–30 Hz | 0 | 0 |
+| Gamma 31–60 Hz | −1.0 | −6.8 |
+
+The median describes a typical channel-trial. The mean is pulled around by a
+minority of trials with extreme power, and the two diverge most in Gamma — so
+Gamma's apparent weakness under a linear mean comes from a few outlying
+trials, not from what a normal recording looks like.
+
+**Do not rank the bands from this.** The ordering flips with the estimator,
+and the curve mixes the sensor's high-pass with the EMG's own spectrum, which
+a power spectrum cannot separate. An earlier draft of this document asserted
+first that Alpha and then that Gamma was "the weakest band"; neither claim
+was supportable.
+
+### What the coherence results actually show
+
+This is the evidence that settles whether a band is usable, and it is stable.
+Mean `AUC_norm` from `DESCRIPTIVE_TABLE_ALL.csv`:
+
+| Pair | Alpha | Beta | Gamma |
+|---|---|---|---|
+| SOL_GM | 0.163 | 0.144 | 0.172 |
+| TAprox_TAdist | 0.213 | 0.204 | 0.215 |
+
+The three bands come out at comparable magnitudes. And from
+`CONTINUOUS_AGE_LME_TABLE__equalized_poi_auc_nocyclecov.csv`, Alpha carries
+some of the strongest effects in the study:
+
+| Pair | Effect | Alpha | Beta | Gamma |
+|---|---|---|---|---|
+| SOL_GM | age | **0.0012** | **0.00025** | 0.18 |
+| TAprox_TAdist | age | 0.13 | 0.32 | **0.0021** |
+| TAprox_TAdist | condition | **0.043** | 0.15 | **0.00016** |
+
+**There is no case for discarding Alpha.** Doing so would throw away the
+SOL_GM age effect at p = 0.0012.
+
+### The caveat that does apply to Alpha
+
+It runs the other way from an SNR argument. During walking, 8–12 Hz content
+is not purely neural: it also contains movement artifact (footstrike
+transients, cable and skin motion) and high-order stride harmonics. Anything
+of that sort which is **shared between the two sensors on a limb, and locked
+to the gait cycle, inflates coherence** rather than suppressing it, because
+this pipeline interpolates each cycle to a common length and averages spectra
+across cycles — exactly the operation that rewards cycle-locked components.
+
+So the risk in the Alpha band is **false positives, not false negatives**, and
+it applies most to the lowest frequencies in the band.
+
+This is testable with machinery the pipeline already has.
+`C.g_coherence.params.surrogate_delta` shuffles the cycle order of one signal
+and subtracts the 95th percentile of the resulting null, which destroys
+cycle-locked common modulation while preserving within-cycle structure. It is
+currently `enable = false`. Turning it on for the Alpha band would show
+whether alpha coherence survives once cycle-locked commonality is removed. If
+it does, the artifact concern is answered; if it collapses, that is worth
+knowing before the results are written up.
