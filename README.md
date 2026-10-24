@@ -396,9 +396,10 @@ Run with [main_kinematics_analysis.m](main_kinematics_analysis.m); the code is i
 
 ## Known issues
 
-- In h_stats, `infer_spm_object_switch` is defined only inside `run_spm_mixed_age_condition_on_spectrum.m`, so the one-way age and condition spectrum SPMs land in their `catch` branch and report `Age SPM failed: ...` instead of drawing significance bars. The two-way mixed ANOVA, which already reports age and condition main effects, is unaffected. Fixing this makes new statistical results appear, so it is deliberately left for you to decide on.
-- d_a needs a key press (`pause`) for manual cluster selection, so the pipeline cannot run unattended end to end.
-- c, d_a, d_b and e each plot one hard-coded example signal (`CTL_79 / Flat / right`, `CTL_47 / Flat / right`). Those plots fail if the participant is absent from your dataset.
-- `Metadata/ParticipantGroup.m` and `Metadata/PhysicalActivity_EMG.csv` are not used by any code. They stay where they are: `Metadata/` is git-ignored and untracked, so deleting anything there cannot be undone.
-- Age groups are four hard-coded participant lists in `config_emg.m` rather than being read from the `AgeGroup` column of `participants_metadata_EMG.csv`. Deriving them from the CSV could silently change group membership, so they are left as they are.
-- Stages that are currently switched off (a, b, c, d_a, d_b, e and the whole time-domain branch) had several bugs fixed without being run. Run each one before trusting its output.
+- **The 8 spectrum figures in `Results/png_visualisation/.../spectrum_curves/` dated 2026-09-19 predate a fix and should not be trusted.** Until now the one-way age and condition spectrum SPMs never ran: `infer_spm_object_switch` was a local function in one file and unreachable from the two that called it, so both landed in a `catch` that nothing inspected. The follow-up figures still captioned themselves `SPM n=42 subjects`, so a test that never ran looked like a null result. The code is fixed; rerun stage h to regenerate them.
+- d_a pauses for manual cluster selection. That is the method, not a defect — but it does mean the pipeline cannot be run unattended from end to end.
+- Stages that are currently switched off (a, b, c, d_a, d_b, e and the whole time-domain branch) had bugs fixed without being run. Run each one before trusting its output.
+- `Metadata/ParticipantGroup.m` duplicates the four participant lists in `config_emg.m` exactly, and nothing reads it. It is a second copy that can drift. `Metadata/PhysicalActivity_EMG.csv` (65 participants, PAQ-C / PAQ-A / GPAQ) is unused but is real data, usable as a covariate if you ever want it — note the scores are not comparable across the three instruments, and the Jeunes Enfants have none.
+- If an older copy of this project is still on your saved MATLAB path, its files shadow these ones and which copy runs depends on path order. `check_repo`'s `shadowed` check reports this; clear it with `pathtool`.
+
+Checked and found **not** to be problems: the four hard-coded age-group lists in `config_emg.m` agree with `participants_metadata_EMG.csv` for all 80 participants, with clean non-overlapping age bands, so there is no need to derive them from the CSV.

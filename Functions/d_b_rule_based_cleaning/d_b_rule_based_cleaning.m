@@ -404,7 +404,16 @@ function d_b_rule_based_cleaning()
     leg       = 'right';
     muscle    = 'EMG_SOL_Concat';
 
-    plot_specific_rule_based_qc(subject, condition, leg, muscle, C, IO, BURST_QC);
+    % Optional single-signal example. The plot helper validates the entry and
+    % errors if this participant is not in the processed set, and this sits at
+    % the end of the stage, so an absent participant would otherwise throw away
+    % a completed run. Warn and carry on instead.
+    try
+        plot_specific_rule_based_qc(subject, condition, leg, muscle, C, IO, BURST_QC);
+    catch ME
+        warning('Example QC plot skipped (%s | %s | %s | %s): %s', ...
+            subject, condition, leg, muscle, ME.message);
+    end
 
     %% ===================== PLOTS: ALL signal_fail =====================
     if R.plot_signal_fails && ~isempty(signalFailCandidates)

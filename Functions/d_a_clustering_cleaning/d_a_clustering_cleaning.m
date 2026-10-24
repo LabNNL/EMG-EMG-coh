@@ -660,7 +660,17 @@ function d_a_clustering_cleaning()
     leg       = 'right';
     muscle    = 'EMG_TAdist_Concat';
 
-    plot_selected_cluster_decision_final( subject, condition, leg, muscle, DF_IO.in_dir, DC_IO.cluster_dir, DC_IO.output_results_mat, DM_IO.final_plot_dir);
+    % Optional single-signal example. The plot helper validates the entry and
+    % errors if this participant is not in the processed set, and this sits at
+    % the end of the stage, so an absent participant would otherwise throw away
+    % a completed run. Warn and carry on instead.
+    try
+        plot_selected_cluster_decision_final( subject, condition, leg, muscle, ...
+            DF_IO.in_dir, DC_IO.cluster_dir, DC_IO.output_results_mat, DM_IO.final_plot_dir);
+    catch ME
+        warning('Example QC plot skipped (%s | %s | %s | %s): %s', ...
+            subject, condition, leg, muscle, ME.message);
+    end
 
     %% ===================== LOCAL FUNCTIONS =====================
 end

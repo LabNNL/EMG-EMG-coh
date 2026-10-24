@@ -78,7 +78,13 @@ function make_spectrum_age_within_condition_figure(Tp, pairName, freqRef, C, HC,
         spmInfo = [];
         if nAgeGroupsPresent >= 2 && nSubj >= minN
             spmInfo = run_spm_age_on_spectrum(Tc, ageLevels, freqRef, HS);
-            txt = sprintf('SPM n=%d subjects', nSubj);
+            if spm_info_ok(spmInfo)
+                txt = sprintf('SPM n=%d subjects', nSubj);
+            else
+                % Never caption a test that did not run as though it ran:
+                % a plot with no bars would otherwise read as a null result.
+                txt = sprintf('SPM FAILED: n=%d', nSubj);
+            end
         else
             txt = sprintf('SPM skipped: n=%d', nSubj);
         end

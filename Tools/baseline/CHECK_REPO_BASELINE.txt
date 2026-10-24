@@ -1,9 +1,3 @@
-===== unresolved (2) =====
-  [error  ] Functions/h_stats/h_stats_helpers/run_spm_age_on_spectrum.m:92
-             "infer_spm_object_switch" is called here but resolves to nothing on the path
-  [error  ] Functions/h_stats/h_stats_helpers/run_spm_condition_on_spectrum.m:127
-             "infer_spm_object_switch" is called here but resolves to nothing on the path
-
 ===== shadowed (3) =====
   [warning] /Users/liogr/Library/CloudStorage/OneDrive-Bibliothèquespartagées-UniversitedeMontreal/Yosra Cherni - Lio Grienenberger - MSc epfl/Codes/EMG_Gait_Analysis
              150 project function name(s) also resolve under this location. The repository copy wins for all of them today, but that depends on path order. Remove it from the MATLAB path.
@@ -161,7 +155,7 @@
              C.j_time_domain.params.pairwise_policy.use_harmonized_cycles: leaf name "use_harmonized_cycles" appears nowhere in the code
 
 ===== summary =====
-  errors   : 2
+  errors   : 0
   warnings : 7
   info     : 67
   Code Analyzer messages across project files: 331

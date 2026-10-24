@@ -1071,12 +1071,14 @@ function f_build_final_paired_signals_from_burst_qc()
 
     %% ===================== LOAD PARTICIPANT METADATA =====================
 
-    metadata_xlsx = fullfile(C.paths.code_dir, 'Metadata', 'participants_metadata_EMG.xlsx');
+    % Read the CSV, not the .xlsx beside it: the .xlsx is a stale export with
+    % 77 of the 80 participants (CTL_78, CTL_79 and CTL_81 are missing), and
+    % the join below is a left join, so those three silently ended up with
+    % empty metadata. h_coherence_stats reads this same CSV.
+    metadata_csv = fullfile(C.paths.metadata_dir, 'participants_metadata_EMG.csv');
 
-    META = readtable(metadata_xlsx);
+    META = readtable(metadata_csv, 'Delimiter', ';', 'TreatAsEmpty', {'NA','NaN',''});
     META.subject = string(META.Participant);
-
-    disp(META.Properties.VariableNames')
 
     %% ===================== TARGET AGE GROUPS WITH 8-15 VALID CYCLES =====================
 

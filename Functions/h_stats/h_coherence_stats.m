@@ -2216,6 +2216,8 @@ function h_coherence_stats()
                 specWidths(i) = numel(T_spec_subj.Spectrum{i});
             end
 
+            MIXED_SPM_ROWS = {};
+
             for ip = 1:numel(pairList)
                 pairName = pairList{ip};
                 Tp = T_spec_subj(T_spec_subj.pair_name == pairName, :);
@@ -2481,8 +2483,20 @@ function h_coherence_stats()
                         else
                             fprintf('\nMIXED SPM NOT OK | %s | %s\n', string(pairName), string(spmMixedInfo.label));
                         end
+
+                        % Keep the result: the console summary above is the
+                        % only place these numbers appeared, and there is no
+                        % diary.
+                        MIXED_SPM_ROWS{end+1,1} = build_mixed_spm_result_table(spmMixedInfo, pairName); %#ok<AGROW>
                     end
                 end
+            end
+
+            if ~isempty(MIXED_SPM_ROWS)
+                MIXED_SPM_TABLE = vertcat(MIXED_SPM_ROWS{:});
+                mixedCsv = fullfile(HS.tables_dir, 'MIXED_SPM_RESULTS.csv');
+                writetable(MIXED_SPM_TABLE, mixedCsv);
+                fprintf('\nSaved mixed age x condition SPM results to:\n  %s\n', mixedCsv);
             end
         end
     end
