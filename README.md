@@ -396,11 +396,9 @@ Run with [main_kinematics_analysis.m](main_kinematics_analysis.m); the code is i
 
 ## Known issues
 
-These are the problems in the current code that affect running it.
-
-- `j_build_time_domain_analysis_datasets` reads `C.i_time_domain`, but the config defines `C.j_time_domain`, so `main_time_domain_analysis.m` fails at its first step.
-- Stage a reads `C.a_extract_raw.input.generate_example_figures`, but the config defines it under `output.`. The error is caught per file and logged as `FILE_READ_ERROR`, so every trial would be skipped silently.
-- In h_stats, `infer_spm_object_switch` is defined only inside `run_spm_mixed_age_condition_on_spectrum.m`. As a result the one-way age and condition spectrum SPMs fall into their `catch` branch and no significance bars are drawn.
-- d_a needs a key press (`pause`), so the full pipeline cannot run unattended.
-- c, d_a, d_b and e always plot one hard-coded example signal (for example `CTL_79 / Flat / right`). These plots fail if that subject is missing.
-- `Metadata/ParticipantGroup.m` and `Metadata/PhysicalActivity_EMG.csv` are not used by any code. (They stay where they are: `Metadata/` is git-ignored and untracked, so deleting anything there cannot be undone.)
+- In h_stats, `infer_spm_object_switch` is defined only inside `run_spm_mixed_age_condition_on_spectrum.m`, so the one-way age and condition spectrum SPMs land in their `catch` branch and report `Age SPM failed: ...` instead of drawing significance bars. The two-way mixed ANOVA, which already reports age and condition main effects, is unaffected. Fixing this makes new statistical results appear, so it is deliberately left for you to decide on.
+- d_a needs a key press (`pause`) for manual cluster selection, so the pipeline cannot run unattended end to end.
+- c, d_a, d_b and e each plot one hard-coded example signal (`CTL_79 / Flat / right`, `CTL_47 / Flat / right`). Those plots fail if the participant is absent from your dataset.
+- `Metadata/ParticipantGroup.m` and `Metadata/PhysicalActivity_EMG.csv` are not used by any code. They stay where they are: `Metadata/` is git-ignored and untracked, so deleting anything there cannot be undone.
+- Age groups are four hard-coded participant lists in `config_emg.m` rather than being read from the `AgeGroup` column of `participants_metadata_EMG.csv`. Deriving them from the CSV could silently change group membership, so they are left as they are.
+- Stages that are currently switched off (a, b, c, d_a, d_b, e and the whole time-domain branch) had several bugs fixed without being run. Run each one before trusting its output.
