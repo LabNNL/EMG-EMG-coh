@@ -17,7 +17,7 @@ addpath(genpath(fullfile(C.paths.code_dir, 'Functions')));
 subjID = 'CTL_01';
 leg = 'left';                      % 'left' or 'right'
 pairName = 'TAprox_TAdist';         % 'TAprox_TAdist' or 'SOL_GM'
-band = 'OVERALL';                  % 'OVERALL', 'Alpha', 'Beta', 'Gamma'
+band = 'OVERALL';                  % 'OVERALL' or a band of C.shared_wavelet.FreqBands, e.g. 'HighBeta'
 conditions_to_plot = {'Flat','Medium','High'};
 
 use_coherence_kept_cycles = true;   % true = exact cycles used in coherence after f_

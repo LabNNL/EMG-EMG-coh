@@ -2,13 +2,15 @@ function plot_continuous_age_lmm_3bands_by_condition(PLOT_3BANDS, C, HC, outFile
 
     P = HC.plot.continuous_age_lmm_3bands;
 
-    bandOrder = ["Alpha", "Beta", "Gamma"];
+    % One panel per configured band (C.shared_wavelet.FreqBands)
+    bandOrder = string(fieldnames(C.shared_wavelet.FreqBands))';
+    nBands = numel(bandOrder);
 
-    fig = figure( 'Visible', P.visible, 'Color', 'w', 'Position', [100 100 1500 520]);
+    fig = figure( 'Visible', P.visible, 'Color', 'w', 'Position', [100 100 500*nBands 520]);
 
-    tl = tiledlayout(fig, 1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
+    tl = tiledlayout(fig, 1, nBands, 'TileSpacing', 'compact', 'Padding', 'compact');
 
-    axAll = gobjects(1,3);
+    axAll = gobjects(1,nBands);
 
     for ib = 1:numel(bandOrder)
 

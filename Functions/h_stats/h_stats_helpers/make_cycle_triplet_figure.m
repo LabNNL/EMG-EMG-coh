@@ -1,7 +1,8 @@
 function make_cycle_triplet_figure(fig, T, pairName, groupVar, groupOrder, colorFun, C, HC, groupLabel)
 
-    bands = {'Alpha','Beta','Gamma'};
-    curveVars = {'Alpha_curve','Beta_curve','Gamma_curve'};
+    curveVars = T.Properties.VariableNames(endsWith(T.Properties.VariableNames, '_curve'));
+    bands = erase(curveVars, '_curve');
+    nBands = numel(bands);
 
     if isfield(HC, 'analysis') && isfield(HC.analysis, 'cycle_triplet_source') && strcmpi(string(HC.analysis.cycle_triplet_source), "sig")
         yLabelTxt = 'Significant coherence';
@@ -32,8 +33,8 @@ function make_cycle_triplet_figure(fig, T, pairName, groupVar, groupOrder, color
     presentGroups = categories(removecats(T.(groupVar)));
     groupLevels = keep_present_in_order(groupOrder, presentGroups);
 
-    for ib = 1:3
-        ax = subplot(1,3,ib, 'Parent', fig); hold(ax, 'on');
+    for ib = 1:nBands
+        ax = subplot(1,nBands,ib, 'Parent', fig); hold(ax, 'on');
 
         curveVar = curveVars{ib};
 

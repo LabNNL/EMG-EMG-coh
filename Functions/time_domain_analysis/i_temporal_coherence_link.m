@@ -550,30 +550,13 @@ function COH = load_coherence_sources(TC)
     assert(isfield(L, 'COHERENCE_RESULTS'), 'COHERENCE_RESULTS missing from:\n%s', TC.coh_mat_default);
 
     COH.default = L.COHERENCE_RESULTS;
-    COH.Alpha = COH.default;
-    COH.Beta  = COH.default;
-    COH.Gamma = COH.default;
-
-    if TC.use_band_specific_datasets
-
-        if isfield(TC, 'coh_mat_alpha') && isfile(TC.coh_mat_alpha)
-            La = load(TC.coh_mat_alpha);
-            if isfield(La, 'COHERENCE_RESULTS')
-                COH.Alpha = La.COHERENCE_RESULTS;
-            end
-        end
-
-        if isfield(TC, 'coh_mat_beta') && isfile(TC.coh_mat_beta)
-            Lb = load(TC.coh_mat_beta);
-            if isfield(Lb, 'COHERENCE_RESULTS')
-                COH.Beta = Lb.COHERENCE_RESULTS;
-            end
-        end
-
-        if isfield(TC, 'coh_mat_gamma') && isfile(TC.coh_mat_gamma)
-            Lg = load(TC.coh_mat_gamma);
-            if isfield(Lg, 'COHERENCE_RESULTS')
-                COH.Gamma = Lg.COHERENCE_RESULTS;
+    % One results file per analysed band (TC.coh_mat_band.<Band>); FULL is the fallback
+    for bandName = string(TC.bands_to_analyze)
+        COH.(bandName) = COH.default;
+        if TC.use_band_specific_datasets && isfield(TC, 'coh_mat_band') && isfield(TC.coh_mat_band, bandName) && isfile(TC.coh_mat_band.(bandName))
+            Lband = load(TC.coh_mat_band.(bandName));
+            if isfield(Lband, 'COHERENCE_RESULTS')
+                COH.(bandName) = Lband.COHERENCE_RESULTS;
             end
         end
     end

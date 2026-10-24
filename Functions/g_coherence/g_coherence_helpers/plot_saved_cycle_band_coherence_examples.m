@@ -35,11 +35,8 @@ function plot_saved_cycle_band_coherence_examples(COHERENCE_RESULTS, outDir, max
                     end
 
                     C = R.CycleBandCoherence;
-                    if ~isfield(C, 'Alpha') || ~isfield(C, 'Beta') || ~isfield(C, 'Gamma')
-                        continue;
-                    end
-
-                    if all(isnan(C.Alpha)) && all(isnan(C.Beta)) && all(isnan(C.Gamma))
+                    bandNames = cycle_band_names(C);
+                    if isempty(bandNames) || all(cellfun(@(b) all(isnan(C.(b))), bandNames))
                         continue;
                     end
 
@@ -72,9 +69,7 @@ function plot_saved_cycle_band_coherence_examples(COHERENCE_RESULTS, outDir, max
         C = R.CycleBandCoherence;
 
         cyc = C.cycle_number(:);
-        alphaVals = C.Alpha(:);
-        betaVals  = C.Beta(:);
-        gammaVals = C.Gamma(:);
+        bandNames = cycle_band_names(C);
 
         mask_analysis        = logical(C.analysis_cycle_mask(:));
         mask_real_outer      = logical(C.mask_real_outer(:));
@@ -83,14 +78,10 @@ function plot_saved_cycle_band_coherence_examples(COHERENCE_RESULTS, outDir, max
 
         fig = figure('Visible','off','Color','w','Position',[100 100 1200 900]);
 
-        plot_one_band_cycle_panel(cyc, alphaVals, mask_analysis, mask_real_outer, mask_analysis_outer, mask_analysis_middle, ...
-            'Alpha', subjID, cond, leg, pairName, 1);
-
-        plot_one_band_cycle_panel(cyc, betaVals, mask_analysis, mask_real_outer, mask_analysis_outer, mask_analysis_middle, ...
-            'Beta', subjID, cond, leg, pairName, 2);
-
-        plot_one_band_cycle_panel(cyc, gammaVals, mask_analysis, mask_real_outer, mask_analysis_outer, mask_analysis_middle, ...
-            'Gamma', subjID, cond, leg, pairName, 3);
+        for ib = 1:numel(bandNames)
+            plot_one_band_cycle_panel(cyc, C.(bandNames{ib})(:), mask_analysis, mask_real_outer, mask_analysis_outer, mask_analysis_middle, ...
+                bandNames{ib}, subjID, cond, leg, pairName, ib, numel(bandNames));
+        end
 
         fname = sprintf('CYCLE_BAND_COH__%s__%s__%s__%s.png', subjID, cond, leg, pairName);
         fname = regexprep(fname, '[^\w\.-]', '_');
@@ -105,9 +96,9 @@ function plot_saved_cycle_band_coherence_examples(COHERENCE_RESULTS, outDir, max
 end
 
 function plot_one_band_cycle_panel(cyc, vals, mask_analysis, mask_real_outer, mask_analysis_outer, mask_analysis_middle, ...
-    bandLabel, subjID, cond, leg, pairName, panelIdx)
+    bandLabel, subjID, cond, leg, pairName, panelIdx, nPanels)
 
-    subplot(3,1,panelIdx); hold on;
+    subplot(nPanels,1,panelIdx); hold on;
 
     % all cycles faint
     plot(cyc, vals, '-', 'Color', [0.8 0.8 0.8], 'LineWidth', 1);
@@ -183,4 +174,10 @@ function y = moving_average_ignore_nan(x, win)
         seg = x(i1:i2);
         y(i) = mean(seg, 'omitnan');
     end
+end
+
+function bandNames = cycle_band_names(C)
+% The per-band fields of R.CycleBandCoherence (one per configured band)
+    bandNames = setdiff(fieldnames(C), {'cycle_number','FullRange','analysis_cycle_mask', ...
+        'mask_real_outer','mask_analysis_outer','mask_analysis_middle'}, 'stable');
 end

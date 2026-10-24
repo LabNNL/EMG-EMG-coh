@@ -9,20 +9,24 @@ function make_band_triplet_figure(T, pairName, metricFamily, plotMode, outFile, 
         primaryTbl = table();
     end
 
-    fig = figure('Visible', visibleMode, 'Color', 'w', 'Position', [100 100 1800 520]);
+    fig = figure('Visible', visibleMode, 'Color', 'w', 'Position', [100 100 600*numel(fieldnames(C.shared_wavelet.FreqBands)) 520]);
 
     legendHandlesMaster = gobjects(0);
     legendLabelsMaster = {};
 
+    % One panel per configured band (C.shared_wavelet.FreqBands)
+    bandNames = fieldnames(C.shared_wavelet.FreqBands)';
+    nBands = numel(bandNames);
+
     switch lower(metricFamily)
         case 'mean'
-            dvList = {'Alpha','Beta','Gamma'};
+            dvList = bandNames;
             familyLabel = 'Mean coherence';
         case 'auc'
-            dvList = {'Alpha_AUC_norm','Beta_AUC_norm','Gamma_AUC_norm'};
+            dvList = strcat(bandNames, '_AUC_norm');
             familyLabel = 'Normalized AUC';
         case 'peak'
-            dvList = {'Alpha_Peak','Beta_Peak','Gamma_Peak'};
+            dvList = strcat(bandNames, '_Peak');
             familyLabel = 'Peak coherence';
         otherwise
             error('Unknown metricFamily: %s', metricFamily);
@@ -30,10 +34,8 @@ function make_band_triplet_figure(T, pairName, metricFamily, plotMode, outFile, 
 
     scopeLabel = get_metric_scope_label(HC.analysis.metric_scope);
 
-    bandNames = {'Alpha','Beta','Gamma'};
-
-    for i = 1:3
-        ax = subplot(1,3,i);
+    for i = 1:nBands
+        ax = subplot(1,nBands,i);
         hold(ax, 'on');
 
         dv = dvList{i};

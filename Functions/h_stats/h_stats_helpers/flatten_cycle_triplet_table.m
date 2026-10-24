@@ -1,9 +1,13 @@
 function Tflat = flatten_cycle_triplet_table(T)
+% One row per time point, one column per band (from the <Band>_curve columns)
 
     if isempty(T)
         Tflat = table();
         return;
     end
+
+    curveVars = T.Properties.VariableNames(endsWith(T.Properties.VariableNames, '_curve'));
+    bandNames = erase(curveVars, '_curve');
 
     rows = {};
     ri = 0;
@@ -11,32 +15,21 @@ function Tflat = flatten_cycle_triplet_table(T)
     for i = 1:height(T)
 
         tvec = unwrap_table_vector_entry(T.Time_percent, i);
-        a    = unwrap_table_vector_entry(T.Alpha_curve, i);
-        b    = unwrap_table_vector_entry(T.Beta_curve, i);
-        g    = unwrap_table_vector_entry(T.Gamma_curve, i);
+        curves = cellfun(@(v) unwrap_table_vector_entry(T.(v), i), curveVars, 'UniformOutput', false);
 
-        if isempty(tvec) || isempty(a) || isempty(b) || isempty(g)
+        if isempty(tvec) || any(cellfun(@isempty, curves))
             continue;
         end
 
-        tvec = tvec(:);
-        a = a(:);
-        b = b(:);
-        g = g(:);
-
-        n = min([numel(tvec), numel(a), numel(b), numel(g)]);
+        n = min([numel(tvec), cellfun(@numel, curves)]);
         if n == 0
             continue;
         end
 
-        tvec = tvec(1:n);
-        a = a(1:n);
-        b = b(1:n);
-        g = g(1:n);
-
         for k = 1:n
             ri = ri + 1;
-            rows(ri,:) = { string(T.subject(i)), string(T.age_group(i)), string(T.condition(i)), string(T.pair_name(i)), tvec(k), a(k), b(k), g(k), T.POI_StartPercent(i), T.POI_EndPercent(i) };
+            rows(ri,:) = [{ string(T.subject(i)), string(T.age_group(i)), string(T.condition(i)), string(T.pair_name(i)), tvec(k)}, ...
+                cellfun(@(c) c(k), curves, 'UniformOutput', false), {T.POI_StartPercent(i), T.POI_EndPercent(i)}]; %#ok<AGROW>
         end
     end
 
@@ -45,5 +38,5 @@ function Tflat = flatten_cycle_triplet_table(T)
         return;
     end
 
-    Tflat = cell2table(rows, 'VariableNames', { 'subject','age_group','condition','pair_name','time_percent', 'Alpha','Beta','Gamma','POI_StartPercent','POI_EndPercent'});
+    Tflat = cell2table(rows, 'VariableNames', [{ 'subject','age_group','condition','pair_name','time_percent'}, bandNames, {'POI_StartPercent','POI_EndPercent'}]);
 end

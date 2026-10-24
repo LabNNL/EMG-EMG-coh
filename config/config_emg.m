@@ -180,6 +180,7 @@ C.plotting.colors.Swing = [0.10 0.32 0.62];  % dark blue
 
 C.plotting.colors.Alpha = [0.98 0.84 0.40];   % warm yellow
 C.plotting.colors.Beta = [0.95 0.63 0.22];  % orange
+C.plotting.colors.HighBeta = [0.95 0.63 0.22];  % orange
 C.plotting.colors.Gamma = [0.82 0.42 0.08];   % dark orange
 
 C.plotting.colors.Flat = [0.95 0.66 0.66];   % light red
@@ -189,7 +190,7 @@ C.plotting.colors.High = [0.66 0.10 0.10];   % dark red
 C.plotting.age_order = ["JeunesEnfants", "Enfants", "Adolescents", "Adultes"];
 C.plotting.sex_order = ["Femmes", "Hommes"];
 C.plotting.phase_order = ["Full", "Stance", "Swing"];
-C.plotting.band_order = ["Alpha", "Beta", "Gamma"];
+C.plotting.band_order = ["HighBeta", "Gamma"];   % analysed bands, see C.shared_wavelet.FreqBands
 C.plotting.condition_order = ["Flat", "Medium", "High"];
 
 C.plotting.AlphaTransparency = 0.5; % 
@@ -244,12 +245,22 @@ C.general.fs_emg = 2000;   % Hz (default sampling rate for EMG, can be overridde
 %% ===================== SHARED COHERENCE / WAVELET SETTINGS =====================
 C.shared_wavelet = struct();
 C.shared_wavelet.WaveNumber = 7;
+% The analysed bands. Only >= 20 Hz is analysed (decided 2026-10-24): the
+% Delsys high-pass (10 or 20 Hz) cannot be confirmed for every participant,
+% and below 20 Hz cycle-locked movement artifact can inflate coherence
+% (docs/acquisition.md). Before 2026-10 the bands were Alpha [8 12],
+% Beta [13 30], Gamma [31 60]. Every stage loops over these names, so a
+% band is added or removed here only; names must start with a capital
+% letter and contain no underscore (they prefix column names such as
+% HighBeta_AUC_norm).
 C.shared_wavelet.FreqBands = struct( ...
-    'Alpha', [8 12], ...
-    'Beta',  [13 30], ...
-    'Gamma', [31 60]);
-C.shared_wavelet.FreqMin = C.shared_wavelet.FreqBands.Alpha(1); %8 Hz
-C.shared_wavelet.FreqMax = C.shared_wavelet.FreqBands.Gamma(2); %60 Hz
+    'HighBeta', [20 30], ...
+    'Gamma',    [31 60]);
+C.shared_wavelet.band_names = fieldnames(C.shared_wavelet.FreqBands)';
+bandEdges = struct2cell(C.shared_wavelet.FreqBands);
+bandEdges = vertcat(bandEdges{:});
+C.shared_wavelet.FreqMin = min(bandEdges(:,1)); % 20 Hz
+C.shared_wavelet.FreqMax = max(bandEdges(:,2)); % 60 Hz
 
 %% a_extract_raw_cycles_concat settings
 
@@ -898,7 +909,7 @@ C.f_final_signals.params.wavelet_contamination_qc.mode = "overall";
 C.f_final_signals.params.wavelet_contamination_qc.boundary_type = "classical_coi"; % "classical_coi or amplitude_based
 C.f_final_signals.params.wavelet_contamination_qc.amplitude_tol = 0.05;
 
-C.f_final_signals.params.wavelet_contamination_qc.overall_rule = "max_band"; % or "alpha", have to implement for the others if we want to have separate datasets for each band
+C.f_final_signals.params.wavelet_contamination_qc.overall_rule = "max_band"; % widest band boundary, i.e. that of the lowest band; "alpha" needs an Alpha band, have to implement for the others if we want to have separate datasets for each band
 C.f_final_signals.params.wavelet_contamination_qc.extra_buffer_sec = 0;
 
 C.f_final_signals.params.wavelet_contamination_qc.wave_number = C.shared_wavelet.WaveNumber;
@@ -928,9 +939,11 @@ C.f_final_signals.plot.excluded_band.out_dir = fullfile( ...
     C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'band_specific_excluded_examples');
 
 C.f_final_signals.io.out_mat_overall = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS_OVERALL.mat');
-C.f_final_signals.io.out_mat_alpha   = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS_ALPHA.mat');
-C.f_final_signals.io.out_mat_beta    = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS_BETA.mat');
-C.f_final_signals.io.out_mat_gamma   = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS_GAMMA.mat');
+% One export per band: FINAL_PAIRED_SIGNALS_<BAND>.mat
+C.f_final_signals.io.out_mat_band = struct();
+for bandName = C.shared_wavelet.band_names
+    C.f_final_signals.io.out_mat_band.(bandName{1}) = fullfile(C.f_final_signals.io.out_dir, ['FINAL_PAIRED_SIGNALS_' upper(bandName{1}) '.mat']);
+end
 
 % ---------- Signal recap per band ----------
 
@@ -949,7 +962,7 @@ C.f_final_signals.crosstalk.enable = true;
 % Run cross-talk QC on this/these modes.
 % If any checked mode is suspicious, the pair signal is excluded.
 C.f_final_signals.crosstalk.analysis_modes = ["overall"]; 
-% later possible: ["overall","Alpha","Beta","Gamma"]
+% later possible: "overall" plus band names of C.shared_wavelet.FreqBands
 
 C.f_final_signals.crosstalk.target_pairs = ["TAprox_TAdist"];
 C.f_final_signals.crosstalk.target_age_groups = "all";
@@ -1165,7 +1178,8 @@ C.g_coherence.params.transform_scope = "per_trial";
 %                    within overall_contamination_half_width_sec of a kept sample
 % "kept_blocks"    = never;  "trial_run" = always (audit only)
 C.g_coherence.params.per_trial.context_policy = "trial_run_safe";
-% Minimum symmetric-extension padding at segment edges (s); 0.6 s = 3x the 8 Hz e-folding time
+% Minimum symmetric-extension padding at segment edges (s); 0.6 s = 3x the 8 Hz e-folding
+% time, kept when the lowest band moved to 20 Hz (more than needed there, harmless)
 C.g_coherence.params.per_trial.min_pad_sec = 0.6;
 
 % ===================== Padding for wavelet edge effects (transform_scope = "concatenated") =====================
@@ -1211,16 +1225,15 @@ C.g_coherence.group_plot.enable = false;                                        
 C.g_coherence.group_plot.dir = fullfile(C.g_coherence.plot.dir, 'coherencegroup_plots');      % dossier plots de groupe
 C.g_coherence.group_plot.make_scalar_bars = true;                                              % true = barplots des métriques scalaires
 
+bandNames = C.shared_wavelet.band_names;
 C.g_coherence.group_plot.scalar_plot_sets = { ...
-    {'Alpha','Beta','Gamma'}, ...                                                               % moyennes significatives par bande
-    {'Alpha_AUC_norm','Beta_AUC_norm','Gamma_AUC_norm'} ...                                     % AUC normalisées par bande
+    bandNames, ...                                                                              % mean per band
+    strcat(bandNames, '_AUC_norm') ...                                                          % normalized AUC per band
 };
 
-C.g_coherence.group_plot.summaryScalarVars = { ...
-    'Alpha','Beta','Gamma', ...                                                                 % moyenne par bande
-    'Alpha_AUC_norm','Beta_AUC_norm','Gamma_AUC_norm', ...                                      % AUC normalisée par bande
-    'FullBand_Mean', 'FullBand_AUC_norm' ...                                                    % métriques full-band
-};
+C.g_coherence.group_plot.summaryScalarVars = [ ...
+    bandNames, strcat(bandNames, '_AUC_norm'), ...                                              % mean and normalized AUC per band
+    {'FullBand_Mean', 'FullBand_AUC_norm'}];                                                    % full-band metrics
 
 % ===================== Final comparison plots =====================
 C.g_coherence.final_plot = struct();
@@ -1235,24 +1248,17 @@ C.g_coherence.final_plot.make_raw_maps = true;
 C.g_coherence.final_plot.make_sig_maps = true;
 
 % ---------- Input datasets for coherence ----------
-C.g_coherence.io.input_sets = { ...
-    struct( ...
-        'name', 'FULL', ...
-        'mat_file', fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS.mat'), ...
-        'enabled', true), ...
-    struct( ...
-        'name', 'ALPHA', ...
-        'mat_file', fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS_ALPHA.mat'), ...
-        'enabled', true), ...
-    struct( ...
-        'name', 'BETA', ...
-        'mat_file', fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS_BETA.mat'), ...
-        'enabled', true), ...
-    struct( ...
-        'name', 'GAMMA', ...
-        'mat_file', fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS_GAMMA.mat'), ...
-        'enabled', true) ...
-    };
+% FULL (all bands, overall cycle mask) plus one dataset per band (band-specific cycle mask)
+C.g_coherence.io.input_sets = {struct( ...
+    'name', 'FULL', ...
+    'mat_file', fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS.mat'), ...
+    'enabled', true)};
+for bandName = C.shared_wavelet.band_names
+    C.g_coherence.io.input_sets{end+1} = struct( ...
+        'name', upper(bandName{1}), ...
+        'mat_file', C.f_final_signals.io.out_mat_band.(bandName{1}), ...
+        'enabled', true);
+end
 
 C.g_coherence.params.exclude_edge_cycles_after_wavelet = false; % honestly unnecessary with good padding, but change in case, exclude the first and last cycle of each signal after wavelet transformation to avoid any residual edge effects
 C.g_coherence.params.n_edge_cycles_excluded_each_side = 1;
@@ -1333,9 +1339,9 @@ C.h_stats.analysis.pairs_to_analyze = {'TAprox_TAdist','SOL_GM'};
 
 % ===================== METRIC SELECTION =====================
 % Choose one or several scalar metric families for the whole h_stats script:
-%   "mean" = Alpha / Beta / Gamma
-%   "auc"  = Alpha_AUC_norm / Beta_AUC_norm / Gamma_AUC_norm
-%   "peak" = Alpha_Peak / Beta_Peak / Gamma_Peak
+%   "mean" = <Band>             e.g. HighBeta, Gamma
+%   "auc"  = <Band>_AUC_norm    e.g. HighBeta_AUC_norm
+%   "peak" = <Band>_Peak        (one DV per band of C.shared_wavelet.FreqBands)
 %
 % Examples:
 %   {'auc'}
@@ -1357,34 +1363,19 @@ for iMF = 1:numel(metricFamilies)
     mf = metricFamilies(iMF);
 
     switch mf
-
         case "mean"
-            thisDV = {'Alpha','Beta','Gamma'};
-            thisPlotType = {'mean'};
-            thisPairs = { ...
-                'Alpha', 'Alpha_LogPower'; ...
-                'Beta',  'Beta_LogPower'; ...
-                'Gamma', 'Gamma_LogPower'};
-
+            suffix = '';
         case "auc"
-            thisDV = {'Alpha_AUC_norm','Beta_AUC_norm','Gamma_AUC_norm'};
-            thisPlotType = {'auc'};
-            thisPairs = { ...
-                'Alpha_AUC_norm', 'Alpha_LogPower'; ...
-                'Beta_AUC_norm',  'Beta_LogPower'; ...
-                'Gamma_AUC_norm', 'Gamma_LogPower'};
-
+            suffix = '_AUC_norm';
         case "peak"
-            thisDV = {'Alpha_Peak','Beta_Peak','Gamma_Peak'};
-            thisPlotType = {'peak'};
-            thisPairs = { ...
-                'Alpha_Peak', 'Alpha_LogPower'; ...
-                'Beta_Peak',  'Beta_LogPower'; ...
-                'Gamma_Peak', 'Gamma_LogPower'};
-
+            suffix = '_Peak';
         otherwise
             error('Unknown scalar metric family: %s. Use "mean", "auc", or "peak".', mf);
     end
+
+    thisDV = strcat(C.shared_wavelet.band_names, suffix);
+    thisPlotType = {char(mf)};
+    thisPairs = [thisDV(:), strcat(C.shared_wavelet.band_names(:), '_LogPower')];
 
     C.h_stats.analysis.dv_list = [C.h_stats.analysis.dv_list, thisDV]; %#ok<AGROW>
     C.h_stats.analysis.metric_type_for_plots = [C.h_stats.analysis.metric_type_for_plots, thisPlotType]; %#ok<AGROW>
@@ -1471,9 +1462,11 @@ C.h_stats.posthoc.correction = 'fdr';       % 'holm' or 'fdr'
 % ===================== BAND-SPECIFIC DATASET SETTINGS =====================
 C.h_stats.analysis.use_band_specific_datasets = true;   % easy on/off switch
 
-C.h_stats.io.coh_mat_alpha = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_ALPHA.mat');
-C.h_stats.io.coh_mat_beta  = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_BETA.mat');
-C.h_stats.io.coh_mat_gamma = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_GAMMA.mat');
+% One g output per band: COHERENCE_RESULTS_<BAND>.mat
+C.h_stats.io.coh_mat_band = struct();
+for bandName = C.shared_wavelet.band_names
+    C.h_stats.io.coh_mat_band.(bandName{1}) = fullfile(C.paths.coherence_dir, ['COHERENCE_RESULTS_' upper(bandName{1}) '.mat']);
+end
 %% h_stats spectrum plots
 
 C.h_stats.spectrum = struct();
@@ -1545,7 +1538,7 @@ C.h_stats.analysis.run_power_correlations = false;
 % If false: DV ~ AgeYears_z + condition
 C.h_stats.analysis.continuous_age_condition_interaction = true;
 
-% Add power covariate matching the band: Alpha_LogPower / Beta_LogPower / Gamma_LogPower
+% Add power covariate matching the band: <Band>_LogPower (e.g. HighBeta_LogPower)
 C.h_stats.analysis.continuous_age_include_power = false;
 
 % Add log_n_cycles using the same band-specific helper as main models
@@ -1599,18 +1592,16 @@ C.temporal_coherence_link.plots_dir  = fullfile(C.paths.plot_dir, 'i_temporal_co
 
 % ---------- Input coherence files ----------
 C.temporal_coherence_link.coh_mat_default = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_FULL.mat');
-C.temporal_coherence_link.coh_mat_alpha   = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_ALPHA.mat');
-C.temporal_coherence_link.coh_mat_beta    = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_BETA.mat');
-C.temporal_coherence_link.coh_mat_gamma   = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_GAMMA.mat');
+C.temporal_coherence_link.coh_mat_band = C.h_stats.io.coh_mat_band;
 
-% If true, Alpha/Beta/Gamma rows use the band-specific coherence files.
+% If true, band rows use the band-specific coherence files.
 % This is recommended if your coherence stats already use band-specific datasets.
 C.temporal_coherence_link.use_band_specific_datasets = true;
 
 % ---------- Analysis choices ----------
 % C.temporal_coherence_link.pairs_to_analyze = {'TAprox_TAdist','SOL_GM','VL_RF'};
 C.temporal_coherence_link.pairs_to_analyze = {'TAprox_TAdist','SOL_GM'};
-C.temporal_coherence_link.bands_to_analyze = {'Alpha','Beta','Gamma'};
+C.temporal_coherence_link.bands_to_analyze = C.shared_wavelet.band_names;
 
 % Recommended: POI, because your pair-specific interpretation is phase-dependent.
 C.temporal_coherence_link.metric_scope = "POI";

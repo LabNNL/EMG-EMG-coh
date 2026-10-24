@@ -79,8 +79,13 @@ function h_coherence_stats()
 
     fprintf('\n=== Running coherence stats: pair-specific main phase analysis ===\n');
 
-    varNamesDebug = { 'subject','age_group','condition','leg','pair_name', 'n_cycles_used', 'n_cycles_available_ref', 'Alpha_n_cycles_used_for_metric', 'Beta_n_cycles_used_for_metric', 'Gamma_n_cycles_used_for_metric', 'Alpha_cycle_count_source', 'Beta_cycle_count_source', 'Gamma_cycle_count_source', 'metric_scope','coherence_source', 'Alpha','Beta','Gamma', 'Alpha_AUC_norm','Beta_AUC_norm','Gamma_AUC_norm', 'Alpha_Peak','Beta_Peak','Gamma_Peak', 'Alpha_LogPower','Beta_LogPower','Gamma_LogPower', ...
-        'Alpha_AUC_norm__raw','Beta_AUC_norm__raw','Gamma_AUC_norm__raw', 'Alpha_AUC_norm__cycle_bias_corrected','Beta_AUC_norm__cycle_bias_corrected','Gamma_AUC_norm__cycle_bias_corrected', 'Alpha_n_cycles__raw','Beta_n_cycles__raw','Gamma_n_cycles__raw'}; % sensitivity columns (run_continuous_age_sensitivity)
+    % One column per configured band (C.shared_wavelet.FreqBands) for each quantity
+    bandNames = fieldnames(C.g_coherence.params.FreqBands)';
+    perBand = @(suffix) strcat(bandNames, suffix);
+    varNamesDebug = [{'subject','age_group','condition','leg','pair_name', 'n_cycles_used', 'n_cycles_available_ref'}, ...
+        perBand('_n_cycles_used_for_metric'), perBand('_cycle_count_source'), {'metric_scope','coherence_source'}, ...
+        bandNames, perBand('_AUC_norm'), perBand('_Peak'), perBand('_LogPower'), ...
+        perBand('_AUC_norm__raw'), perBand('_AUC_norm__cycle_bias_corrected'), perBand('_n_cycles__raw')]; % last three: sensitivity columns (run_continuous_age_sensitivity)
 
     contAgeLmmPlotDir = fullfile(HC.io.plots_dir, 'continuous_age_lmm_by_condition');
     if ~exist(contAgeLmmPlotDir, 'dir')
@@ -93,45 +98,28 @@ function h_coherence_stats()
     assert(isfield(L0, 'COHERENCE_RESULTS'), 'COHERENCE_RESULTS not found in default input mat file.');
     COH_DEFAULT = L0.COHERENCE_RESULTS;
 
-    COH_ALPHA = COH_DEFAULT;
-    COH_BETA  = COH_DEFAULT;
-    COH_GAMMA = COH_DEFAULT;
-
-    alpha_source = "default";
-    beta_source  = "default";
-    gamma_source = "default";
-
-    if isfield(HC.analysis, 'use_band_specific_datasets') && HC.analysis.use_band_specific_datasets
-
-        if isfield(HC.io, 'coh_mat_alpha') && isfile(HC.io.coh_mat_alpha)
-            La = load(HC.io.coh_mat_alpha);
-            if isfield(La, 'COHERENCE_RESULTS')
-                COH_ALPHA = La.COHERENCE_RESULTS;
-                alpha_source = "band-specific";
+    % One results file per band (COHERENCE_RESULTS_<BAND>.mat); FULL is the fallback
+    COH_BAND = struct();
+    bandSource = struct();
+    for ib = 1:numel(bandNames)
+        band = bandNames{ib};
+        COH_BAND.(band) = COH_DEFAULT;
+        bandSource.(band) = "default";
+        if isfield(HC.analysis, 'use_band_specific_datasets') && HC.analysis.use_band_specific_datasets && ...
+                isfield(HC.io, 'coh_mat_band') && isfield(HC.io.coh_mat_band, band) && isfile(HC.io.coh_mat_band.(band))
+            Lband = load(HC.io.coh_mat_band.(band));
+            if isfield(Lband, 'COHERENCE_RESULTS')
+                COH_BAND.(band) = Lband.COHERENCE_RESULTS;
+                bandSource.(band) = "band-specific";
             end
-        end
-
-        if isfield(HC.io, 'coh_mat_beta') && isfile(HC.io.coh_mat_beta)
-            Lb = load(HC.io.coh_mat_beta);
-            if isfield(Lb, 'COHERENCE_RESULTS')
-                COH_BETA = Lb.COHERENCE_RESULTS;
-                beta_source = "band-specific";
-            end
-        end
-
-        if isfield(HC.io, 'coh_mat_gamma') && isfile(HC.io.coh_mat_gamma)
-            Lg = load(HC.io.coh_mat_gamma);
-            if isfield(Lg, 'COHERENCE_RESULTS')
-                COH_GAMMA = Lg.COHERENCE_RESULTS;
-                gamma_source = "band-specific";
-            end
+            clear Lband
         end
     end
 
     fprintf('\n=== Coherence sources used ===\n');
-    fprintf('Alpha: %s\n', alpha_source);
-    fprintf('Beta : %s\n', beta_source);
-    fprintf('Gamma: %s\n', gamma_source);
+    for ib = 1:numel(bandNames)
+        fprintf('%s: %s\n', bandNames{ib}, bandSource.(bandNames{ib}));
+    end
 
     fprintf('Metric scope: %s\n', HC.analysis.metric_scope);
 
@@ -142,36 +130,37 @@ function h_coherence_stats()
     ROW = {};
     ri = 0;
 
-    % Use union of all possible subjects from the 3 sources
-    subjects = unique([ fieldnames(COH_DEFAULT); fieldnames(COH_ALPHA); fieldnames(COH_BETA); fieldnames(COH_GAMMA)]);
+    % Union of the subjects of all sources
+    allCoh = [{COH_DEFAULT}, struct2cell(COH_BAND)'];
+    subjects = fieldnames(COH_DEFAULT);
+    for ib = 1:numel(bandNames)
+        subjects = [subjects; fieldnames(COH_BAND.(bandNames{ib}))]; %#ok<AGROW>
+    end
+    subjects = unique(subjects);
 
     for iS = 1:numel(subjects)
         subjID = subjects{iS};
         age_group = subject_to_group(subjID, C);
 
-        conds = union_of_nested_fields({COH_DEFAULT, COH_ALPHA, COH_BETA, COH_GAMMA}, {subjID});
+        conds = union_of_nested_fields(allCoh, {subjID});
         for ic = 1:numel(conds)
             cond = conds{ic};
 
-            legs = union_of_nested_fields({COH_DEFAULT, COH_ALPHA, COH_BETA, COH_GAMMA}, {subjID, cond});
+            legs = union_of_nested_fields(allCoh, {subjID, cond});
             for il = 1:numel(legs)
                 leg = legs{il};
 
-                pairNames = union_of_nested_fields({COH_DEFAULT, COH_ALPHA, COH_BETA, COH_GAMMA}, {subjID, cond, leg});
+                pairNames = union_of_nested_fields(allCoh, {subjID, cond, leg});
                 fprintf('Subject %s | Condition %s | Leg %s | Pairs: %s\n', subjID, cond, leg, strjoin(pairNames, ', '));
                 for ip = 1:numel(pairNames)
                     pairName = pairNames{ip};
 
                     % Use default result as structural reference when possible
                     R_ref = get_nested_result(COH_DEFAULT, subjID, cond, leg, pairName);
-                    if isempty(R_ref)
-                        R_ref = get_nested_result(COH_ALPHA, subjID, cond, leg, pairName);
-                    end
-                    if isempty(R_ref)
-                        R_ref = get_nested_result(COH_BETA, subjID, cond, leg, pairName);
-                    end
-                    if isempty(R_ref)
-                        R_ref = get_nested_result(COH_GAMMA, subjID, cond, leg, pairName);
+                    for ib = 1:numel(bandNames)
+                        if isempty(R_ref)
+                            R_ref = get_nested_result(COH_BAND.(bandNames{ib}), subjID, cond, leg, pairName);
+                        end
                     end
 
                     if isempty(R_ref)
@@ -188,25 +177,29 @@ function h_coherence_stats()
                         continue;
                     end
 
-                    % Band-specific results
-                    R_alpha = get_nested_result(COH_ALPHA, subjID, cond, leg, pairName);
-                    R_beta  = get_nested_result(COH_BETA,  subjID, cond, leg, pairName);
-                    R_gamma = get_nested_result(COH_GAMMA, subjID, cond, leg, pairName);
-
-                    % ---------- Source-specific cycle counts for each band ----------
-                    cycleRef   = get_metric_cycle_count_info(R_ref,   HC.analysis.coherence_source);
-                    cycleAlpha = get_metric_cycle_count_info(R_alpha, HC.analysis.coherence_source);
-                    cycleBeta  = get_metric_cycle_count_info(R_beta,  HC.analysis.coherence_source);
-                    cycleGamma = get_metric_cycle_count_info(R_gamma, HC.analysis.coherence_source);
-
+                    % Band-specific results and their cycle counts
+                    nB = numel(bandNames);
+                    Rb = cell(1, nB);
+                    cyc = cell(1, nB);
+                    for ib = 1:nB
+                        Rb{ib} = get_nested_result(COH_BAND.(bandNames{ib}), subjID, cond, leg, pairName);
+                        cyc{ib} = get_metric_cycle_count_info(Rb{ib}, HC.analysis.coherence_source);
+                    end
+                    cycleRef = get_metric_cycle_count_info(R_ref, HC.analysis.coherence_source);
                     nCyclesAvailableRef = cycleRef.n_available;
 
-                    ri = ri + 1;
+                    src = HC.analysis.coherence_source;
+                    scope = HC.analysis.metric_scope;
+                    metric = @(suffix, source) arrayfun(@(ib) get_scalar_from_result(Rb{ib}, [bandNames{ib} suffix], scope, source), 1:nB, 'UniformOutput', false);
 
-                    ROW(ri,:) = { string(subjID), string(age_group), string(cond), string(leg), string(pairName), nCycles, nCyclesAvailableRef, cycleAlpha.n_used_for_metric, cycleBeta.n_used_for_metric, cycleGamma.n_used_for_metric, string(cycleAlpha.source), string(cycleBeta.source), string(cycleGamma.source), string(HC.analysis.metric_scope), string(HC.analysis.coherence_source), get_scalar_from_result(R_alpha, 'Alpha', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_beta,  'Beta',  HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_gamma, 'Gamma', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_alpha, 'Alpha_AUC_norm', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_beta,  'Beta_AUC_norm',  HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_gamma, 'Gamma_AUC_norm', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_alpha, 'Alpha_Peak', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_beta,  'Beta_Peak',  HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_gamma, 'Gamma_Peak', HC.analysis.metric_scope, HC.analysis.coherence_source), get_power_by_scope(R_ref, 'Alpha', HC.analysis.metric_scope), get_power_by_scope(R_ref, 'Beta',  HC.analysis.metric_scope), get_power_by_scope(R_ref, 'Gamma', HC.analysis.metric_scope), ...
-                        get_scalar_from_result(R_alpha, 'Alpha_AUC_norm', HC.analysis.metric_scope, "raw"), get_scalar_from_result(R_beta, 'Beta_AUC_norm', HC.analysis.metric_scope, "raw"), get_scalar_from_result(R_gamma, 'Gamma_AUC_norm', HC.analysis.metric_scope, "raw"), ...
-                        get_scalar_from_result(R_alpha, 'Alpha_AUC_norm', HC.analysis.metric_scope, "cycle_bias_corrected"), get_scalar_from_result(R_beta, 'Beta_AUC_norm', HC.analysis.metric_scope, "cycle_bias_corrected"), get_scalar_from_result(R_gamma, 'Gamma_AUC_norm', HC.analysis.metric_scope, "cycle_bias_corrected"), ...
-                        get_metric_cycle_count_info(R_alpha, "raw").n_used_for_metric, get_metric_cycle_count_info(R_beta, "raw").n_used_for_metric, get_metric_cycle_count_info(R_gamma, "raw").n_used_for_metric };
+                    ri = ri + 1;
+                    ROW(ri,:) = [{string(subjID), string(age_group), string(cond), string(leg), string(pairName), nCycles, nCyclesAvailableRef}, ...
+                        cellfun(@(x) x.n_used_for_metric, cyc, 'UniformOutput', false), cellfun(@(x) string(x.source), cyc, 'UniformOutput', false), ...
+                        {string(scope), string(src)}, ...
+                        metric('', src), metric('_AUC_norm', src), metric('_Peak', src), ...
+                        cellfun(@(b) get_power_by_scope(R_ref, b, scope), bandNames, 'UniformOutput', false), ...
+                        metric('_AUC_norm', "raw"), metric('_AUC_norm', "cycle_bias_corrected"), ...
+                        cellfun(@(R) get_metric_cycle_count_info(R, "raw").n_used_for_metric, Rb, 'UniformOutput', false)];
                 end
             end
         end
@@ -241,9 +234,9 @@ function h_coherence_stats()
     groupVars = {'subject','age_group','condition','pair_name'};
 
     analysisDvList = HC.analysis.dv_list;
-    powerVars = {'Alpha_LogPower','Beta_LogPower','Gamma_LogPower'};
+    powerVars = perBand('_LogPower');
 
-    sensitivityVars = {'Alpha_AUC_norm__raw','Beta_AUC_norm__raw','Gamma_AUC_norm__raw', 'Alpha_AUC_norm__cycle_bias_corrected','Beta_AUC_norm__cycle_bias_corrected','Gamma_AUC_norm__cycle_bias_corrected', 'Alpha_n_cycles__raw','Beta_n_cycles__raw','Gamma_n_cycles__raw'};
+    sensitivityVars = [perBand('_AUC_norm__raw'), perBand('_AUC_norm__cycle_bias_corrected'), perBand('_n_cycles__raw')];
 
     avgVars = unique([analysisDvList, powerVars, sensitivityVars], 'stable');
 
@@ -344,28 +337,20 @@ function h_coherence_stats()
     T_subj.min_cycles_available_ref_across_legs = splitapply(@(x) min(x, [], 'omitnan'), T_row.n_cycles_available_ref, G);
 
     % ---------- Band-specific actual cycles used for selected metric source ----------
-    T_subj.Alpha_mean_cycles_used_for_metric_across_legs = splitapply(@(x) mean(x, 'omitnan'), T_row.Alpha_n_cycles_used_for_metric, G);
-
-    T_subj.Beta_mean_cycles_used_for_metric_across_legs = splitapply(@(x) mean(x, 'omitnan'), T_row.Beta_n_cycles_used_for_metric, G);
-
-    T_subj.Gamma_mean_cycles_used_for_metric_across_legs = splitapply(@(x) mean(x, 'omitnan'), T_row.Gamma_n_cycles_used_for_metric, G);
-
-    T_subj.Alpha_min_cycles_used_for_metric_across_legs = splitapply(@(x) min(x, [], 'omitnan'), T_row.Alpha_n_cycles_used_for_metric, G);
-
-    T_subj.Beta_min_cycles_used_for_metric_across_legs = splitapply(@(x) min(x, [], 'omitnan'), T_row.Beta_n_cycles_used_for_metric, G);
-
-    T_subj.Gamma_min_cycles_used_for_metric_across_legs = splitapply(@(x) min(x, [], 'omitnan'), T_row.Gamma_n_cycles_used_for_metric, G);
+    for ib = 1:numel(bandNames)
+        band = bandNames{ib};
+        T_subj.([band '_mean_cycles_used_for_metric_across_legs']) = splitapply(@(x) mean(x, 'omitnan'), T_row.([band '_n_cycles_used_for_metric']), G);
+        T_subj.([band '_min_cycles_used_for_metric_across_legs']) = splitapply(@(x) min(x, [], 'omitnan'), T_row.([band '_n_cycles_used_for_metric']), G);
+    end
 
     % ---------- Create band-specific log cycle variables ----------
-    T_subj.Alpha_log_n_cycles = log_safe(T_subj.Alpha_mean_cycles_used_for_metric_across_legs);
-    T_subj.Beta_log_n_cycles  = log_safe(T_subj.Beta_mean_cycles_used_for_metric_across_legs);
-    T_subj.Gamma_log_n_cycles = log_safe(T_subj.Gamma_mean_cycles_used_for_metric_across_legs);
-
     fprintf('\n=== Source-specific cycle-count variables created ===\n');
     fprintf('Coherence source: %s\n', string(HC.analysis.coherence_source));
-    fprintf('Valid Alpha_log_n_cycles rows: %d / %d\n', sum(isfinite(T_subj.Alpha_log_n_cycles)), height(T_subj));
-    fprintf('Valid Beta_log_n_cycles rows:  %d / %d\n', sum(isfinite(T_subj.Beta_log_n_cycles)),  height(T_subj));
-    fprintf('Valid Gamma_log_n_cycles rows: %d / %d\n', sum(isfinite(T_subj.Gamma_log_n_cycles)), height(T_subj));
+    for ib = 1:numel(bandNames)
+        band = bandNames{ib};
+        T_subj.([band '_log_n_cycles']) = log_safe(T_subj.([band '_mean_cycles_used_for_metric_across_legs']));
+        fprintf('Valid %s_log_n_cycles rows: %d / %d\n', band, sum(isfinite(T_subj.([band '_log_n_cycles']))), height(T_subj));
+    end
 
     fprintf('Subject-level table after leg averaging: %d rows\n', height(T_subj));
 
@@ -1605,9 +1590,10 @@ function h_coherence_stats()
     fprintf(fid, '\n--- Rows by pair x age_group x condition ---\n');
     disp_to_file(fid, groupcounts_table(T_subj, {'pair_name','age_group','condition'}));
 
-    fprintf(fid, 'Alpha source: %s\n', alpha_source);
-    fprintf(fid, 'Beta source:  %s\n', beta_source);
-    fprintf(fid, 'Gamma source: %s\n\n', gamma_source);
+    for ib = 1:numel(bandNames)
+        fprintf(fid, '%s source: %s\n', bandNames{ib}, bandSource.(bandNames{ib}));
+    end
+    fprintf(fid, '\n');
 
     fprintf(fid, 'Coherence source: %s\n', string(HC.analysis.coherence_source));
     fprintf(fid, 'Metric scope: %s\n', string(HC.analysis.metric_scope));
@@ -1625,20 +1611,17 @@ function h_coherence_stats()
     fprintf(fid, 'Cycle-count covariate requested: %d\n', includeCycleCov);
 
     fprintf(fid, 'Band-specific cycle-count variables:\n');
-    fprintf(fid, '  - Alpha_log_n_cycles from Alpha_mean_cycles_used_for_metric_across_legs\n');
-    fprintf(fid, '  - Beta_log_n_cycles from Beta_mean_cycles_used_for_metric_across_legs\n');
-    fprintf(fid, '  - Gamma_log_n_cycles from Gamma_mean_cycles_used_for_metric_across_legs\n');
+    for ib = 1:numel(bandNames)
+        fprintf(fid, '  - %s_log_n_cycles from %s_mean_cycles_used_for_metric_across_legs\n', bandNames{ib}, bandNames{ib});
+    end
 
     fprintf(fid, '\nCycle-count source examples in T_row:\n');
 
-    if ismember('Alpha_cycle_count_source', T_row.Properties.VariableNames)
-        fprintf(fid, '  Alpha sources: %s\n', strjoin(unique(string(T_row.Alpha_cycle_count_source)), ', '));
-    end
-    if ismember('Beta_cycle_count_source', T_row.Properties.VariableNames)
-        fprintf(fid, '  Beta sources: %s\n', strjoin(unique(string(T_row.Beta_cycle_count_source)), ', '));
-    end
-    if ismember('Gamma_cycle_count_source', T_row.Properties.VariableNames)
-        fprintf(fid, '  Gamma sources: %s\n', strjoin(unique(string(T_row.Gamma_cycle_count_source)), ', '));
+    for ib = 1:numel(bandNames)
+        v = [bandNames{ib} '_cycle_count_source'];
+        if ismember(v, T_row.Properties.VariableNames)
+            fprintf(fid, '  %s sources: %s\n', bandNames{ib}, strjoin(unique(string(T_row.(v))), ', '));
+        end
     end
 
     fprintf(fid, 'Analysis tag: %s\n\n', ANALYSIS_TAG);
@@ -1665,7 +1648,7 @@ function h_coherence_stats()
     fprintf('\nVariables in HC.analysis.dv_list but missing from T_row:\n');
     disp(missingFromTrow(:));
 
-    powerVars = {'Alpha_LogPower','Beta_LogPower','Gamma_LogPower'};
+    powerVars = perBand('_LogPower');
 
     fprintf('\nPower vars in T_row?\n');
     disp(ismember(powerVars, T_row.Properties.VariableNames));
@@ -2073,21 +2056,21 @@ function h_coherence_stats()
         riS = 0;
         nSkippedFreq = 0;
 
-        subjects_spec = unique([ fieldnames(COH_DEFAULT); fieldnames(COH_ALPHA); fieldnames(COH_BETA); fieldnames(COH_GAMMA)]);
+        subjects_spec = subjects;   % union over all sources, built for the row table
 
         for iS = 1:numel(subjects_spec)
             subjID = subjects_spec{iS};
             age_group = subject_to_group(subjID, C);
 
-            conds_spec = union_of_nested_fields({COH_DEFAULT, COH_ALPHA, COH_BETA, COH_GAMMA}, {subjID});
+            conds_spec = union_of_nested_fields(allCoh, {subjID});
             for ic = 1:numel(conds_spec)
                 cond = conds_spec{ic};
 
-                legs_spec = union_of_nested_fields({COH_DEFAULT, COH_ALPHA, COH_BETA, COH_GAMMA}, {subjID, cond});
+                legs_spec = union_of_nested_fields(allCoh, {subjID, cond});
                 for il = 1:numel(legs_spec)
                     leg = legs_spec{il};
 
-                    pairNames_spec = union_of_nested_fields({COH_DEFAULT, COH_ALPHA, COH_BETA, COH_GAMMA}, {subjID, cond, leg});
+                    pairNames_spec = union_of_nested_fields(allCoh, {subjID, cond, leg});
                     fprintf('Processing subject %s | condition %s | leg %s | pairs: %s\n', subjID, cond, leg, strjoin(pairNames_spec, ', '));
                     for ip = 1:numel(pairNames_spec)
                         pairName = pairNames_spec{ip};
@@ -2520,15 +2503,6 @@ function h_coherence_stats()
 
         T_cycle_row = build_cycle_triplet_table_from_results( COH_DEFAULT, C, HC);
 
-        if ~isempty(T_cycle_row)
-
-            t0 = unwrap_table_vector_entry(T_cycle_row.Time_percent, 1);
-            a0 = unwrap_table_vector_entry(T_cycle_row.Alpha_curve, 1);
-            b0 = unwrap_table_vector_entry(T_cycle_row.Beta_curve, 1);
-            g0 = unwrap_table_vector_entry(T_cycle_row.Gamma_curve, 1);
-
-        end
-
         if isempty(T_cycle_row)
             warning('No cycle-triplet rows could be built. Skipping cycle triplets.');
         else
@@ -2538,13 +2512,6 @@ function h_coherence_stats()
                 T_cycle_subj = average_cycle_triplet_legs(T_cycle_row);
             else
                 T_cycle_subj = T_cycle_row;
-            end
-
-            if ~isempty(T_cycle_subj)
-                t0 = unwrap_table_vector_entry(T_cycle_subj.Time_percent, 1);
-                a0 = unwrap_table_vector_entry(T_cycle_subj.Alpha_curve, 1);
-                b0 = unwrap_table_vector_entry(T_cycle_subj.Beta_curve, 1);
-                g0 = unwrap_table_vector_entry(T_cycle_subj.Gamma_curve, 1);
             end
 
             writetable(flatten_cycle_triplet_table(T_cycle_subj), fullfile(cycleTripletDir, 'T_cycle_subject_flat.csv'));

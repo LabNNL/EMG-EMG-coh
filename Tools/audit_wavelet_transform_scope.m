@@ -2,11 +2,11 @@ function [T, S] = audit_wavelet_transform_scope(varargin)
 % AUDIT_WAVELET_TRANSFORM_SCOPE  How much do glue points between kept cycles
 % change the coherence?
 %
-%   audit_wavelet_transform_scope()                          FULL and ALPHA
-%   [T,S] = audit_wavelet_transform_scope('Datasets',"ALPHA") one dataset
+%   audit_wavelet_transform_scope()                             FULL
+%   [T,S] = audit_wavelet_transform_scope('Datasets',"HIGHBETA") one band dataset
 %
 % Options
-%   'Datasets'  dataset names from C.g_coherence.io.input_sets (default ["FULL","ALPHA"])
+%   'Datasets'  dataset names from C.g_coherence.io.input_sets (default "FULL"; the 2026-10 audit ran FULL and ALPHA)
 %   'Scopes'    "concatenated" plus any per_trial context policies
 %               (default ["concatenated","kept_blocks","trial_run_safe"])
 %   'OutDir'    default Results/g_emg_emg_wavelet_coherence/transform_scope_audit
@@ -237,7 +237,7 @@ end
 
 function opt = parse_args(args)
     p = inputParser;
-    p.addParameter('Datasets', ["FULL","ALPHA"]);
+    p.addParameter('Datasets', "FULL");
     p.addParameter('Scopes', ["concatenated","kept_blocks","trial_run_safe"]);
     p.addParameter('OutDir', '');
     p.addParameter('ArchiveDir', '');

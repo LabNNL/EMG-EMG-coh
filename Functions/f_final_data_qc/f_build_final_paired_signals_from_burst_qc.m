@@ -346,29 +346,28 @@ function f_build_final_paired_signals_from_burst_qc()
                             pairReason_i = strjoin(pairReason_i, "+");
                         end
 
-                        pairReasonAlpha = string(pair_cycle_reason_by_band.Alpha(iCyc));
-                        if numel(pairReasonAlpha) ~= 1
-                            pairReasonAlpha = strjoin(pairReasonAlpha, "+");
+                        bandKeep = cell(1, numel(bandNames));
+                        bandReason = cell(1, numel(bandNames));
+                        for ib = 1:numel(bandNames)
+                            band = bandNames{ib};
+                            r = string(pair_cycle_reason_by_band.(band)(iCyc));
+                            if numel(r) ~= 1
+                                r = strjoin(r, "+");
+                            end
+                            bandKeep{ib} = logical(pair_cycle_keep_by_band.(band)(iCyc));
+                            bandReason{ib} = char(r);
                         end
 
-                        pairReasonBeta = string(pair_cycle_reason_by_band.Beta(iCyc));
-                        if numel(pairReasonBeta) ~= 1
-                            pairReasonBeta = strjoin(pairReasonBeta, "+");
-                        end
-
-                        pairReasonGamma = string(pair_cycle_reason_by_band.Gamma(iCyc));
-                        if numel(pairReasonGamma) ~= 1
-                            pairReasonGamma = strjoin(pairReasonGamma, "+");
-                        end
-
-                        PAIR_QC_ROWS(riP,1:19) = { char(string(subjID)), char(string(cond)), char(string(leg)), char(string(pairName)), char(string(mus1)), char(string(mus2)), double(iCyc), double(cycle_starts_pair(iCyc)), double(cycle_ends_pair(iCyc)), logical(cyc1.cycle_keep_mask(iCyc)), logical(cyc2.cycle_keep_mask(iCyc)), logical(pair_cycle_keep(iCyc)), char(pairReason_i), logical(pair_cycle_keep_by_band.Alpha(iCyc)), logical(pair_cycle_keep_by_band.Beta(iCyc)), logical(pair_cycle_keep_by_band.Gamma(iCyc)), char(pairReasonAlpha), char(pairReasonBeta), char(pairReasonGamma) };
+                        PAIR_QC_ROWS(riP,:) = [{ char(string(subjID)), char(string(cond)), char(string(leg)), char(string(pairName)), char(string(mus1)), char(string(mus2)), double(iCyc), double(cycle_starts_pair(iCyc)), double(cycle_ends_pair(iCyc)), logical(cyc1.cycle_keep_mask(iCyc)), logical(cyc2.cycle_keep_mask(iCyc)), logical(pair_cycle_keep(iCyc)), char(pairReason_i)}, bandKeep, bandReason];
                     end
 
                     age_group = subject_to_group(subjID, C);
 
                     % ---------- save summary row ----------
                     riS = riS + 1;
-                    SIGNAL_ROWS(riS,:) = { string(subjID), string(age_group), string(cond), string(leg), string(pairName), string(mus1), string(mus2), nCycles, n_valid_cycles, numel(removed_cycle_numbers), included_for_analysis, string(exclusion_reason), numel(final_sig_1), numel(final_sig_2), fs, string(cycle_source_1), string(cycle_source_2), string(cycle_alignment_note), band_specific.Alpha.n_valid_cycles, band_specific.Beta.n_valid_cycles, band_specific.Gamma.n_valid_cycles, band_specific.Alpha.included_for_analysis, band_specific.Beta.included_for_analysis, band_specific.Gamma.included_for_analysis, };
+                    SIGNAL_ROWS(riS,:) = [{ string(subjID), string(age_group), string(cond), string(leg), string(pairName), string(mus1), string(mus2), nCycles, n_valid_cycles, numel(removed_cycle_numbers), included_for_analysis, string(exclusion_reason), numel(final_sig_1), numel(final_sig_2), fs, string(cycle_source_1), string(cycle_source_2), string(cycle_alignment_note)}, ...
+                        cellfun(@(b) band_specific.(b).n_valid_cycles, bandNames(:)', 'UniformOutput', false), ...
+                        cellfun(@(b) band_specific.(b).included_for_analysis, bandNames(:)', 'UniformOutput', false)];
                     % ---------- save hierarchical struct ----------
                     FINAL_PAIRED_SIGNALS = ensure_pair_fields(FINAL_PAIRED_SIGNALS, subjID, cond, leg);
 
@@ -466,7 +465,8 @@ function f_build_final_paired_signals_from_burst_qc()
     fprintf('Cycle QC rows: %d\n', size(CYCLE_QC_ROWS,1));
 
     if ~isempty(PAIR_QC_ROWS)
-        pairVarNames = { 'subject','condition','leg','pair_name','muscle1','muscle2', 'cycle_number','cycle_start_idx','cycle_end_idx', 'muscle1_cycle_keep','muscle2_cycle_keep', 'pair_cycle_keep','pair_cycle_reason', 'pair_cycle_keep_alpha','pair_cycle_keep_beta','pair_cycle_keep_gamma', 'pair_cycle_reason_alpha','pair_cycle_reason_beta','pair_cycle_reason_gamma'};
+        pairVarNames = { 'subject','condition','leg','pair_name','muscle1','muscle2', 'cycle_number','cycle_start_idx','cycle_end_idx', 'muscle1_cycle_keep','muscle2_cycle_keep', 'pair_cycle_keep','pair_cycle_reason'};
+        pairVarNames = [pairVarNames, strcat('pair_cycle_keep_', lower(bandNames(:)')), strcat('pair_cycle_reason_', lower(bandNames(:)'))];
 
         assert(size(PAIR_QC_ROWS,2) == numel(pairVarNames), 'PAIR_QC_ROWS has %d columns but pairVarNames has %d names.', size(PAIR_QC_ROWS,2), numel(pairVarNames));
 
@@ -477,7 +477,8 @@ function f_build_final_paired_signals_from_burst_qc()
     fprintf('Pair cycle QC rows: %d\n', size(PAIR_QC_ROWS,1));
 
     if ~isempty(SIGNAL_ROWS)
-        FINAL_SIGNAL_SUMMARY = cell2table(SIGNAL_ROWS, 'VariableNames', { 'subject','age_group','condition','leg','pair_name','muscle1','muscle2', 'n_cycles_total','n_valid_cycles','n_removed_cycles', 'included_for_analysis','exclusion_reason', 'final_signal_length_1','final_signal_length_2','fs', 'cycle_source_field_muscle1','cycle_source_field_muscle2','cycle_alignment_note', 'n_valid_cycles_alpha','n_valid_cycles_beta','n_valid_cycles_gamma', 'included_for_analysis_alpha','included_for_analysis_beta','included_for_analysis_gamma' });
+        FINAL_SIGNAL_SUMMARY = cell2table(SIGNAL_ROWS, 'VariableNames', [{ 'subject','age_group','condition','leg','pair_name','muscle1','muscle2', 'n_cycles_total','n_valid_cycles','n_removed_cycles', 'included_for_analysis','exclusion_reason', 'final_signal_length_1','final_signal_length_2','fs', 'cycle_source_field_muscle1','cycle_source_field_muscle2','cycle_alignment_note'}, ...
+            strcat('n_valid_cycles_', lower(bandNames(:)')), strcat('included_for_analysis_', lower(bandNames(:)'))]);
     else
         FINAL_SIGNAL_SUMMARY = table();
     end
@@ -502,9 +503,10 @@ function f_build_final_paired_signals_from_burst_qc()
         FINAL_SIGNAL_SUMMARY.crosstalk_reason = repmat("", height(FINAL_SIGNAL_SUMMARY),1);
 
         FINAL_SIGNAL_SUMMARY.included_after_crosstalk = FINAL_SIGNAL_SUMMARY.included_for_analysis;
-        FINAL_SIGNAL_SUMMARY.included_after_crosstalk_alpha = FINAL_SIGNAL_SUMMARY.included_for_analysis_alpha;
-        FINAL_SIGNAL_SUMMARY.included_after_crosstalk_beta  = FINAL_SIGNAL_SUMMARY.included_for_analysis_beta;
-        FINAL_SIGNAL_SUMMARY.included_after_crosstalk_gamma = FINAL_SIGNAL_SUMMARY.included_for_analysis_gamma;
+        for ib = 1:numel(bandNames)
+            b = lower(bandNames{ib});
+            FINAL_SIGNAL_SUMMARY.(['included_after_crosstalk_' b]) = FINAL_SIGNAL_SUMMARY.(['included_for_analysis_' b]);
+        end
     end
 
     %% ===================== CYCLE RETENTION METRICS =====================
@@ -526,14 +528,14 @@ function f_build_final_paired_signals_from_burst_qc()
 
     fprintf('\n===================== BAND DIFFERENCE CHECK =====================\n');
     fprintf('Different valid-cycle counts vs overall:\n');
-    fprintf('  Alpha: %d\n', sum(FINAL_SIGNAL_SUMMARY.n_valid_cycles_alpha ~= FINAL_SIGNAL_SUMMARY.n_valid_cycles));
-    fprintf('  Beta:  %d\n', sum(FINAL_SIGNAL_SUMMARY.n_valid_cycles_beta  ~= FINAL_SIGNAL_SUMMARY.n_valid_cycles));
-    fprintf('  Gamma: %d\n', sum(FINAL_SIGNAL_SUMMARY.n_valid_cycles_gamma ~= FINAL_SIGNAL_SUMMARY.n_valid_cycles));
+    for ib = 1:numel(bandNames)
+        fprintf('  %s: %d\n', bandNames{ib}, sum(FINAL_SIGNAL_SUMMARY.(['n_valid_cycles_' lower(bandNames{ib})]) ~= FINAL_SIGNAL_SUMMARY.n_valid_cycles));
+    end
 
     fprintf('Different inclusion status vs overall:\n');
-    fprintf('  Alpha: %d\n', sum(FINAL_SIGNAL_SUMMARY.included_for_analysis_alpha ~= FINAL_SIGNAL_SUMMARY.included_for_analysis));
-    fprintf('  Beta:  %d\n', sum(FINAL_SIGNAL_SUMMARY.included_for_analysis_beta  ~= FINAL_SIGNAL_SUMMARY.included_for_analysis));
-    fprintf('  Gamma: %d\n', sum(FINAL_SIGNAL_SUMMARY.included_for_analysis_gamma ~= FINAL_SIGNAL_SUMMARY.included_for_analysis));
+    for ib = 1:numel(bandNames)
+        fprintf('  %s: %d\n', bandNames{ib}, sum(FINAL_SIGNAL_SUMMARY.(['included_for_analysis_' lower(bandNames{ib})]) ~= FINAL_SIGNAL_SUMMARY.included_for_analysis));
+    end
 
     %% ===================== RECAP: BURST POSITIONS IN EXCLUDED CYCLES =====================
     fprintf('\nBuilding excluded-cycle burst position recap...\n');
@@ -1339,14 +1341,12 @@ function f_build_final_paired_signals_from_burst_qc()
     if ~isempty(FINAL_SIGNAL_SUMMARY)
 
         ANALYZABLE_SIGNALS = FINAL_SIGNAL_SUMMARY(FINAL_SIGNAL_SUMMARY.included_after_crosstalk == true, :);
-        ANALYZABLE_SIGNALS_ALPHA = FINAL_SIGNAL_SUMMARY(FINAL_SIGNAL_SUMMARY.included_after_crosstalk_alpha == true, :);
-        ANALYZABLE_SIGNALS_BETA  = FINAL_SIGNAL_SUMMARY(FINAL_SIGNAL_SUMMARY.included_after_crosstalk_beta == true, :);
-        ANALYZABLE_SIGNALS_GAMMA = FINAL_SIGNAL_SUMMARY(FINAL_SIGNAL_SUMMARY.included_after_crosstalk_gamma == true, :);
-
         RECAP_OVERALL = build_signal_recap_tables(ANALYZABLE_SIGNALS);
-        RECAP_ALPHA   = build_signal_recap_tables(ANALYZABLE_SIGNALS_ALPHA);
-        RECAP_BETA    = build_signal_recap_tables(ANALYZABLE_SIGNALS_BETA);
-        RECAP_GAMMA   = build_signal_recap_tables(ANALYZABLE_SIGNALS_GAMMA);
+        for ib = 1:numel(bandNames)
+            band = bandNames{ib};
+            ANALYZABLE_SIGNALS_BY_BAND.(band) = FINAL_SIGNAL_SUMMARY(FINAL_SIGNAL_SUMMARY.(['included_after_crosstalk_' lower(band)]) == true, :);
+            RECAP_BY_BAND.(band) = build_signal_recap_tables(ANALYZABLE_SIGNALS_BY_BAND.(band));
+        end
 
         % Backward-compatible overall variables
         RECAP_BY_AGE                = RECAP_OVERALL.by_age;
@@ -1363,20 +1363,17 @@ function f_build_final_paired_signals_from_burst_qc()
         fprintf('Exclusion method(s) applied: %s\n', strjoin(activeRules, ", "));
 
         print_signal_recap_block('OVERALL', ANALYZABLE_SIGNALS, RECAP_OVERALL);
-        print_signal_recap_block('ALPHA',   ANALYZABLE_SIGNALS_ALPHA, RECAP_ALPHA);
-        print_signal_recap_block('BETA',    ANALYZABLE_SIGNALS_BETA,  RECAP_BETA);
-        print_signal_recap_block('GAMMA',   ANALYZABLE_SIGNALS_GAMMA, RECAP_GAMMA);
+        for ib = 1:numel(bandNames)
+            print_signal_recap_block(upper(bandNames{ib}), ANALYZABLE_SIGNALS_BY_BAND.(bandNames{ib}), RECAP_BY_BAND.(bandNames{ib}));
+        end
 
     else
         ANALYZABLE_SIGNALS       = table();
-        ANALYZABLE_SIGNALS_ALPHA = table();
-        ANALYZABLE_SIGNALS_BETA  = table();
-        ANALYZABLE_SIGNALS_GAMMA = table();
-
         RECAP_OVERALL = init_empty_signal_recap();
-        RECAP_ALPHA   = init_empty_signal_recap();
-        RECAP_BETA    = init_empty_signal_recap();
-        RECAP_GAMMA   = init_empty_signal_recap();
+        for ib = 1:numel(bandNames)
+            ANALYZABLE_SIGNALS_BY_BAND.(bandNames{ib}) = table();
+            RECAP_BY_BAND.(bandNames{ib}) = init_empty_signal_recap();
+        end
 
         RECAP_BY_AGE                = table();
         RECAP_BY_CONDITION          = table();
@@ -1391,9 +1388,9 @@ function f_build_final_paired_signals_from_burst_qc()
     if ~isempty(ANALYZABLE_SIGNALS)
 
         PARTICIPANT_RECAP_OVERALL = build_participant_recap_tables(ANALYZABLE_SIGNALS);
-        PARTICIPANT_RECAP_ALPHA   = build_participant_recap_tables(ANALYZABLE_SIGNALS_ALPHA);
-        PARTICIPANT_RECAP_BETA    = build_participant_recap_tables(ANALYZABLE_SIGNALS_BETA);
-        PARTICIPANT_RECAP_GAMMA   = build_participant_recap_tables(ANALYZABLE_SIGNALS_GAMMA);
+        for ib = 1:numel(bandNames)
+            PARTICIPANT_RECAP_BY_BAND.(bandNames{ib}) = build_participant_recap_tables(ANALYZABLE_SIGNALS_BY_BAND.(bandNames{ib}));
+        end
 
         % Backward-compatible overall variables
         PARTICIPANT_SUMMARY = PARTICIPANT_RECAP_OVERALL.summary;
@@ -1406,15 +1403,15 @@ function f_build_final_paired_signals_from_burst_qc()
         fprintf('\n===================== PARTICIPANT-LEVEL RECAP =====================\n');
 
         print_participant_recap_block('OVERALL', PARTICIPANT_RECAP_OVERALL);
-        print_participant_recap_block('ALPHA',   PARTICIPANT_RECAP_ALPHA);
-        print_participant_recap_block('BETA',    PARTICIPANT_RECAP_BETA);
-        print_participant_recap_block('GAMMA',   PARTICIPANT_RECAP_GAMMA);
+        for ib = 1:numel(bandNames)
+            print_participant_recap_block(upper(bandNames{ib}), PARTICIPANT_RECAP_BY_BAND.(bandNames{ib}));
+        end
 
     else
         PARTICIPANT_RECAP_OVERALL = init_empty_participant_recap();
-        PARTICIPANT_RECAP_ALPHA   = init_empty_participant_recap();
-        PARTICIPANT_RECAP_BETA    = init_empty_participant_recap();
-        PARTICIPANT_RECAP_GAMMA   = init_empty_participant_recap();
+        for ib = 1:numel(bandNames)
+            PARTICIPANT_RECAP_BY_BAND.(bandNames{ib}) = init_empty_participant_recap();
+        end
 
         PARTICIPANT_SUMMARY = table();
         RECAP_PARTICIPANTS_BY_AGE = table();
@@ -1429,9 +1426,9 @@ function f_build_final_paired_signals_from_burst_qc()
     if ~isempty(ANALYZABLE_SIGNALS)
 
         PARTICIPANT_PAIR_RECAP_OVERALL = build_participant_pair_recap_tables(ANALYZABLE_SIGNALS);
-        PARTICIPANT_PAIR_RECAP_ALPHA   = build_participant_pair_recap_tables(ANALYZABLE_SIGNALS_ALPHA);
-        PARTICIPANT_PAIR_RECAP_BETA    = build_participant_pair_recap_tables(ANALYZABLE_SIGNALS_BETA);
-        PARTICIPANT_PAIR_RECAP_GAMMA   = build_participant_pair_recap_tables(ANALYZABLE_SIGNALS_GAMMA);
+        for ib = 1:numel(bandNames)
+            PARTICIPANT_PAIR_RECAP_BY_BAND.(bandNames{ib}) = build_participant_pair_recap_tables(ANALYZABLE_SIGNALS_BY_BAND.(bandNames{ib}));
+        end
 
         % Backward-compatible overall variables
         PARTICIPANT_SUMMARY_BY_PAIR = PARTICIPANT_PAIR_RECAP_OVERALL.summary_by_pair;
@@ -1445,15 +1442,15 @@ function f_build_final_paired_signals_from_burst_qc()
         fprintf('\n===================== PARTICIPANT-LEVEL RECAP PER PAIR =====================\n');
 
         print_participant_pair_recap_block('OVERALL', PARTICIPANT_PAIR_RECAP_OVERALL);
-        print_participant_pair_recap_block('ALPHA',   PARTICIPANT_PAIR_RECAP_ALPHA);
-        print_participant_pair_recap_block('BETA',    PARTICIPANT_PAIR_RECAP_BETA);
-        print_participant_pair_recap_block('GAMMA',   PARTICIPANT_PAIR_RECAP_GAMMA);
+        for ib = 1:numel(bandNames)
+            print_participant_pair_recap_block(upper(bandNames{ib}), PARTICIPANT_PAIR_RECAP_BY_BAND.(bandNames{ib}));
+        end
 
     else
         PARTICIPANT_PAIR_RECAP_OVERALL = init_empty_participant_pair_recap();
-        PARTICIPANT_PAIR_RECAP_ALPHA   = init_empty_participant_pair_recap();
-        PARTICIPANT_PAIR_RECAP_BETA    = init_empty_participant_pair_recap();
-        PARTICIPANT_PAIR_RECAP_GAMMA   = init_empty_participant_pair_recap();
+        for ib = 1:numel(bandNames)
+            PARTICIPANT_PAIR_RECAP_BY_BAND.(bandNames{ib}) = init_empty_participant_pair_recap();
+        end
 
         PARTICIPANT_SUMMARY_BY_PAIR = table();
         RECAP_PARTICIPANTS_BY_PAIR = table();
@@ -1726,26 +1723,15 @@ function f_build_final_paired_signals_from_burst_qc()
 
     fprintf('\nBuilding merged recap master tables...\n');
 
-    RECAP_MASTER_SIGNAL_BY_PAIR_BAND = [
-        build_master_signal_recap_by_pair_band(ANALYZABLE_SIGNALS,       "OVERALL")
-        build_master_signal_recap_by_pair_band(ANALYZABLE_SIGNALS_ALPHA, "ALPHA")
-        build_master_signal_recap_by_pair_band(ANALYZABLE_SIGNALS_BETA,  "BETA")
-        build_master_signal_recap_by_pair_band(ANALYZABLE_SIGNALS_GAMMA, "GAMMA")
-    ];
-
-    RECAP_MASTER_PARTICIPANT_BY_PAIR_BAND = [
-        build_master_participant_recap_by_pair_band(ANALYZABLE_SIGNALS,       "OVERALL")
-        build_master_participant_recap_by_pair_band(ANALYZABLE_SIGNALS_ALPHA, "ALPHA")
-        build_master_participant_recap_by_pair_band(ANALYZABLE_SIGNALS_BETA,  "BETA")
-        build_master_participant_recap_by_pair_band(ANALYZABLE_SIGNALS_GAMMA, "GAMMA")
-    ];
-
-    RECAP_MASTER_CYCLE_DISTRIBUTION_BY_PAIR_BAND = [
-        build_master_cycle_distribution_by_pair_band(FINAL_SIGNAL_SUMMARY, "OVERALL", "included_after_crosstalk",       "n_valid_cycles")
-        build_master_cycle_distribution_by_pair_band(FINAL_SIGNAL_SUMMARY, "ALPHA",   "included_after_crosstalk_alpha", "n_valid_cycles_alpha")
-        build_master_cycle_distribution_by_pair_band(FINAL_SIGNAL_SUMMARY, "BETA",    "included_after_crosstalk_beta",  "n_valid_cycles_beta")
-        build_master_cycle_distribution_by_pair_band(FINAL_SIGNAL_SUMMARY, "GAMMA",   "included_after_crosstalk_gamma", "n_valid_cycles_gamma")
-    ];
+    RECAP_MASTER_SIGNAL_BY_PAIR_BAND = build_master_signal_recap_by_pair_band(ANALYZABLE_SIGNALS, "OVERALL");
+    RECAP_MASTER_PARTICIPANT_BY_PAIR_BAND = build_master_participant_recap_by_pair_band(ANALYZABLE_SIGNALS, "OVERALL");
+    RECAP_MASTER_CYCLE_DISTRIBUTION_BY_PAIR_BAND = build_master_cycle_distribution_by_pair_band(FINAL_SIGNAL_SUMMARY, "OVERALL", "included_after_crosstalk", "n_valid_cycles");
+    for ib = 1:numel(bandNames)
+        band = bandNames{ib};
+        RECAP_MASTER_SIGNAL_BY_PAIR_BAND = [RECAP_MASTER_SIGNAL_BY_PAIR_BAND; build_master_signal_recap_by_pair_band(ANALYZABLE_SIGNALS_BY_BAND.(band), upper(band))]; %#ok<AGROW>
+        RECAP_MASTER_PARTICIPANT_BY_PAIR_BAND = [RECAP_MASTER_PARTICIPANT_BY_PAIR_BAND; build_master_participant_recap_by_pair_band(ANALYZABLE_SIGNALS_BY_BAND.(band), upper(band))]; %#ok<AGROW>
+        RECAP_MASTER_CYCLE_DISTRIBUTION_BY_PAIR_BAND = [RECAP_MASTER_CYCLE_DISTRIBUTION_BY_PAIR_BAND; build_master_cycle_distribution_by_pair_band(FINAL_SIGNAL_SUMMARY, upper(band), ['included_after_crosstalk_' lower(band)], ['n_valid_cycles_' lower(band)])]; %#ok<AGROW>
+    end
 
     writetable(RECAP_MASTER_SIGNAL_BY_PAIR_BAND, fullfile(IO.recap_xlsx_dir, 'RECAP_MASTER_SIGNAL_BY_PAIR_BAND.xlsx'));
 
@@ -1760,22 +1746,20 @@ function f_build_final_paired_signals_from_burst_qc()
     fprintf('\nBuilding exported band-specific FINAL_PAIRED_SIGNALS files...\n');
 
     FINAL_PAIRED_SIGNALS_OVERALL = build_export_final_paired_signals(FINAL_PAIRED_SIGNALS, "overall");
-    FINAL_PAIRED_SIGNALS_ALPHA   = build_export_final_paired_signals(FINAL_PAIRED_SIGNALS, "Alpha");
-    FINAL_PAIRED_SIGNALS_BETA    = build_export_final_paired_signals(FINAL_PAIRED_SIGNALS, "Beta");
-    FINAL_PAIRED_SIGNALS_GAMMA   = build_export_final_paired_signals(FINAL_PAIRED_SIGNALS, "Gamma");
 
     fprintf('Saving:\n  %s\n', IO.out_mat_overall);
     save(IO.out_mat_overall, 'FINAL_PAIRED_SIGNALS_OVERALL', '-v7.3');
 
-    fprintf('Saving:\n  %s\n', IO.out_mat_alpha);
-    save(IO.out_mat_alpha, 'FINAL_PAIRED_SIGNALS_ALPHA', '-v7.3');
+    % One file per band, holding one variable FINAL_PAIRED_SIGNALS_<BAND>
+    for ib = 1:numel(bandNames)
+        band = bandNames{ib};
+        BAND_EXPORT = struct();
+        BAND_EXPORT.(['FINAL_PAIRED_SIGNALS_' upper(band)]) = build_export_final_paired_signals(FINAL_PAIRED_SIGNALS, band, bandNames);
+        fprintf('Saving:\n  %s\n', IO.out_mat_band.(band));
+        save(IO.out_mat_band.(band), '-struct', 'BAND_EXPORT', '-v7.3');
+        clear BAND_EXPORT
+    end
 
-    fprintf('Saving:\n  %s\n', IO.out_mat_beta);
-    save(IO.out_mat_beta, 'FINAL_PAIRED_SIGNALS_BETA', '-v7.3');
-
-    fprintf('Saving:\n  %s\n', IO.out_mat_gamma);
-    save(IO.out_mat_gamma, 'FINAL_PAIRED_SIGNALS_GAMMA', '-v7.3');
-
-    save(IO.out_mat, 'FINAL_PAIRED_SIGNALS', 'CYCLE_QC_TABLE', 'PAIR_CYCLE_QC_TABLE', 'FINAL_SIGNAL_SUMMARY', 'ANALYZABLE_SIGNALS', 'RECAP_BY_AGE', 'RECAP_BY_CONDITION', 'RECAP_BY_PAIR', 'RECAP_BY_AGE_CONDITION', 'RECAP_BY_PAIR_AGE', 'RECAP_BY_PAIR_CONDITION', 'RECAP_BY_PAIR_AGE_CONDITION', 'PARTICIPANT_SUMMARY', 'RECAP_PARTICIPANTS_BY_AGE', 'RECAP_PARTICIPANTS_BY_CONDITION', 'RECAP_PARTICIPANTS_BY_AGE_CONDITION', 'RECAP_SIGNALS_PER_PARTICIPANT_BY_AGE', 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_AGE', 'PARTICIPANT_SUMMARY_BY_PAIR', 'RECAP_PARTICIPANTS_BY_PAIR', 'RECAP_PARTICIPANTS_BY_PAIR_AGE', 'RECAP_SIGNALS_PER_PARTICIPANT_BY_PAIR_AGE', 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_PAIR_AGE', 'ANALYZABLE_SIGNALS_ALPHA', 'ANALYZABLE_SIGNALS_BETA', 'ANALYZABLE_SIGNALS_GAMMA', 'RECAP_ALPHA', 'RECAP_BETA', 'RECAP_GAMMA', 'PARTICIPANT_RECAP_ALPHA', 'PARTICIPANT_RECAP_BETA', 'PARTICIPANT_RECAP_GAMMA', 'PARTICIPANT_PAIR_RECAP_ALPHA', 'PARTICIPANT_PAIR_RECAP_BETA', 'PARTICIPANT_PAIR_RECAP_GAMMA', 'CROSSTALK_QC_TABLE', 'CROSSTALK_QC_SUSPICIOUS', 'IO', 'P', 'PL', '-v7.3');
+    save(IO.out_mat, 'FINAL_PAIRED_SIGNALS', 'CYCLE_QC_TABLE', 'PAIR_CYCLE_QC_TABLE', 'FINAL_SIGNAL_SUMMARY', 'ANALYZABLE_SIGNALS', 'RECAP_BY_AGE', 'RECAP_BY_CONDITION', 'RECAP_BY_PAIR', 'RECAP_BY_AGE_CONDITION', 'RECAP_BY_PAIR_AGE', 'RECAP_BY_PAIR_CONDITION', 'RECAP_BY_PAIR_AGE_CONDITION', 'PARTICIPANT_SUMMARY', 'RECAP_PARTICIPANTS_BY_AGE', 'RECAP_PARTICIPANTS_BY_CONDITION', 'RECAP_PARTICIPANTS_BY_AGE_CONDITION', 'RECAP_SIGNALS_PER_PARTICIPANT_BY_AGE', 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_AGE', 'PARTICIPANT_SUMMARY_BY_PAIR', 'RECAP_PARTICIPANTS_BY_PAIR', 'RECAP_PARTICIPANTS_BY_PAIR_AGE', 'RECAP_SIGNALS_PER_PARTICIPANT_BY_PAIR_AGE', 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_PAIR_AGE', 'ANALYZABLE_SIGNALS_BY_BAND', 'RECAP_BY_BAND', 'PARTICIPANT_RECAP_BY_BAND', 'PARTICIPANT_PAIR_RECAP_BY_BAND', 'CROSSTALK_QC_TABLE', 'CROSSTALK_QC_SUSPICIOUS', 'IO', 'P', 'PL', '-v7.3');
     fprintf('Updated mat file with recap tables.\n');
 end

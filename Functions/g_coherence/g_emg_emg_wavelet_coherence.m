@@ -800,9 +800,9 @@ function g_emg_emg_wavelet_coherence()
                         % ---------- Cycle-level QC from per-cycle coherence ----------
                         R.CycleBandCoherence = struct();
                         R.CycleBandCoherence.cycle_number = (1:height(Tseg))';
-                        R.CycleBandCoherence.Alpha        = core.alpha_by_cycle;
-                        R.CycleBandCoherence.Beta         = core.beta_by_cycle;
-                        R.CycleBandCoherence.Gamma        = core.gamma_by_cycle;
+                        for bandName = fieldnames(core.band_by_cycle)'
+                            R.CycleBandCoherence.(bandName{1}) = core.band_by_cycle.(bandName{1});
+                        end
                         R.CycleBandCoherence.FullRange    = core.fullrange_by_cycle;
                         R.CycleBandCoherence.analysis_cycle_mask = analysis_cycle_mask;
                         R.CycleBandCoherence.mask_real_outer = mask_real_outer;
