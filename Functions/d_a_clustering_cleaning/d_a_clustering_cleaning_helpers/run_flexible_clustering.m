@@ -248,12 +248,6 @@ function db = compute_davies_bouldin(X, idx, C)
 
     db = mean(max(R, [], 2, 'omitnan'), 'omitnan');
 end
-
-
-function out = make_valid_fieldname(x)
-    out = matlab.lang.makeValidName(char(string(x)));
-end
-
 function r = tiedrank_with_nan(x)
     r = nan(size(x));
     ok = ~isnan(x);

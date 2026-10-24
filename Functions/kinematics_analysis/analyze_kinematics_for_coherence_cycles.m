@@ -694,24 +694,3 @@ end
 function out = sanitize_file_part(x)
     out = regexprep(char(string(x)), '[^a-zA-Z0-9_\\-]', '_');
 end
-
-function S = ensure_field(S, f, defaultVal)
-    if ~isfield(S, f) || isempty(S.(f))
-        S.(f) = defaultVal;
-    end
-end
-
-function val = get_nested_or_default(S, path, defaultVal)
-    val = defaultVal;
-    cur = S;
-    for i = 1:numel(path)
-        f = path{i};
-        if ~isstruct(cur) || ~isfield(cur, f)
-            return;
-        end
-        cur = cur.(f);
-    end
-    if ~isempty(cur)
-        val = cur;
-    end
-end

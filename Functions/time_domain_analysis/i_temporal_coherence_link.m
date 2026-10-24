@@ -975,56 +975,6 @@ function val = get_scalar_from_result(R, bandName, metricScope, coherenceSource,
         val = NaN;
     end
 end
-
-function tf = result_has_poi(R)
-
-    tf = isfield(R, 'POI') && isfield(R.POI, 'has_poi') && R.POI.has_poi && isfield(R.POI, 'indices') && ~isempty(R.POI.indices);
-end
-
-function R = get_nested_result(S, subjID, cond, leg, pairName)
-
-    R = [];
-
-    try
-        if ~isstruct(S), return; end
-        if ~isfield(S, subjID), return; end
-        if ~isfield(S.(subjID), cond), return; end
-        if ~isfield(S.(subjID).(cond), leg), return; end
-        if ~isfield(S.(subjID).(cond).(leg), pairName), return; end
-
-        R = S.(subjID).(cond).(leg).(pairName);
-    catch
-        R = [];
-    end
-end
-
-function out = union_of_nested_fields(structList, fieldPath)
-
-    out = {};
-
-    for i = 1:numel(structList)
-
-        S = structList{i};
-
-        try
-            T = S;
-
-            for j = 1:numel(fieldPath)
-                if ~isstruct(T) || ~isfield(T, fieldPath{j})
-                    T = [];
-                    break;
-                end
-                T = T.(fieldPath{j});
-            end
-
-            if isstruct(T)
-                out = union(out, fieldnames(T));
-            end
-        catch
-        end
-    end
-end
-
 function age_group = subject_to_group(subjID, C)
 
     age_group = "Unknown";
@@ -1035,25 +985,6 @@ function age_group = subject_to_group(subjID, C)
         end
     end
 end
-
-function c = get_age_color(ageName, C)
-
-    if isfield(C.plotting.colors, char(string(ageName)))
-        c = C.plotting.colors.(char(string(ageName)));
-    else
-        c = [0.4 0.4 0.4];
-    end
-end
-
-function c = get_condition_color(condName, C)
-
-    if isfield(C.plotting.colors, char(string(condName)))
-        c = C.plotting.colors.(char(string(condName)));
-    else
-        c = [0.4 0.4 0.4];
-    end
-end
-
 function z = zscore_safe(x)
 
     z = x;

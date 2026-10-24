@@ -16,6 +16,7 @@ New to the repository? In this order:
 3. [docs/data_structures.md](docs/data_structures.md): what is inside the saved `.mat` files, field by field.
 4. [docs/reproduce.md](docs/reproduce.md): how to regenerate the results and check them.
 5. [docs/acquisition.md](docs/acquisition.md): how the EMG was recorded, why only ≥ 20 Hz is analysed, and the current results.
+6. Before changing code: [docs/conventions.md](docs/conventions.md).
 
 This README is the reference for everything else.
 
@@ -93,6 +94,7 @@ EMG-EMG-coh/
 ├── docs/
 │   ├── overview.md                  # start here: the pipeline on one page, glossary
 │   ├── data_structures.md           # what is inside the saved .mat files
+│   ├── conventions.md               # where code goes, how functions are written, how to change code safely
 │   ├── acquisition.md               # recording hardware, filters, why >= 20 Hz, current results
 │   └── reproduce.md                 # how to regenerate and check the reported results
 ├── Tools/

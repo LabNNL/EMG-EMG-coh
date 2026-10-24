@@ -390,16 +390,3 @@ function fs = get_fs_emg_default(C)
         fs = 2000;
     end
 end
-
-function frame = analog_sample_to_marker_frame(sampleIdx, fsAnalog, fsMarker)
-    frame = round((double(sampleIdx) - 1) / double(fsAnalog) * double(fsMarker)) + 1;
-    frame = max(1, frame);
-end
-
-function other = opposite_leg(leg)
-    if strcmpi(leg, 'left')
-        other = 'right';
-    else
-        other = 'left';
-    end
-end

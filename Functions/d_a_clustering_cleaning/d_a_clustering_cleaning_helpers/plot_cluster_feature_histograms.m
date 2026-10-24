@@ -73,7 +73,3 @@ function plot_cluster_feature_histograms(T, CLUSTER_RESULTS, featureVars, outDir
         % close(fig);
     end
 end
-
-function out = make_valid_fieldname(x)
-    out = matlab.lang.makeValidName(char(string(x)));
-end

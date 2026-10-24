@@ -337,18 +337,6 @@ function x = extract_profile_from_valid_cycles(VC, iC, P)
         x = VC.(char(sigName)){iC};
     end
 end
-
-function plot_mean_sem(ax, X, col, labelText, alphaVal)
-    if isempty(X), return; end
-
-    M = mean(X, 1, 'omitnan');
-    S = std(X, 0, 1, 'omitnan') ./ sqrt(size(X,1));
-    x = linspace(0, 100, numel(M));
-
-    fill(ax, [x fliplr(x)], [M-S fliplr(M+S)], col, 'FaceAlpha', alphaVal, 'EdgeColor', 'none', 'HandleVisibility', 'off');
-    plot(ax, x, M, 'LineWidth', 2, 'Color', col, 'DisplayName', labelText);
-end
-
 function format_activation_axis(ax, P)
     xlabel(ax, 'Gait cycle (%)');
     ylabel(ax, get_ylabel_text(P));
@@ -384,15 +372,6 @@ function ytxt = get_ylabel_text(P)
             error('Unknown normalization_mode: %s', modeName);
     end
 end
-
-function col = get_color_safe(colorStruct, fieldName, fallback)
-    if isfield(colorStruct, fieldName)
-        col = colorStruct.(fieldName);
-    else
-        col = fallback;
-    end
-end
-
 function plot_toeoff_line(ax, toeFrac)
     xline(ax, 100 * toeFrac, '--', 'Color', [0.3 0.3 0.3], 'HandleVisibility', 'off');
 end
@@ -641,33 +620,6 @@ function fig = plot_activation_profile_all_pooled(TD, subjFields, muscleName, P,
         grid(ax2, 'on');
     end
 end
-
-function prettymuscleName = prettymuscle(muscleName)
-    % Convert internal muscle names to more readable format
-    % Take out EMG and Concat first
-    prettymuscleName = regexprep(muscleName, 'EMG_|_Concat', '');
-    % Replace underscores with spaces
-    prettymuscleName = strrep(prettymuscleName, '_', ' ');
-    %if contains TA replace by 'Tibialis Anterior'
-    if contains(prettymuscleName, 'TAdist')
-        prettymuscleName = strrep(prettymuscleName, 'TAdist', 'Tibialis Anterior dist');
-    elseif contains(prettymuscleName, 'TAprox')
-        prettymuscleName = strrep(prettymuscleName, 'TAprox', 'Tibialis Anterior prox');
-    elseif contains(prettymuscleName, 'SOL')
-        prettymuscleName = strrep(prettymuscleName, 'SOL', 'Soleus');
-    elseif contains(prettymuscleName, 'GMED')
-        prettymuscleName = strrep(prettymuscleName, 'GMED', 'Gluteus Medius');
-    elseif contains(prettymuscleName, 'GM')
-        prettymuscleName = strrep(prettymuscleName, 'GM', 'Gastrocnemius Medialis');
-    elseif contains(prettymuscleName, 'VL')
-        prettymuscleName = strrep(prettymuscleName, 'VL', 'Vastus Lateralis');
-    elseif contains(prettymuscleName, 'RF')
-        prettymuscleName = strrep(prettymuscleName, 'RF', 'Rectus Femoris');
-    elseif contains(prettymuscleName, 'ST')
-        prettymuscleName = strrep(prettymuscleName, 'ST', 'Semitendinosus');
-    end
-end
-
 function [Y, subjectIDs] = collect_subject_mean_envelopes(TD, subjFields, muscleName, condName, ageName)
 
     subjectMeans = {};
