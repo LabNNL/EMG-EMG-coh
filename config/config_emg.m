@@ -55,12 +55,20 @@ C.physio.gait_phases.terminal_swing = struct('start_pct', 87, 'end_pct', 100);
 
 %% ===================== PATHS =====================
 
-% !!!!!!!!!!!!!!!!!!!!!!!!!
-% UPDATE THE FOLLOWING PATHS TO YOUR FOLDER STRUCTURE
-% !!!!!!!!!!!!!!!!!!!!!!!!!
+% The data location is machine-specific and lives in config/local_paths.m,
+% which is git-ignored. Copy config/local_paths.template.m to create it.
+% The code directory is derived from this file's own location.
 
-C.paths.project_data_root = '/Users/liogr/Documents/MyDocuments/Etudes/Master/MA4_Internship_LNNL/Coherence'; %TODO: Update this to your project root directory
-C.paths.code_dir        = '/Users/liogr/Library/CloudStorage/OneDrive-Bibliothèquespartagées-UniversitedeMontreal/Yosra Cherni - Lio Grienenberger - MSc epfl/Codes/EMG-EMG-coh'; %TODO: Update this to your code directory
+if exist('local_paths', 'file') ~= 2
+    error('config_emg:missingLocalPaths', ...
+        ['config/local_paths.m not found.\n' ...
+         'Copy config/local_paths.template.m to config/local_paths.m ' ...
+         'and set project_data_root to your data folder.']);
+end
+
+LP = local_paths();
+C.paths.project_data_root = LP.project_data_root;
+C.paths.code_dir      = fileparts(fileparts(mfilename('fullpath')));
 C.paths.functions_dir = fullfile(C.paths.code_dir, 'Functions');
 
 if exist(C.paths.functions_dir, 'dir')

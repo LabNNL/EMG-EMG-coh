@@ -97,18 +97,29 @@ Each stage folder has one entry function named after the folder plus a `*_helper
 
 ## Setup
 
-1. Open [config/config_emg.m](config/config_emg.m) and set the two machine-specific paths at the top of the `PATHS` section:
-   - `C.paths.project_data_root`: folder holding the raw data and the intermediate `.mat` files (outside the repo).
-   - `C.paths.code_dir`: this repository.
-2. Raw `.c3d` files go under `<project_data_root>/Reworked_Data/` (`C.paths.data_dir`), searched recursively. Filenames must match
+1. **Set your data folder.** Copy [config/local_paths.template.m](config/local_paths.template.m) to `config/local_paths.m` and set `project_data_root` to the folder holding your raw data and intermediate `.mat` files. That file is git-ignored, so your paths stay local. The code directory needs no configuration — `config_emg()` derives it from its own location.
+2. **Start MATLAB in the repository root.** [startup.m](startup.m) runs automatically and puts `config/`, `Functions/`, `scripts/` and `Tools/` on the path. If you started MATLAB elsewhere, `cd` here and run `startup` once. Nothing else adds `config/` to the path, so `config_emg()` will not resolve until this has run.
+3. **Raw `.c3d` files** go under `<project_data_root>/Reworked_Data/` (`C.paths.data_dir`), searched recursively. Filenames must match
    `^(?<subjID>[^_]+_[^_]+)_(?<cond>Plat|Medium|High)_(?<ess>\d{2})(?:_NEW)?\.c3d$`, for example `CTL_01_Plat_03.c3d`. Duplicate filenames anywhere in the tree raise an error.
-3. Put the metadata files in `Metadata/`:
+4. **Metadata files** go in `Metadata/`:
    - `Association.m`: per-participant sensor → muscle mapping (`sensor_association_left/right`), used by stage a.
    - `participants_metadata_EMG.csv` (`;`-separated) and `.xlsx`: age in months, sex, height, weight, etc. Used by stages f and h.
    - `Mapping-EMG.xlsm` (sheet `Mapping-ALL`): optional visual QC scores, used by stage e only when `use_visual_mapping = true`.
-4. Run MATLAB **from the repository root**. Some functions build paths from `pwd` (for example h_stats reads `fullfile(pwd,'Metadata',…)`).
 
-`Metadata/` and `Results/` are git-ignored (only `Results/*/png_visualisation/*.png` is tracked), so a fresh clone has neither.
+`Metadata/` and `Results/` are git-ignored, so a fresh clone has neither.
+
+### Checking the repository
+
+`Tools/check_repo.m` runs static checks over the project code and prints a report:
+
+```matlab
+startup
+check_repo                                  % full report
+check_repo('Checks', {'config_missing'})    % one check
+check_repo('Save', 'report.txt')            % also write it to a file
+```
+
+It reports config settings read by code but not defined, config fields assigned twice or never read, duplicate `.m` filenames (which shadow each other depending on path order), functions called but not resolvable, and Code Analyzer messages. `Tools/baseline/CHECK_REPO_BASELINE.txt` holds the reference output to compare against. It lives outside `Functions/` on purpose, since `config_emg()` genpaths that whole tree.
 
 ---
 

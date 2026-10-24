@@ -4,6 +4,9 @@
 # MATLAB
 *.asv
 
+# Machine-specific paths (copy local_paths.template.m to create it)
+config/local_paths.m
+
 # Results
 Results/*
 Results_reworked/*
