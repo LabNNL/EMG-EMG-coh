@@ -930,14 +930,6 @@ function S = ensure_td_pair_fields(S, subjID, cond, leg)
     if ~isfield(S.(subjID).(cond), leg), S.(subjID).(cond).(leg) = struct(); end
 end
 
-function age_group = subject_to_group(subjID, C)
-    age_group = "Unknown";
-    if isfield(C, 'groups') && isa(C.groups, 'containers.Map')
-        if isKey(C.groups, subjID)
-            age_group = string(C.groups(subjID));
-        end
-    end
-end
 
 function merged = merge_segments_local(segs)
     if isempty(segs)

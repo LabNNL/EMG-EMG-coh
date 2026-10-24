@@ -126,7 +126,9 @@ check_repo('Checks', {'config_missing'})    % one check
 check_repo('Save', 'report.txt')            % also write it to a file
 ```
 
-It reports config settings read by code but not defined, config fields assigned twice or never read, duplicate `.m` filenames (which shadow each other depending on path order), functions called but not resolvable, and Code Analyzer messages. `Tools/baseline/CHECK_REPO_BASELINE.txt` holds the reference output to compare against. It lives outside `Functions/` on purpose, since `config_emg()` genpaths that whole tree.
+It reports config settings read by code but not defined, config fields assigned twice or never read, duplicate `.m` filenames, project function names that also resolve outside the repository, functions called but not resolvable, and Code Analyzer messages.
+
+The `shadowed` check is worth watching: if an older copy of this project is still on your saved MATLAB path, its files sit alongside these ones and which copy runs depends on path order. Remove such copies with `pathtool`. `Tools/baseline/CHECK_REPO_BASELINE.txt` holds the reference output to compare against. It lives outside `Functions/` on purpose, since `config_emg()` genpaths that whole tree.
 
 ---
 

@@ -36,13 +36,13 @@
   [error  ] Functions/time_domain_analysis/k_plot_activation_profiles.m:701
              "get_toe_fraction_from_valid_cycles" is called here but resolves to nothing on the path
 
-===== duplicates (3) =====
-  [info   ] Functions/d_a_clustering_cleaning/d_a_clustering_cleaning_helpers/WaveletParameters.m
-             WaveletParameters.m exists 2 times (identical copies): d_a_clustering_cleaning_helpers/WaveletParameters.m | g_coherence_helpers/WaveletParameters.m
-  [error  ] Functions/g_coherence/g_coherence_helpers/keep_present_in_order.m
-             keep_present_in_order.m exists 2 times (DIFFERENT contents): g_coherence_helpers/keep_present_in_order.m | h_stats_helpers/keep_present_in_order.m
-  [error  ] Functions/c_burst_extraction/c_burst_extraction_helpers/logical_to_runs_local.m
-             logical_to_runs_local.m exists 2 times (DIFFERENT contents): c_burst_extraction_helpers/logical_to_runs_local.m | f_final_data_qc_helpers/logical_to_runs_local.m
+===== shadowed (3) =====
+  [warning] /Users/liogr/Library/CloudStorage/OneDrive-Bibliothèquespartagées-UniversitedeMontreal/Yosra Cherni - Lio Grienenberger - MSc epfl/Codes/EMG_Gait_Analysis
+             150 project function name(s) also resolve under this location. The repository copy wins for all of them today, but that depends on path order. Remove it from the MATLAB path.
+  [warning] /Users/liogr/Library/CloudStorage/OneDrive-Bibliothèquespartagées-UniversitedeMontreal/Yosra Cherni - Lio Grienenberger - MSc epfl/Codes/EMG_Gait_Analysis/Functions/c_burst_extraction/c_burst_extraction_helpers
+             1 project function name(s) also resolve under this location. The repository copy wins for all of them today, but that depends on path order. Remove it from the MATLAB path.
+  [warning] /Users/liogr/Library/CloudStorage/OneDrive-Bibliothèquespartagées-UniversitedeMontreal/Yosra Cherni - Lio Grienenberger - MSc epfl/Codes/EMG_Gait_Analysis/Functions/d_a_clustering_cleaning/d_a_clustering_cleaning_helpers
+             1 project function name(s) also resolve under this location. The repository copy wins for all of them today, but that depends on path order. Remove it from the MATLAB path.
 
 ===== config_double (15) =====
   [warning] config/config_emg.m:339
@@ -541,7 +541,7 @@
              C.l_spm.params.amplitude_qc_exclusion_method: leaf name "amplitude_qc_exclusion_method" appears nowhere in the code
 
 ===== summary =====
-  errors   : 19
-  warnings : 15
-  info     : 231
+  errors   : 17
+  warnings : 18
+  info     : 230
   Code Analyzer messages across project files: 333

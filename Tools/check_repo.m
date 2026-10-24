@@ -11,6 +11,7 @@ function cr_findings = check_repo(varargin)
 %   config_missing  C.<path> read by code but not defined by config_emg()
 %   config_dead     config fields assigned but never read (informational)
 %   duplicates      duplicate .m basenames on the project path
+%   shadowed        project function names that also resolve outside the repo
 %   unresolved      functions called but not resolvable from the path
 %   checkcode       MATLAB Code Analyzer messages
 %
@@ -40,6 +41,9 @@ if cr_wants(cr_opt, 'config_dead')
 end
 if cr_wants(cr_opt, 'duplicates')
     cr_findings = [cr_findings; cr_check_duplicates(cr_files)];
+end
+if cr_wants(cr_opt, 'shadowed')
+    cr_findings = [cr_findings; cr_check_shadowed(cr_files, cr_root)];
 end
 if cr_wants(cr_opt, 'unresolved')
     cr_findings = [cr_findings; cr_check_unresolved(cr_src)];
@@ -169,6 +173,60 @@ for k = 1:numel(uniqBase)
     F = cr_add(F, 'duplicates', sev, files{idx(1)}, 0, ...
         sprintf('%s.m exists %d times (%s): %s', uniqBase{k}, numel(idx), what, ...
         strjoin(cellfun(@(p) cr_relpath(p), files(idx), 'UniformOutput', false), ' | ')));
+end
+end
+
+function F = cr_check_shadowed(files, root)
+% A project function name that also resolves somewhere outside this
+% repository. Typically an older copy of the project left on the saved
+% MATLAB path: if the path order ever changes, that copy runs instead.
+% Reported one line per outside location rather than per function: a stale
+% copy of the whole project shadows hundreds of names at once.
+F = cr_empty_findings();
+[~, base] = cellfun(@fileparts, files, 'UniformOutput', false);
+
+roots = containers.Map('KeyType', 'char', 'ValueType', 'any');
+for k = 1:numel(base)
+    hits = which(base{k}, '-all');
+    % built-ins and overloaded methods report as text, not as a path
+    outside = hits(~startsWith(hits, root) & startsWith(hits, filesep));
+    if isempty(outside)
+        continue
+    end
+    rel = cr_relpath_root(files{k}, root);
+    for j = 1:numel(outside)
+        otherRoot = outside{j};
+        if endsWith(otherRoot, rel)
+            otherRoot = extractBefore(otherRoot, numel(otherRoot) - numel(rel));
+        else
+            otherRoot = fileparts(otherRoot);
+        end
+        if ~isKey(roots, otherRoot)
+            roots(otherRoot) = struct('n', 0, 'losers', {{}});
+        end
+        e = roots(otherRoot);
+        e.n = e.n + 1;
+        if ~startsWith(hits{1}, root)
+            e.losers{end+1} = base{k};
+        end
+        roots(otherRoot) = e;
+    end
+end
+
+keysOut = keys(roots);
+for k = 1:numel(keysOut)
+    e = roots(keysOut{k});
+    if isempty(e.losers)
+        F = cr_add(F, 'shadowed', 'warning', keysOut{k}, 0, sprintf( ...
+            ['%d project function name(s) also resolve under this location. ' ...
+             'The repository copy wins for all of them today, but that ' ...
+             'depends on path order. Remove it from the MATLAB path.'], e.n));
+    else
+        F = cr_add(F, 'shadowed', 'error', keysOut{k}, 0, sprintf( ...
+            ['%d project function name(s) also resolve under this location, ' ...
+             'and the OUTSIDE copy wins for %d of them: %s'], ...
+            e.n, numel(e.losers), strjoin(e.losers, ', ')));
+    end
 end
 end
 
@@ -550,8 +608,8 @@ end
 
 function txt = cr_format_report(F, root)
 buf = strings(0, 1);
-order = {'config_missing', 'unresolved', 'duplicates', 'config_double', ...
-    'checkcode', 'config_dead'};
+order = {'config_missing', 'unresolved', 'shadowed', 'duplicates', ...
+    'config_double', 'checkcode', 'config_dead'};
 
 for k = 1:numel(order)
     name = order{k};
