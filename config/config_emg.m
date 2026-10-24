@@ -37,21 +37,6 @@ C.physio.phase_windows_pct.VL_RF = struct( ...
     'start_pct', 90, ...
     'end_pct', 30);
 
-% Gait cycle phases 
-C.physio.gait_phases = struct();
-C.physio.gait_phases.stance = struct('start_pct', 0, 'end_pct', 60);
-C.physio.gait_phases.swing = struct('start_pct', 60, 'end_pct', 100);
-C.physio.gait_phases.initial_contact = struct('start_pct', 0, 'end_pct', 100);
-C.physio.gait_phases.weight_acceptance = struct('start_pct', 0, 'end_pct', 10);
-C.physio.gait_phases.single_support = struct('start_pct', 10, 'end_pct', 50);
-C.physio.gait_phases.limb_advancement = struct('start_pct', 50, 'end_pct', 100);
-C.physio.gait_phases.loading_response = struct('start_pct', 0, 'end_pct', 10);
-C.physio.gait_phases.mid_stance = struct('start_pct', 10, 'end_pct', 30);
-C.physio.gait_phases.terminal_stance = struct('start_pct', 30, 'end_pct', 50);
-C.physio.gait_phases.pre_swing = struct('start_pct', 50, 'end_pct', 60);
-C.physio.gait_phases.initial_swing = struct('start_pct', 60, 'end_pct', 73);
-C.physio.gait_phases.mid_swing = struct('start_pct', 73, 'end_pct', 87);
-C.physio.gait_phases.terminal_swing = struct('start_pct', 87, 'end_pct', 100);
 
 %% ===================== PATHS =====================
 
@@ -294,13 +279,9 @@ C.a_extract_raw.files.recap_cycles_per_participant_age_csv = fullfile(C.a_extrac
 
 % TO DO : CHANGE THE FOLLOWING TO ADAPT TO YOUR FOLDER STRUCTURE AND NAMING CONVENTIONS
 C.a_extract_raw.input = struct();
-C.a_extract_raw.input.file_extension = '.c3d';
-C.a_extract_raw.input.search_recursively = true;
-C.a_extract_raw.input.filename_mode = 'regex'; 
 % 'regex', 'table', 'custom_function'
 C.a_extract_raw.input.filename_regex = ...
     '^(?<subjID>[^_]+_[^_]+)_(?<cond>Plat|Medium|High)_(?<ess>\d{2})(?:_NEW)?\.c3d$';
-C.a_extract_raw.input.allow_new_suffix = true;
 C.a_extract_raw.input.prefer_standard_over_new = false; % If true and multiple files match (e.g. both *_RAW_CYCLES_CONCAT.mat and *_RAW_CYCLES_CONCAT_NEW.mat exist), it will prefer the one without _NEW. Set to false if you want to prefer the _NEW version instead.
 C.a_extract_raw.input.ignore_unmatched_files = true;   % but log them
 C.a_extract_raw.design = struct();
@@ -330,24 +311,12 @@ C.a_extract_raw.mapping.mode = 'association_script';
 % 'association_script', 'fixed_names', 'mapping_table', 'custom_function'
 C.a_extract_raw.mapping.association_script = fullfile(C.paths.code_dir, 'Metadata', 'Association.m');
 
-C.a_extract_raw.mapping.fixed_names.left = struct();
+% Used only when mapping.mode is 'fixed_names'; filled in per project.
+C.a_extract_raw.mapping.fixed_names.left  = struct();
 C.a_extract_raw.mapping.fixed_names.right = struct();
 
-C.a_extract_raw.fallbacks = struct();
-
-C.a_extract_raw.fallbacks.skip_missing_files = true;
-C.a_extract_raw.fallbacks.skip_missing_leg_events = true;
-C.a_extract_raw.fallbacks.skip_missing_muscle_channels = true;
-C.a_extract_raw.fallbacks.allow_partial_leg_output = true;
-C.a_extract_raw.fallbacks.allow_partial_condition_output = true;
-C.a_extract_raw.fallbacks.continue_on_file_error = true;
 
 C.a_extract_raw.output = struct();
-C.a_extract_raw.output.save_segments = false;
-C.a_extract_raw.output.save_toe_off = true;
-C.a_extract_raw.output.save_trial_provenance = true;
-C.a_extract_raw.output.save_example_figure = true;
-C.a_extract_raw.output.inspect_one_mat_file = true;
 C.a_extract_raw.output.generate_example_figures = true; % If true, will generate example figures for each subject showing the raw signal with detected events and extracted cycles. Saved in RAW_PLOT_DIR.
 
 %% ===================== EMG CHANNEL DETECTION =====================
@@ -370,13 +339,10 @@ C.a_extract_raw.channels.left_keywords  = ["_L"," L","Left","left"];
 C.a_extract_raw.channels.right_keywords = ["_R"," R","Right","right"];
 
 % Behavior
-C.a_extract_raw.channels.allow_partial_mapping = true;
 C.a_extract_raw.missing = struct();
-C.a_extract_raw.missing.allow_missing_muscles = true;
 % Minimum required per muscle to keep it
 C.a_extract_raw.missing.min_cycles_per_muscle = 0; % set to 0 to keep all muscles regardless of number of cycles, or set to a higher number if you want to exclude muscles with too few cycles (e.g. due to missing channels)
 % Minimum required per pair (important later)
-C.a_extract_raw.missing.min_cycles_per_pair = 0;
 
 %% ===================== MARKER EXTRACTION =====================
 C.a_extract_raw.markers = struct();
@@ -404,7 +370,6 @@ C.b_preproc.plot_seconds = 10; % When plotting random examples for QC, how many 
 C.b_preproc.input_pattern = '*_RAW_CYCLES_CONCAT.mat';
 C.b_preproc.output_suffix = '_EMG_PREPROC.mat';
 
-C.b_preproc.overwrite = true;
 C.b_preproc.inspect_one_output = true;
 C.b_preproc.inspect_depth = 3;
 
@@ -520,7 +485,6 @@ C.d_clustering.io.cluster_dir = C.paths.clustering_dir;
 C.d_clustering.io.csv_dir = fullfile(C.paths.results_dir, 'd_a_clustering_cleaning', 'csv_clustering_results');
 C.d_clustering.io.plot_dir = fullfile(C.paths.plot_dir, 'd_a_clustering_cleaning', 'cluster_decision_plots');
 
-C.d_clustering.io.input_mat = 'BURST_FEATURES.mat';
 C.d_clustering.io.output_clustered_csv = 'BURST_FEATURES_WITH_CLUSTERS.csv';
 C.d_clustering.io.output_results_mat = 'CLUSTER_RESULTS.mat';
 
@@ -649,7 +613,6 @@ C.d_rule_based.params = struct();
 
 % Core checks
 C.d_rule_based.params.min_seconds_per_signal = 0; % Not activated right now, but if you want to exclude bursts from signals that have very little data (e.g. due to a lot of visual artifact rejection), you can set this to a positive number (e.g. 10 or 30 seconds) and it will exclude bursts from any signal that has less than that amount of data after all the cleaning steps.
-C.d_rule_based.params.min_cycles = 1; % Minimum number of cycles required for a burst to be included. If a burst has fewer than this number of cycles, it will be excluded. Set to 1 to include all bursts regardless of cycle count.
 C.d_rule_based.params.max_nan_frac = 0.001;
 
 % Flatline
@@ -678,31 +641,18 @@ C.d_rule_based.params.max_high_over_mid_warn = 0.7;
 C.d_rule_based.params.spectrum_fail = true;
 
 % Absolute amplitude
-C.d_rule_based.params.check_abs_amplitude = true;
 C.d_rule_based.params.units = "V";
-C.d_rule_based.params.max_p2p_mV = 10;
-C.d_rule_based.params.max_rms_mV = 1.5;
-C.d_rule_based.params.abs_amp_fail = true;
 
 % Whole-signal plotting behavior
-C.d_rule_based.params.plot_failed = true;
-C.d_rule_based.params.plot_warn = false;
 C.d_rule_based.params.plot_seconds = NaN;
-C.d_rule_based.params.max_fail_plots = 200;
 
 % Runner behavior
-C.d_rule_based.params.early_exit_fail = false;
-C.d_rule_based.params.check_saturation_plateau = true;
 
 % Plateau detection
 C.d_rule_based.params.plateau_eps_frac = 0.05;
-C.d_rule_based.params.max_plateau_frac_fail = 0.40;
-C.d_rule_based.params.max_plateau_frac_warn = 0.25;
 
 % Rail detection
 C.d_rule_based.params.rail_eps_frac = 0.005;
-C.d_rule_based.params.max_rail_frac_fail = 0.05;
-C.d_rule_based.params.max_rail_frac_warn = 0.02;
 
 % Flatline absolute thresholds
 C.d_rule_based.params.flatline_p2p_max = 1e-5;
@@ -752,7 +702,6 @@ C.d_rule_based.params.burst.abs.units = "V";
 C.d_rule_based.params.burst.abs.max_p2p_mV_fail = 8;
 C.d_rule_based.params.burst.abs.max_rms_mV_fail = 1.5;
 
-C.d_rule_based.params.burst.context_ms = 20;              % padding around burst for artifact checks
 
 %% e_final_burst_qc_combination
 
@@ -777,7 +726,6 @@ C.e_final_burst_qc.io.out_csv = fullfile(C.e_final_burst_qc.io.csv_dir, 'FINAL_B
 % ---------- Decision parameters ----------
 C.e_final_burst_qc.params = struct();
 C.e_final_burst_qc.params.decision_rule = "conservative";   % "conservative" | "inclusive"
-C.e_final_burst_qc.params.missing_cluster_policy = "bad";   % "bad" | "missing"
 C.e_final_burst_qc.params.use_visual_mapping = false; % If true, will use the Visual Mapping XLSM file to determine final burst decisions for bursts that are missing cluster-based QC results. If false, will use the missing_cluster_policy instead.
 
 % ---------- Plot settings ----------
@@ -839,30 +787,6 @@ C.f_final_signals.io.cycle_qc_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'CY
 C.f_final_signals.io.pair_cycle_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PAIR_CYCLE_QC_TABLE.xlsx');
 C.f_final_signals.io.signal_sum_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'FINAL_SIGNAL_SUMMARY.xlsx');
 
-C.f_final_signals.io.analyzable_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'ANALYZABLE_SIGNALS.xlsx');
-C.f_final_signals.io.recap_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_AGE.xlsx');
-C.f_final_signals.io.recap_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_CONDITION.xlsx');
-C.f_final_signals.io.recap_pair_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_age_cond_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_AGE_CONDITION.xlsx');
-
-C.f_final_signals.io.participant_summary_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY.xlsx');
-C.f_final_signals.io.recap_participants_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_AGE.xlsx');
-C.f_final_signals.io.recap_participants_by_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_CONDITION.xlsx');
-C.f_final_signals.io.recap_participants_by_age_cond_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.recap_signals_per_participant_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BY_AGE.xlsx');
-C.f_final_signals.io.recap_conditions_per_participant_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_AGE.xlsx');
-
-C.f_final_signals.io.recap_pair_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_pair_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_PAIR_CONDITION.xlsx');
-C.f_final_signals.io.recap_pair_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_PAIR_AGE_CONDITION.xlsx');
-
-C.f_final_signals.io.participant_summary_by_pair_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_participants_by_pair_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_participants_by_pair_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_participants_by_pair_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_CONDITION.xlsx');
-C.f_final_signals.io.recap_participants_by_pair_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_CONDITION.xlsx');
-C.f_final_signals.io.recap_signals_per_participant_by_pair_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_conditions_per_participant_by_pair_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_PAIR_AGE.xlsx');
 
 C.f_final_signals.io.excluded_burst_position_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'EXCLUDED_CYCLE_BURST_POSITION_TABLE.xlsx');
 C.f_final_signals.io.excluded_burst_position_plot_dir = fullfile(C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'excluded_burst_position_plots');
@@ -901,13 +825,10 @@ C.f_final_signals.params.cycle_policy.parameters.flatline_min_std = 1e-8;
 C.f_final_signals.params.cycle_policy.reject_if_flatline_fraction_over = true;
 C.f_final_signals.params.cycle_policy.parameters.max_flatline_fraction = 0.01;
 
-C.f_final_signals.params.cycle_policy.parameters.flatline_local_method = "diff";
 C.f_final_signals.params.cycle_policy.parameters.flatline_diff_thresh = 1e-8;
 C.f_final_signals.params.cycle_policy.parameters.flatline_min_run_samples = 20;
 
 % ---------- Pair policy ----------
-C.f_final_signals.params.pair_policy = struct();
-C.f_final_signals.params.pair_policy.require_same_valid_cycles = true; % DON'T CHANGE THIS WITHOUT THINKING CAREFULLY ABOUT THE IMPLICATIONS. This means that if a cycle is rejected in one signal of the pair, it will be rejected in the other signal as well, even if it would have been accepted based on its own quality. This is important for ensuring that the paired signals are truly comparable and that we are not introducing bias by including different sets of cycles for each signal. If you set this to false, then each signal will have its own set of valid cycles based on its own quality, which could lead to situations where you are comparing one signal with mostly good cycles to another signal with mostly bad cycles, which could bias your results and make it harder to interpret any differences you find between the signals.
 
 % ---------- Minimum valid cycles ----------
 C.f_final_signals.params.min_cycles_required = 10; % Minimum number of valid cycles required for a signal to be included in the final dataset. If a signal has fewer than this number of valid cycles after applying the cycle-level QC policies, it will be excluded from the final paired signals dataset.
@@ -997,9 +918,6 @@ C.f_final_signals.plot.rebuilt_band.random_seed = [];
 C.f_final_signals.plot.rebuilt_band.out_dir = fullfile( ...
     C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'band_specific_rebuilt_examples');
 
-C.f_final_signals.io.analyzable_alpha_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'ANALYZABLE_SIGNALS_ALPHA.xlsx');
-C.f_final_signals.io.analyzable_beta_xlsx  = fullfile(C.f_final_signals.io.xlsx_dir, 'ANALYZABLE_SIGNALS_BETA.xlsx');
-C.f_final_signals.io.analyzable_gamma_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'ANALYZABLE_SIGNALS_GAMMA.xlsx');
 
 C.f_final_signals.plot.excluded_band = struct();
 C.f_final_signals.plot.excluded_band.enable = true;
@@ -1014,76 +932,13 @@ C.f_final_signals.io.out_mat_beta    = fullfile(C.f_final_signals.io.out_dir, 'F
 C.f_final_signals.io.out_mat_gamma   = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS_GAMMA.mat');
 
 % ---------- Signal recap per band ----------
-C.f_final_signals.io.recap_alpha_age_xlsx                = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_AGE.xlsx');
-C.f_final_signals.io.recap_alpha_condition_xlsx          = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_CONDITION.xlsx');
-C.f_final_signals.io.recap_alpha_pair_xlsx               = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_alpha_age_condition_xlsx      = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.recap_alpha_pair_age_xlsx           = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_alpha_pair_condition_xlsx     = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_PAIR_CONDITION.xlsx');
-C.f_final_signals.io.recap_alpha_pair_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_PAIR_AGE_CONDITION.xlsx');
 
-C.f_final_signals.io.recap_beta_age_xlsx                = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_AGE.xlsx');
-C.f_final_signals.io.recap_beta_condition_xlsx          = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_CONDITION.xlsx');
-C.f_final_signals.io.recap_beta_pair_xlsx               = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_beta_age_condition_xlsx      = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.recap_beta_pair_age_xlsx           = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_beta_pair_condition_xlsx     = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_PAIR_CONDITION.xlsx');
-C.f_final_signals.io.recap_beta_pair_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_PAIR_AGE_CONDITION.xlsx');
-
-C.f_final_signals.io.recap_gamma_age_xlsx                = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_AGE.xlsx');
-C.f_final_signals.io.recap_gamma_condition_xlsx          = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_CONDITION.xlsx');
-C.f_final_signals.io.recap_gamma_pair_xlsx               = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_gamma_age_condition_xlsx      = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.recap_gamma_pair_age_xlsx           = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_gamma_pair_condition_xlsx     = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_PAIR_CONDITION.xlsx');
-C.f_final_signals.io.recap_gamma_pair_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_PAIR_AGE_CONDITION.xlsx');
 
 % ---------- Participant recap per band ----------
-C.f_final_signals.io.participant_summary_alpha_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_ALPHA.xlsx');
-C.f_final_signals.io.participants_alpha_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_ALPHA_BY_AGE.xlsx');
-C.f_final_signals.io.participants_alpha_by_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_ALPHA_BY_CONDITION.xlsx');
-C.f_final_signals.io.participants_alpha_by_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_ALPHA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.signals_per_participant_alpha_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_ALPHA_BY_AGE.xlsx');
-C.f_final_signals.io.conditions_per_participant_alpha_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_ALPHA_BY_AGE.xlsx');
 
-C.f_final_signals.io.participant_summary_beta_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_BETA.xlsx');
-C.f_final_signals.io.participants_beta_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BETA_BY_AGE.xlsx');
-C.f_final_signals.io.participants_beta_by_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BETA_BY_CONDITION.xlsx');
-C.f_final_signals.io.participants_beta_by_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BETA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.signals_per_participant_beta_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BETA_BY_AGE.xlsx');
-C.f_final_signals.io.conditions_per_participant_beta_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BETA_BY_AGE.xlsx');
-
-C.f_final_signals.io.participant_summary_gamma_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_GAMMA.xlsx');
-C.f_final_signals.io.participants_gamma_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_GAMMA_BY_AGE.xlsx');
-C.f_final_signals.io.participants_gamma_by_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_GAMMA_BY_CONDITION.xlsx');
-C.f_final_signals.io.participants_gamma_by_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_GAMMA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.signals_per_participant_gamma_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_GAMMA_BY_AGE.xlsx');
-C.f_final_signals.io.conditions_per_participant_gamma_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_GAMMA_BY_AGE.xlsx');
 
 % ---------- Participant-by-pair recap per band ----------
-C.f_final_signals.io.participant_summary_by_pair_alpha_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_BY_PAIR_ALPHA.xlsx');
-C.f_final_signals.io.participants_by_pair_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_ALPHA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_ALPHA.xlsx');
-C.f_final_signals.io.participants_by_pair_condition_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_CONDITION_ALPHA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_condition_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_CONDITION_ALPHA.xlsx');
-C.f_final_signals.io.signals_per_participant_by_pair_age_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BY_PAIR_AGE_ALPHA.xlsx');
-C.f_final_signals.io.conditions_per_participant_by_pair_age_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_PAIR_AGE_ALPHA.xlsx');
 
-C.f_final_signals.io.participant_summary_by_pair_beta_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_BY_PAIR_BETA.xlsx');
-C.f_final_signals.io.participants_by_pair_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_BETA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_BETA.xlsx');
-C.f_final_signals.io.participants_by_pair_condition_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_CONDITION_BETA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_condition_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_CONDITION_BETA.xlsx');
-C.f_final_signals.io.signals_per_participant_by_pair_age_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BY_PAIR_AGE_BETA.xlsx');
-C.f_final_signals.io.conditions_per_participant_by_pair_age_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_PAIR_AGE_BETA.xlsx');
-
-C.f_final_signals.io.participant_summary_by_pair_gamma_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_BY_PAIR_GAMMA.xlsx');
-C.f_final_signals.io.participants_by_pair_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_GAMMA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_GAMMA.xlsx');
-C.f_final_signals.io.participants_by_pair_condition_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_CONDITION_GAMMA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_condition_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_CONDITION_GAMMA.xlsx');
-C.f_final_signals.io.signals_per_participant_by_pair_age_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BY_PAIR_AGE_GAMMA.xlsx');
-C.f_final_signals.io.conditions_per_participant_by_pair_age_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_PAIR_AGE_GAMMA.xlsx');
 
 %% ---------- Cross-talk QC integration ----------
 C.f_final_signals.crosstalk = struct();
@@ -1100,12 +955,9 @@ C.f_final_signals.crosstalk.target_age_groups = "all";
 C.f_final_signals.crosstalk.target_conditions = "all";
 C.f_final_signals.crosstalk.target_legs = "all";
 
-C.f_final_signals.crosstalk.use_centered_raw = true;
-C.f_final_signals.crosstalk.use_rectified_for_similarity = true;
 
 C.f_final_signals.crosstalk.max_lag_ms = 300;
 C.f_final_signals.crosstalk.zero_lag_window_ms = 1;
-C.f_final_signals.crosstalk.narrow_peak_halfwidth_ms = 2;
 
 C.f_final_signals.crosstalk.central_spike = struct();
 C.f_final_signals.crosstalk.central_spike.broad_smooth_window_ms = 25;
@@ -1285,8 +1137,6 @@ C.g_coherence.params.qc_edge.enable = true;
 C.g_coherence.params.qc_edge.dir = fullfile(C.g_coherence.plot.dir, 'edge_effect_qc');
 C.g_coherence.params.qc_edge.csv_dir = fullfile(C.paths.results_dir, 'g_emg_emg_wavelet_coherence', 'edge_effect_qc');
 
-C.g_coherence.params.qc_edge.flag_prop_cycles_threshold = 0.20;
-C.g_coherence.params.qc_edge.flag_edge_ratio_threshold  = 1.50;
 
 % ===================== Frequency bands =====================
 C.g_coherence.params.FreqBands = C.shared_wavelet.FreqBands;
@@ -1296,7 +1146,6 @@ C.g_coherence.params.n_interp_time = 1000;   % chaque cycle est interpolé à 10
 
 % ===================== Significance =====================
 C.g_coherence.params.alpha = 0.05;           % alpha pour le seuil de significativité Rosenberg
-C.g_coherence.params.compute_significant_only = true; % true = les métriques scalaires sont calculées à partir de Coherence_sig
 C.g_coherence.params.store_raw_coherence = true;      % true = garde aussi la matrice de cohérence brute
 C.g_coherence.params.store_sig_coherence = true;      % true = garde aussi la cohérence thresholdée
 
@@ -1314,7 +1163,6 @@ C.g_coherence.params.padding.mode = 'mirror';
 C.g_coherence.params.padding.n_cycles_each_side = 1;
 
 % Safety: require these fields in Tseg
-C.g_coherence.params.padding.use_signal1_cycle_bounds = true;
 
 % 
 C.g_coherence.params.store_final_concatenated_signals = true;
@@ -1364,7 +1212,6 @@ C.g_coherence.final_plot = struct();
 C.g_coherence.final_plot.enable = true;                                                         % true = plots comparatifs finaux
 C.g_coherence.final_plot.dir = fullfile(C.g_coherence.group_plot.dir, 'final_comparison_plots'); % dossier des plots finaux
 C.g_coherence.final_plot.condition_order = C.plotting.condition_order;                            % ordre fixe des conditions
-C.g_coherence.final_plot.age_group_order = ["JeunesEnfants","Enfants","Adolescents","Adultes"]; % ordre fixe des groupes d'âge
 
 C.g_coherence.final_plot.make_raw_spectra = true;
 C.g_coherence.final_plot.make_sig_spectra = true;
@@ -1552,8 +1399,6 @@ C.h_stats.analysis.coherence_source = "equalized";   % "sig" or "raw" or "sig_eq
 % false = main raw model without cycle covariate
 % true  = raw model controlling for log(n_cycles_used)
 C.h_stats.analysis.include_cycle_count_covariate = false;
-C.h_stats.analysis.cycle_count_covariate_name = "log_n_cycles";
-C.h_stats.analysis.cycle_count_covariate_source = "mean_cycles_used_across_legs";
 
 C.h_stats.analysis.include_cycle_count_in_correlations = false;
 
@@ -1569,10 +1414,8 @@ C.h_stats.plot.visible = 'off';
 C.h_stats.plot.cycle_triplets = struct();
 C.h_stats.plot.cycle_triplets.visible = 'off';
 C.h_stats.plot.cycle_triplets.show_sem = true;
-C.h_stats.plot.cycle_triplets.alpha_fill = 0.18;
 C.h_stats.plot.cycle_triplets.line_width = 2.2;
 C.h_stats.plot.cycle_triplets.poi_face_alpha = 0.08;
-C.h_stats.plot.cycle_triplets.poi_edge_alpha = 0.20;
 C.h_stats.plot.cycle_triplets.plots_dir = fullfile(C.h_stats.io.plots_dir, 'cycle_triplets');
 
 C.h_stats.analysis.make_cycle_triplets = false;
@@ -1584,7 +1427,6 @@ C.h_stats.analysis.cycle_triplet_source = C.h_stats.analysis.coherence_source;  
 C.h_stats.analysis.cycle_triplet_average_legs = true;
 
 % frequency bands used for cycle triplets
-C.h_stats.analysis.cycle_triplet_bands = {'Alpha','Beta','Gamma'};
 
 % Correlation plot y-axis control
 C.h_stats.plot.correlation_use_fixed_ylim = C.h_stats.plot.use_fixed_coherence_ylim;
@@ -1634,8 +1476,6 @@ C.h_stats.spectrum.require_complete_case_for_condition = true;
 C.h_stats.spectrum.min_subjects_per_group = 3;
 
 C.h_stats.spectrum.show_cluster_stars = true;
-C.h_stats.spectrum.shade_sig_regions = true;
-C.h_stats.spectrum.sig_patch_facealpha = 0.18;
 
 C.h_stats.spectrum.show_individual_lines = false;   % true/false
 C.h_stats.spectrum.show_sem = true;               % true/false
@@ -1938,28 +1778,6 @@ C.j_time_domain.params.extract_signals.rectified  = true;
 C.j_time_domain.params.extract_signals.envelope   = true;
 
 
-
-%% j_single_muscle_feature_extraction
-C.j_single_features = struct();
-
-C.j_single_features.io = struct();
-C.j_single_features.io.in_mat  = fullfile(C.j_time_domain.io.out_dir, 'TIME_DOMAIN_DATA.mat');
-C.j_single_features.io.out_dir = fullfile(C.paths.mat_dir, 'mat_single_muscle_features');
-C.j_single_features.io.out_mat = fullfile(C.j_single_features.io.out_dir, 'SINGLE_MUSCLE_FEATURES.mat');
-
-C.j_single_features.io.csv_dir    = fullfile(C.paths.results_dir, 'j_single_muscle_features');
-C.j_single_features.io.cycle_csv  = fullfile(C.j_single_features.io.csv_dir, 'TD_SINGLE_CYCLE_FEATURES.csv');
-C.j_single_features.io.signal_csv = fullfile(C.j_single_features.io.csv_dir, 'TD_SINGLE_SIGNAL_FEATURES.csv');
-
-C.j_single_features.params = struct();
-C.j_single_features.params.signal_name = "envelope";      % "bandpassed" | "rectified" | "envelope"
-C.j_single_features.params.use_time_normalized = true;    % true = use time_normalized_envelope, etc.
-C.j_single_features.params.default_toeoff_fraction = 0.60;
-
-% threshold method
-C.j_single_features.params.activity_threshold_method = "fraction_of_peak"; % "fraction_of_peak" | "mean_plus_sd"
-C.j_single_features.params.activity_threshold_value  = 0.20;
-
 %% k_plot_activation_profiles
 C.k_activation_profiles = struct();
 
@@ -1984,14 +1802,12 @@ C.k_activation_profiles.params.show_participant_level_mean = true;
 C.k_activation_profiles.params.show_cycle_level_mean = false;
 
 C.k_activation_profiles.params.ylabel_text_raw = 'Envelope amplitude';
-C.k_activation_profiles.params.ylabel_text_normalized = 'Envelope amplitude (normalized to Flat mean peak)';
 
 C.k_activation_profiles.params.muscles_to_plot = C.design.muscleFields;
 
 C.k_activation_profiles.params.conditions_to_plot = C.plotting.condition_order;
 C.k_activation_profiles.params.age_groups_to_plot = C.plotting.age_order;
 C.k_activation_profiles.params.default_toeoff_fraction = 0.60;
-C.k_activation_profiles.params.ylabel_text = 'Envelope amplitude';
 
 %% l_spm_envelope_analysis
 C.l_spm = struct();
@@ -2059,7 +1875,6 @@ C.l_spm.params.nonparam_iterations = 5000; % use 1000 for quick tests, 5000+ for
 C.l_spm.params.show_sem = true;
 C.l_spm.params.default_toeoff_fraction = 0.60;
 C.l_spm.params.ylabel_text_raw = 'Envelope amplitude';
-C.l_spm.params.ylabel_text_normalized = 'Normalized envelope (% Flat max)';
 C.l_spm.params.ylabel_text_time_normalized = 'Time-normalized envelope amplitude';
 
 % symmetry
@@ -2071,7 +1886,6 @@ C.l_spm.io.symmetry_plot_dir = fullfile(C.l_spm.io.out_dir, 'symmetry_indices');
 C.l_spm.io.outlier_plot_dir = fullfile(C.paths.plot_dir, ...
     'l_spm_envelope_analysis', 'normalized_outlier_examples');
 
-C.l_spm.params.plot_normalized_outliers = false;
 C.l_spm.params.n_outlier_examples_to_plot = 10;
 C.l_spm.params.outlier_plot_selection = "top";   % "top" | "random"
 C.l_spm.params.outlier_plot_normalization_mode = "flat_percentile"; % or "subject_percentile" or "all"
@@ -2095,7 +1909,6 @@ C.l_spm.params.run_normalized_amplitude_qc = true;
 
 % "none" | "fixed" | "adaptive" | "both"
 C.l_spm.params.outlier_detection_mode = "adaptive";
-C.l_spm.params.amplitude_qc_exclusion_method = C.l_spm.params.outlier_detection_mode; % "adaptive" only for now
 
 % Fixed threshold QC
 C.l_spm.params.fixed_outlier_threshold_percent = 250;
@@ -2148,7 +1961,6 @@ C.kinematics_coherence.markers.reference_candidates = ...
     ["SACR","Sacrum","PELO","Pelvis","LASI","RASI"];
 
 end
-
 
 
 %% -------- local helper (kept inside this file) --------

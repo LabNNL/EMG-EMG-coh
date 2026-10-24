@@ -44,504 +44,160 @@
   [warning] /Users/liogr/Library/CloudStorage/OneDrive-Bibliothèquespartagées-UniversitedeMontreal/Yosra Cherni - Lio Grienenberger - MSc epfl/Codes/EMG_Gait_Analysis/Functions/d_a_clustering_cleaning/d_a_clustering_cleaning_helpers
              1 project function name(s) also resolve under this location. The repository copy wins for all of them today, but that depends on path order. Remove it from the MATLAB path.
 
-===== config_double (15) =====
-  [warning] config/config_emg.m:339
-             C.a_extract_raw.mapping.fixed_names.left assigned 2 times (lines 331, 339); line 339 wins
-  [warning] config/config_emg.m:340
-             C.a_extract_raw.mapping.fixed_names.right assigned 2 times (lines 334, 340); line 340 wins
-  [warning] config/config_emg.m:480
-             C.c_bursts.inspect assigned 2 times (lines 417, 480); line 480 wins
-  [warning] config/config_emg.m:482
-             C.c_bursts.inspect.inspect_depth assigned 2 times (lines 419, 482); line 482 wins
-  [warning] config/config_emg.m:481
-             C.c_bursts.inspect.inspect_one_output assigned 2 times (lines 418, 481); line 481 wins
-  [warning] config/config_emg.m:758
-             C.d_rule_based.params.burst.spec.enable assigned 2 times (lines 749, 758); line 758 wins
-  [warning] config/config_emg.m:1548
-             C.h_stats.analysis.correlation_pairs assigned 2 times (lines 1500, 1548); line 1548 wins
-  [warning] config/config_emg.m:1544
-             C.h_stats.analysis.dv_list assigned 2 times (lines 1498, 1544); line 1544 wins
-  [warning] config/config_emg.m:1545
-             C.h_stats.analysis.metric_type_for_plots assigned 2 times (lines 1499, 1545); line 1545 wins
-  [warning] config/config_emg.m:1551
-             C.h_stats.analysis.power_pairs assigned 2 times (lines 1501, 1551); line 1551 wins
-  [warning] config/config_emg.m:1642
-             C.h_stats.spectrum.spm_alpha assigned 2 times (lines 1629, 1642); line 1642 wins
-  [warning] config/config_emg.m:1953
-             C.j_time_domain.params.n_normalized_points assigned 2 times (lines 1876, 1953); line 1953 wins
-  [warning] config/config_emg.m:1952
-             C.j_time_domain.params.store_time_normalized_cycles assigned 2 times (lines 1875, 1952); line 1952 wins
-  [warning] config/config_emg.m:2125
-             C.l_spm.params.n_random_outlier_signal_examples assigned 2 times (lines 2097, 2125); line 2125 wins
-  [warning] config/config_emg.m:2124
-             C.l_spm.params.plot_random_outlier_signal_examples assigned 2 times (lines 2096, 2124); line 2124 wins
+===== config_double (4) =====
+  [warning] config/config_emg.m:1384
+             C.h_stats.analysis.correlation_pairs assigned 2 times (lines 1336, 1384); line 1384 wins
+  [warning] config/config_emg.m:1380
+             C.h_stats.analysis.dv_list assigned 2 times (lines 1334, 1380); line 1380 wins
+  [warning] config/config_emg.m:1381
+             C.h_stats.analysis.metric_type_for_plots assigned 2 times (lines 1335, 1381); line 1381 wins
+  [warning] config/config_emg.m:1387
+             C.h_stats.analysis.power_pairs assigned 2 times (lines 1337, 1387); line 1387 wins
 
 ===== checkcode (0) =====
 
-===== config_dead (230) =====
+===== config_dead (69) =====
   [info   ] config/config_emg.m:30
              C.physio.phase_windows_pct.TAprox_TAdist: leaf name "TAprox_TAdist" appears nowhere in the code
   [info   ] config/config_emg.m:33
              C.physio.phase_windows_pct.SOL_GM: leaf name "SOL_GM" appears nowhere in the code
   [info   ] config/config_emg.m:36
              C.physio.phase_windows_pct.VL_RF: leaf name "VL_RF" appears nowhere in the code
-  [info   ] config/config_emg.m:41
-             C.physio.gait_phases: leaf name "gait_phases" appears nowhere in the code
-  [info   ] config/config_emg.m:44
-             C.physio.gait_phases.initial_contact: leaf name "initial_contact" appears nowhere in the code
-  [info   ] config/config_emg.m:45
-             C.physio.gait_phases.weight_acceptance: leaf name "weight_acceptance" appears nowhere in the code
-  [info   ] config/config_emg.m:46
-             C.physio.gait_phases.single_support: leaf name "single_support" appears nowhere in the code
-  [info   ] config/config_emg.m:47
-             C.physio.gait_phases.limb_advancement: leaf name "limb_advancement" appears nowhere in the code
-  [info   ] config/config_emg.m:48
-             C.physio.gait_phases.loading_response: leaf name "loading_response" appears nowhere in the code
-  [info   ] config/config_emg.m:49
-             C.physio.gait_phases.mid_stance: leaf name "mid_stance" appears nowhere in the code
-  [info   ] config/config_emg.m:50
-             C.physio.gait_phases.terminal_stance: leaf name "terminal_stance" appears nowhere in the code
-  [info   ] config/config_emg.m:51
-             C.physio.gait_phases.pre_swing: leaf name "pre_swing" appears nowhere in the code
-  [info   ] config/config_emg.m:52
-             C.physio.gait_phases.initial_swing: leaf name "initial_swing" appears nowhere in the code
-  [info   ] config/config_emg.m:53
-             C.physio.gait_phases.mid_swing: leaf name "mid_swing" appears nowhere in the code
-  [info   ] config/config_emg.m:54
-             C.physio.gait_phases.terminal_swing: leaf name "terminal_swing" appears nowhere in the code
-  [info   ] config/config_emg.m:72
+  [info   ] config/config_emg.m:57
              C.paths.functions_dir: leaf name "functions_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:85
+  [info   ] config/config_emg.m:70
              C.paths.old_data_dir: leaf name "old_data_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:92
+  [info   ] config/config_emg.m:77
              C.paths.features_dir: leaf name "features_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:93
+  [info   ] config/config_emg.m:78
              C.paths.clustering_dir: leaf name "clustering_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:94
+  [info   ] config/config_emg.m:79
              C.paths.rule_based_dir: leaf name "rule_based_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:95
+  [info   ] config/config_emg.m:80
              C.paths.burst_decision_dir: leaf name "burst_decision_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:96
+  [info   ] config/config_emg.m:81
              C.paths.final_signals_dir: leaf name "final_signals_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:97
+  [info   ] config/config_emg.m:82
              C.paths.coherence_dir: leaf name "coherence_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:98
+  [info   ] config/config_emg.m:83
              C.paths.stats_dir: leaf name "stats_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:103
+  [info   ] config/config_emg.m:88
              C.paths.raw_plot_dir: leaf name "raw_plot_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:134
+  [info   ] config/config_emg.m:119
              C.paths.toolboxes.btk: leaf name "btk" appears nowhere in the code
-  [info   ] config/config_emg.m:156
+  [info   ] config/config_emg.m:141
              C.participants.jeunesEnfants: leaf name "jeunesEnfants" appears nowhere in the code
-  [info   ] config/config_emg.m:159
+  [info   ] config/config_emg.m:144
              C.participants.enfants: leaf name "enfants" appears nowhere in the code
-  [info   ] config/config_emg.m:164
+  [info   ] config/config_emg.m:149
              C.participants.adolescents: leaf name "adolescents" appears nowhere in the code
-  [info   ] config/config_emg.m:168
+  [info   ] config/config_emg.m:153
              C.participants.adultes: leaf name "adultes" appears nowhere in the code
-  [info   ] config/config_emg.m:184
+  [info   ] config/config_emg.m:169
              C.plotting.colors.JeunesEnfants: leaf name "JeunesEnfants" appears nowhere in the code
-  [info   ] config/config_emg.m:185
+  [info   ] config/config_emg.m:170
              C.plotting.colors.Enfants: leaf name "Enfants" appears nowhere in the code
-  [info   ] config/config_emg.m:186
+  [info   ] config/config_emg.m:171
              C.plotting.colors.Adolescents: leaf name "Adolescents" appears nowhere in the code
-  [info   ] config/config_emg.m:187
+  [info   ] config/config_emg.m:172
              C.plotting.colors.Adultes: leaf name "Adultes" appears nowhere in the code
-  [info   ] config/config_emg.m:192
+  [info   ] config/config_emg.m:177
              C.plotting.colors.Full: leaf name "Full" appears nowhere in the code
-  [info   ] config/config_emg.m:193
+  [info   ] config/config_emg.m:178
              C.plotting.colors.Stance: leaf name "Stance" appears nowhere in the code
-  [info   ] config/config_emg.m:194
+  [info   ] config/config_emg.m:179
              C.plotting.colors.Swing: leaf name "Swing" appears nowhere in the code
-  [info   ] config/config_emg.m:201
+  [info   ] config/config_emg.m:186
              C.plotting.colors.Medium: leaf name "Medium" appears nowhere in the code
-  [info   ] config/config_emg.m:202
+  [info   ] config/config_emg.m:187
              C.plotting.colors.High: leaf name "High" appears nowhere in the code
-  [info   ] config/config_emg.m:217
+  [info   ] config/config_emg.m:202
              C.plotting.colors.exclude_visual: leaf name "exclude_visual" appears nowhere in the code
-  [info   ] config/config_emg.m:218
+  [info   ] config/config_emg.m:203
              C.plotting.colors.exclude_signal_rule: leaf name "exclude_signal_rule" appears nowhere in the code
-  [info   ] config/config_emg.m:234
+  [info   ] config/config_emg.m:219
              C.plotting.colors.EMG_TAprox_Concat: leaf name "EMG_TAprox_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:235
+  [info   ] config/config_emg.m:220
              C.plotting.colors.EMG_TAdist_Concat: leaf name "EMG_TAdist_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:236
+  [info   ] config/config_emg.m:221
              C.plotting.colors.EMG_SOL_Concat: leaf name "EMG_SOL_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:237
+  [info   ] config/config_emg.m:222
              C.plotting.colors.EMG_GM_Concat: leaf name "EMG_GM_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:238
+  [info   ] config/config_emg.m:223
              C.plotting.colors.EMG_VL_Concat: leaf name "EMG_VL_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:239
+  [info   ] config/config_emg.m:224
              C.plotting.colors.EMG_RF_Concat: leaf name "EMG_RF_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:240
+  [info   ] config/config_emg.m:225
              C.plotting.colors.EMG_ST_Concat: leaf name "EMG_ST_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:241
+  [info   ] config/config_emg.m:226
              C.plotting.colors.EMG_GMED_Concat: leaf name "EMG_GMED_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:259
+  [info   ] config/config_emg.m:244
              C.shared_wavelet: leaf name "shared_wavelet" appears nowhere in the code
-  [info   ] config/config_emg.m:297
-             C.a_extract_raw.input.file_extension: leaf name "file_extension" appears nowhere in the code
-  [info   ] config/config_emg.m:298
-             C.a_extract_raw.input.search_recursively: leaf name "search_recursively" appears nowhere in the code
-  [info   ] config/config_emg.m:299
-             C.a_extract_raw.input.filename_mode: leaf name "filename_mode" appears nowhere in the code
-  [info   ] config/config_emg.m:303
-             C.a_extract_raw.input.allow_new_suffix: leaf name "allow_new_suffix" appears nowhere in the code
-  [info   ] config/config_emg.m:342
-             C.a_extract_raw.fallbacks: leaf name "fallbacks" appears nowhere in the code
-  [info   ] config/config_emg.m:344
-             C.a_extract_raw.fallbacks.skip_missing_files: leaf name "skip_missing_files" appears nowhere in the code
-  [info   ] config/config_emg.m:345
-             C.a_extract_raw.fallbacks.skip_missing_leg_events: leaf name "skip_missing_leg_events" appears nowhere in the code
-  [info   ] config/config_emg.m:346
-             C.a_extract_raw.fallbacks.skip_missing_muscle_channels: leaf name "skip_missing_muscle_channels" appears nowhere in the code
-  [info   ] config/config_emg.m:347
-             C.a_extract_raw.fallbacks.allow_partial_leg_output: leaf name "allow_partial_leg_output" appears nowhere in the code
-  [info   ] config/config_emg.m:348
-             C.a_extract_raw.fallbacks.allow_partial_condition_output: leaf name "allow_partial_condition_output" appears nowhere in the code
-  [info   ] config/config_emg.m:349
-             C.a_extract_raw.fallbacks.continue_on_file_error: leaf name "continue_on_file_error" appears nowhere in the code
-  [info   ] config/config_emg.m:351
+  [info   ] config/config_emg.m:319
              C.a_extract_raw.output: leaf name "output" appears nowhere in the code
-  [info   ] config/config_emg.m:352
-             C.a_extract_raw.output.save_segments: leaf name "save_segments" appears nowhere in the code
-  [info   ] config/config_emg.m:353
-             C.a_extract_raw.output.save_toe_off: leaf name "save_toe_off" appears nowhere in the code
-  [info   ] config/config_emg.m:354
-             C.a_extract_raw.output.save_trial_provenance: leaf name "save_trial_provenance" appears nowhere in the code
-  [info   ] config/config_emg.m:355
-             C.a_extract_raw.output.save_example_figure: leaf name "save_example_figure" appears nowhere in the code
-  [info   ] config/config_emg.m:356
-             C.a_extract_raw.output.inspect_one_mat_file: leaf name "inspect_one_mat_file" appears nowhere in the code
-  [info   ] config/config_emg.m:365
+  [info   ] config/config_emg.m:328
              C.a_extract_raw.channels.muscle_keywords.EMG_TAprox: leaf name "EMG_TAprox" appears nowhere in the code
-  [info   ] config/config_emg.m:366
+  [info   ] config/config_emg.m:329
              C.a_extract_raw.channels.muscle_keywords.EMG_TAdist: leaf name "EMG_TAdist" appears nowhere in the code
-  [info   ] config/config_emg.m:367
+  [info   ] config/config_emg.m:330
              C.a_extract_raw.channels.muscle_keywords.EMG_SOL: leaf name "EMG_SOL" appears nowhere in the code
-  [info   ] config/config_emg.m:368
+  [info   ] config/config_emg.m:331
              C.a_extract_raw.channels.muscle_keywords.EMG_GM: leaf name "EMG_GM" appears nowhere in the code
-  [info   ] config/config_emg.m:369
+  [info   ] config/config_emg.m:332
              C.a_extract_raw.channels.muscle_keywords.EMG_VL: leaf name "EMG_VL" appears nowhere in the code
-  [info   ] config/config_emg.m:370
+  [info   ] config/config_emg.m:333
              C.a_extract_raw.channels.muscle_keywords.EMG_RF: leaf name "EMG_RF" appears nowhere in the code
-  [info   ] config/config_emg.m:371
+  [info   ] config/config_emg.m:334
              C.a_extract_raw.channels.muscle_keywords.EMG_ST: leaf name "EMG_ST" appears nowhere in the code
-  [info   ] config/config_emg.m:372
+  [info   ] config/config_emg.m:335
              C.a_extract_raw.channels.muscle_keywords.EMG_GMED: leaf name "EMG_GMED" appears nowhere in the code
-  [info   ] config/config_emg.m:379
-             C.a_extract_raw.channels.allow_partial_mapping: leaf name "allow_partial_mapping" appears nowhere in the code
-  [info   ] config/config_emg.m:381
-             C.a_extract_raw.missing.allow_missing_muscles: leaf name "allow_missing_muscles" appears nowhere in the code
-  [info   ] config/config_emg.m:385
-             C.a_extract_raw.missing.min_cycles_per_pair: leaf name "min_cycles_per_pair" appears nowhere in the code
-  [info   ] config/config_emg.m:413
-             C.b_preproc.overwrite: leaf name "overwrite" appears nowhere in the code
-  [info   ] config/config_emg.m:533
-             C.d_clustering.io.input_mat: leaf name "input_mat" appears nowhere in the code
-  [info   ] config/config_emg.m:601
+  [info   ] config/config_emg.m:555
              C.d_cluster_manual.keep.muscle.EMG_GMED_Concat: leaf name "EMG_GMED_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:602
+  [info   ] config/config_emg.m:556
              C.d_cluster_manual.keep.muscle.EMG_GM_Concat: leaf name "EMG_GM_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:603
+  [info   ] config/config_emg.m:557
              C.d_cluster_manual.keep.muscle.EMG_RF_Concat: leaf name "EMG_RF_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:604
+  [info   ] config/config_emg.m:558
              C.d_cluster_manual.keep.muscle.EMG_SOL_Concat: leaf name "EMG_SOL_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:605
+  [info   ] config/config_emg.m:559
              C.d_cluster_manual.keep.muscle.EMG_ST_Concat: leaf name "EMG_ST_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:606
+  [info   ] config/config_emg.m:560
              C.d_cluster_manual.keep.muscle.EMG_TAdist_Concat: leaf name "EMG_TAdist_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:607
+  [info   ] config/config_emg.m:561
              C.d_cluster_manual.keep.muscle.EMG_TAprox_Concat: leaf name "EMG_TAprox_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:608
+  [info   ] config/config_emg.m:562
              C.d_cluster_manual.keep.muscle.EMG_VL_Concat: leaf name "EMG_VL_Concat" appears nowhere in the code
-  [info   ] config/config_emg.m:611
+  [info   ] config/config_emg.m:565
              C.d_cluster_manual.keep.age_group.JeunesEnfants: leaf name "JeunesEnfants" appears nowhere in the code
-  [info   ] config/config_emg.m:612
+  [info   ] config/config_emg.m:566
              C.d_cluster_manual.keep.age_group.Enfants: leaf name "Enfants" appears nowhere in the code
-  [info   ] config/config_emg.m:613
+  [info   ] config/config_emg.m:567
              C.d_cluster_manual.keep.age_group.Adolescents: leaf name "Adolescents" appears nowhere in the code
-  [info   ] config/config_emg.m:614
+  [info   ] config/config_emg.m:568
              C.d_cluster_manual.keep.age_group.Adultes: leaf name "Adultes" appears nowhere in the code
-  [info   ] config/config_emg.m:618
+  [info   ] config/config_emg.m:572
              C.d_cluster_manual.keep.condition.Medium: leaf name "Medium" appears nowhere in the code
-  [info   ] config/config_emg.m:619
+  [info   ] config/config_emg.m:573
              C.d_cluster_manual.keep.condition.High: leaf name "High" appears nowhere in the code
-  [info   ] config/config_emg.m:662
-             C.d_rule_based.params.min_cycles: leaf name "min_cycles" appears nowhere in the code
-  [info   ] config/config_emg.m:691
-             C.d_rule_based.params.check_abs_amplitude: leaf name "check_abs_amplitude" appears nowhere in the code
-  [info   ] config/config_emg.m:693
-             C.d_rule_based.params.max_p2p_mV: leaf name "max_p2p_mV" appears nowhere in the code
-  [info   ] config/config_emg.m:694
-             C.d_rule_based.params.max_rms_mV: leaf name "max_rms_mV" appears nowhere in the code
-  [info   ] config/config_emg.m:695
-             C.d_rule_based.params.abs_amp_fail: leaf name "abs_amp_fail" appears nowhere in the code
-  [info   ] config/config_emg.m:698
-             C.d_rule_based.params.plot_failed: leaf name "plot_failed" appears nowhere in the code
-  [info   ] config/config_emg.m:699
-             C.d_rule_based.params.plot_warn: leaf name "plot_warn" appears nowhere in the code
-  [info   ] config/config_emg.m:701
-             C.d_rule_based.params.max_fail_plots: leaf name "max_fail_plots" appears nowhere in the code
-  [info   ] config/config_emg.m:704
-             C.d_rule_based.params.early_exit_fail: leaf name "early_exit_fail" appears nowhere in the code
-  [info   ] config/config_emg.m:705
-             C.d_rule_based.params.check_saturation_plateau: leaf name "check_saturation_plateau" appears nowhere in the code
-  [info   ] config/config_emg.m:709
-             C.d_rule_based.params.max_plateau_frac_fail: leaf name "max_plateau_frac_fail" appears nowhere in the code
-  [info   ] config/config_emg.m:710
-             C.d_rule_based.params.max_plateau_frac_warn: leaf name "max_plateau_frac_warn" appears nowhere in the code
-  [info   ] config/config_emg.m:714
-             C.d_rule_based.params.max_rail_frac_fail: leaf name "max_rail_frac_fail" appears nowhere in the code
-  [info   ] config/config_emg.m:715
-             C.d_rule_based.params.max_rail_frac_warn: leaf name "max_rail_frac_warn" appears nowhere in the code
-  [info   ] config/config_emg.m:766
-             C.d_rule_based.params.burst.context_ms: leaf name "context_ms" appears nowhere in the code
-  [info   ] config/config_emg.m:791
-             C.e_final_burst_qc.params.missing_cluster_policy: leaf name "missing_cluster_policy" appears nowhere in the code
-  [info   ] config/config_emg.m:853
-             C.f_final_signals.io.analyzable_xlsx: leaf name "analyzable_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:854
-             C.f_final_signals.io.recap_age_xlsx: leaf name "recap_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:855
-             C.f_final_signals.io.recap_condition_xlsx: leaf name "recap_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:856
-             C.f_final_signals.io.recap_pair_xlsx: leaf name "recap_pair_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:857
-             C.f_final_signals.io.recap_age_cond_xlsx: leaf name "recap_age_cond_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:859
-             C.f_final_signals.io.participant_summary_xlsx: leaf name "participant_summary_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:860
-             C.f_final_signals.io.recap_participants_by_age_xlsx: leaf name "recap_participants_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:861
-             C.f_final_signals.io.recap_participants_by_condition_xlsx: leaf name "recap_participants_by_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:862
-             C.f_final_signals.io.recap_participants_by_age_cond_xlsx: leaf name "recap_participants_by_age_cond_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:863
-             C.f_final_signals.io.recap_signals_per_participant_by_age_xlsx: leaf name "recap_signals_per_participant_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:864
-             C.f_final_signals.io.recap_conditions_per_participant_by_age_xlsx: leaf name "recap_conditions_per_participant_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:866
-             C.f_final_signals.io.recap_pair_age_xlsx: leaf name "recap_pair_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:867
-             C.f_final_signals.io.recap_pair_condition_xlsx: leaf name "recap_pair_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:868
-             C.f_final_signals.io.recap_pair_age_condition_xlsx: leaf name "recap_pair_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:870
-             C.f_final_signals.io.participant_summary_by_pair_xlsx: leaf name "participant_summary_by_pair_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:871
-             C.f_final_signals.io.recap_participants_by_pair_xlsx: leaf name "recap_participants_by_pair_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:872
-             C.f_final_signals.io.recap_participants_by_pair_age_xlsx: leaf name "recap_participants_by_pair_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:873
-             C.f_final_signals.io.recap_participants_by_pair_condition_xlsx: leaf name "recap_participants_by_pair_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:874
-             C.f_final_signals.io.recap_participants_by_pair_age_condition_xlsx: leaf name "recap_participants_by_pair_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:875
-             C.f_final_signals.io.recap_signals_per_participant_by_pair_age_xlsx: leaf name "recap_signals_per_participant_by_pair_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:876
-             C.f_final_signals.io.recap_conditions_per_participant_by_pair_age_xlsx: leaf name "recap_conditions_per_participant_by_pair_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:915
-             C.f_final_signals.params.cycle_policy.parameters.flatline_local_method: leaf name "flatline_local_method" appears nowhere in the code
-  [info   ] config/config_emg.m:920
-             C.f_final_signals.params.pair_policy: leaf name "pair_policy" appears nowhere in the code
-  [info   ] config/config_emg.m:921
-             C.f_final_signals.params.pair_policy.require_same_valid_cycles: leaf name "require_same_valid_cycles" appears nowhere in the code
-  [info   ] config/config_emg.m:998
+  [info   ] config/config_emg.m:908
              C.f_final_signals.params.wavelet_contamination_qc.phase_windows_pct.TAprox_TAdist: leaf name "TAprox_TAdist" appears nowhere in the code
-  [info   ] config/config_emg.m:1000
+  [info   ] config/config_emg.m:910
              C.f_final_signals.params.wavelet_contamination_qc.phase_windows_pct.SOL_GM: leaf name "SOL_GM" appears nowhere in the code
-  [info   ] config/config_emg.m:1002
+  [info   ] config/config_emg.m:912
              C.f_final_signals.params.wavelet_contamination_qc.phase_windows_pct.VL_RF: leaf name "VL_RF" appears nowhere in the code
-  [info   ] config/config_emg.m:1011
-             C.f_final_signals.io.analyzable_alpha_xlsx: leaf name "analyzable_alpha_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1012
-             C.f_final_signals.io.analyzable_beta_xlsx: leaf name "analyzable_beta_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1013
-             C.f_final_signals.io.analyzable_gamma_xlsx: leaf name "analyzable_gamma_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1028
-             C.f_final_signals.io.recap_alpha_age_xlsx: leaf name "recap_alpha_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1029
-             C.f_final_signals.io.recap_alpha_condition_xlsx: leaf name "recap_alpha_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1030
-             C.f_final_signals.io.recap_alpha_pair_xlsx: leaf name "recap_alpha_pair_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1031
-             C.f_final_signals.io.recap_alpha_age_condition_xlsx: leaf name "recap_alpha_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1032
-             C.f_final_signals.io.recap_alpha_pair_age_xlsx: leaf name "recap_alpha_pair_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1033
-             C.f_final_signals.io.recap_alpha_pair_condition_xlsx: leaf name "recap_alpha_pair_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1034
-             C.f_final_signals.io.recap_alpha_pair_age_condition_xlsx: leaf name "recap_alpha_pair_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1036
-             C.f_final_signals.io.recap_beta_age_xlsx: leaf name "recap_beta_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1037
-             C.f_final_signals.io.recap_beta_condition_xlsx: leaf name "recap_beta_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1038
-             C.f_final_signals.io.recap_beta_pair_xlsx: leaf name "recap_beta_pair_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1039
-             C.f_final_signals.io.recap_beta_age_condition_xlsx: leaf name "recap_beta_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1040
-             C.f_final_signals.io.recap_beta_pair_age_xlsx: leaf name "recap_beta_pair_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1041
-             C.f_final_signals.io.recap_beta_pair_condition_xlsx: leaf name "recap_beta_pair_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1042
-             C.f_final_signals.io.recap_beta_pair_age_condition_xlsx: leaf name "recap_beta_pair_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1044
-             C.f_final_signals.io.recap_gamma_age_xlsx: leaf name "recap_gamma_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1045
-             C.f_final_signals.io.recap_gamma_condition_xlsx: leaf name "recap_gamma_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1046
-             C.f_final_signals.io.recap_gamma_pair_xlsx: leaf name "recap_gamma_pair_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1047
-             C.f_final_signals.io.recap_gamma_age_condition_xlsx: leaf name "recap_gamma_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1048
-             C.f_final_signals.io.recap_gamma_pair_age_xlsx: leaf name "recap_gamma_pair_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1049
-             C.f_final_signals.io.recap_gamma_pair_condition_xlsx: leaf name "recap_gamma_pair_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1050
-             C.f_final_signals.io.recap_gamma_pair_age_condition_xlsx: leaf name "recap_gamma_pair_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1053
-             C.f_final_signals.io.participant_summary_alpha_xlsx: leaf name "participant_summary_alpha_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1054
-             C.f_final_signals.io.participants_alpha_by_age_xlsx: leaf name "participants_alpha_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1055
-             C.f_final_signals.io.participants_alpha_by_condition_xlsx: leaf name "participants_alpha_by_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1056
-             C.f_final_signals.io.participants_alpha_by_age_condition_xlsx: leaf name "participants_alpha_by_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1057
-             C.f_final_signals.io.signals_per_participant_alpha_by_age_xlsx: leaf name "signals_per_participant_alpha_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1058
-             C.f_final_signals.io.conditions_per_participant_alpha_by_age_xlsx: leaf name "conditions_per_participant_alpha_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1060
-             C.f_final_signals.io.participant_summary_beta_xlsx: leaf name "participant_summary_beta_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1061
-             C.f_final_signals.io.participants_beta_by_age_xlsx: leaf name "participants_beta_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1062
-             C.f_final_signals.io.participants_beta_by_condition_xlsx: leaf name "participants_beta_by_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1063
-             C.f_final_signals.io.participants_beta_by_age_condition_xlsx: leaf name "participants_beta_by_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1064
-             C.f_final_signals.io.signals_per_participant_beta_by_age_xlsx: leaf name "signals_per_participant_beta_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1065
-             C.f_final_signals.io.conditions_per_participant_beta_by_age_xlsx: leaf name "conditions_per_participant_beta_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1067
-             C.f_final_signals.io.participant_summary_gamma_xlsx: leaf name "participant_summary_gamma_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1068
-             C.f_final_signals.io.participants_gamma_by_age_xlsx: leaf name "participants_gamma_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1069
-             C.f_final_signals.io.participants_gamma_by_condition_xlsx: leaf name "participants_gamma_by_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1070
-             C.f_final_signals.io.participants_gamma_by_age_condition_xlsx: leaf name "participants_gamma_by_age_condition_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1071
-             C.f_final_signals.io.signals_per_participant_gamma_by_age_xlsx: leaf name "signals_per_participant_gamma_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1072
-             C.f_final_signals.io.conditions_per_participant_gamma_by_age_xlsx: leaf name "conditions_per_participant_gamma_by_age_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1075
-             C.f_final_signals.io.participant_summary_by_pair_alpha_xlsx: leaf name "participant_summary_by_pair_alpha_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1076
-             C.f_final_signals.io.participants_by_pair_alpha_xlsx: leaf name "participants_by_pair_alpha_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1077
-             C.f_final_signals.io.participants_by_pair_age_alpha_xlsx: leaf name "participants_by_pair_age_alpha_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1078
-             C.f_final_signals.io.participants_by_pair_condition_alpha_xlsx: leaf name "participants_by_pair_condition_alpha_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1079
-             C.f_final_signals.io.participants_by_pair_age_condition_alpha_xlsx: leaf name "participants_by_pair_age_condition_alpha_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1080
-             C.f_final_signals.io.signals_per_participant_by_pair_age_alpha_xlsx: leaf name "signals_per_participant_by_pair_age_alpha_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1081
-             C.f_final_signals.io.conditions_per_participant_by_pair_age_alpha_xlsx: leaf name "conditions_per_participant_by_pair_age_alpha_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1083
-             C.f_final_signals.io.participant_summary_by_pair_beta_xlsx: leaf name "participant_summary_by_pair_beta_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1084
-             C.f_final_signals.io.participants_by_pair_beta_xlsx: leaf name "participants_by_pair_beta_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1085
-             C.f_final_signals.io.participants_by_pair_age_beta_xlsx: leaf name "participants_by_pair_age_beta_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1086
-             C.f_final_signals.io.participants_by_pair_condition_beta_xlsx: leaf name "participants_by_pair_condition_beta_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1087
-             C.f_final_signals.io.participants_by_pair_age_condition_beta_xlsx: leaf name "participants_by_pair_age_condition_beta_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1088
-             C.f_final_signals.io.signals_per_participant_by_pair_age_beta_xlsx: leaf name "signals_per_participant_by_pair_age_beta_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1089
-             C.f_final_signals.io.conditions_per_participant_by_pair_age_beta_xlsx: leaf name "conditions_per_participant_by_pair_age_beta_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1091
-             C.f_final_signals.io.participant_summary_by_pair_gamma_xlsx: leaf name "participant_summary_by_pair_gamma_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1092
-             C.f_final_signals.io.participants_by_pair_gamma_xlsx: leaf name "participants_by_pair_gamma_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1093
-             C.f_final_signals.io.participants_by_pair_age_gamma_xlsx: leaf name "participants_by_pair_age_gamma_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1094
-             C.f_final_signals.io.participants_by_pair_condition_gamma_xlsx: leaf name "participants_by_pair_condition_gamma_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1095
-             C.f_final_signals.io.participants_by_pair_age_condition_gamma_xlsx: leaf name "participants_by_pair_age_condition_gamma_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1096
-             C.f_final_signals.io.signals_per_participant_by_pair_age_gamma_xlsx: leaf name "signals_per_participant_by_pair_age_gamma_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1097
-             C.f_final_signals.io.conditions_per_participant_by_pair_age_gamma_xlsx: leaf name "conditions_per_participant_by_pair_age_gamma_xlsx" appears nowhere in the code
-  [info   ] config/config_emg.m:1114
-             C.f_final_signals.crosstalk.use_centered_raw: leaf name "use_centered_raw" appears nowhere in the code
-  [info   ] config/config_emg.m:1115
-             C.f_final_signals.crosstalk.use_rectified_for_similarity: leaf name "use_rectified_for_similarity" appears nowhere in the code
-  [info   ] config/config_emg.m:1119
-             C.f_final_signals.crosstalk.narrow_peak_halfwidth_ms: leaf name "narrow_peak_halfwidth_ms" appears nowhere in the code
-  [info   ] config/config_emg.m:1299
-             C.g_coherence.params.qc_edge.flag_prop_cycles_threshold: leaf name "flag_prop_cycles_threshold" appears nowhere in the code
-  [info   ] config/config_emg.m:1300
-             C.g_coherence.params.qc_edge.flag_edge_ratio_threshold: leaf name "flag_edge_ratio_threshold" appears nowhere in the code
-  [info   ] config/config_emg.m:1310
-             C.g_coherence.params.compute_significant_only: leaf name "compute_significant_only" appears nowhere in the code
-  [info   ] config/config_emg.m:1328
-             C.g_coherence.params.padding.use_signal1_cycle_bounds: leaf name "use_signal1_cycle_bounds" appears nowhere in the code
-  [info   ] config/config_emg.m:1378
-             C.g_coherence.final_plot.age_group_order: leaf name "age_group_order" appears nowhere in the code
-  [info   ] config/config_emg.m:1566
-             C.h_stats.analysis.cycle_count_covariate_name: leaf name "cycle_count_covariate_name" appears nowhere in the code
-  [info   ] config/config_emg.m:1567
-             C.h_stats.analysis.cycle_count_covariate_source: leaf name "cycle_count_covariate_source" appears nowhere in the code
-  [info   ] config/config_emg.m:1583
-             C.h_stats.plot.cycle_triplets.alpha_fill: leaf name "alpha_fill" appears nowhere in the code
-  [info   ] config/config_emg.m:1586
-             C.h_stats.plot.cycle_triplets.poi_edge_alpha: leaf name "poi_edge_alpha" appears nowhere in the code
-  [info   ] config/config_emg.m:1598
-             C.h_stats.analysis.cycle_triplet_bands: leaf name "cycle_triplet_bands" appears nowhere in the code
-  [info   ] config/config_emg.m:1649
-             C.h_stats.spectrum.shade_sig_regions: leaf name "shade_sig_regions" appears nowhere in the code
-  [info   ] config/config_emg.m:1650
-             C.h_stats.spectrum.sig_patch_facealpha: leaf name "sig_patch_facealpha" appears nowhere in the code
-  [info   ] config/config_emg.m:1832
+  [info   ] config/config_emg.m:1660
              C.j_time_domain: leaf name "j_time_domain" appears nowhere in the code
-  [info   ] config/config_emg.m:1874
+  [info   ] config/config_emg.m:1702
              C.j_time_domain.params.store_raw_cycle_segments: leaf name "store_raw_cycle_segments" appears nowhere in the code
-  [info   ] config/config_emg.m:1925
+  [info   ] config/config_emg.m:1753
              C.j_time_domain.params.pairwise_policy: leaf name "pairwise_policy" appears nowhere in the code
-  [info   ] config/config_emg.m:1926
+  [info   ] config/config_emg.m:1754
              C.j_time_domain.params.pairwise_policy.require_same_cycle_number: leaf name "require_same_cycle_number" appears nowhere in the code
-  [info   ] config/config_emg.m:1927
+  [info   ] config/config_emg.m:1755
              C.j_time_domain.params.pairwise_policy.use_harmonized_cycles: leaf name "use_harmonized_cycles" appears nowhere in the code
-  [info   ] config/config_emg.m:1957
-             C.j_single_features: leaf name "j_single_features" appears nowhere in the code
-  [info   ] config/config_emg.m:1965
-             C.j_single_features.io.cycle_csv: leaf name "cycle_csv" appears nowhere in the code
-  [info   ] config/config_emg.m:1966
-             C.j_single_features.io.signal_csv: leaf name "signal_csv" appears nowhere in the code
-  [info   ] config/config_emg.m:1974
-             C.j_single_features.params.activity_threshold_method: leaf name "activity_threshold_method" appears nowhere in the code
-  [info   ] config/config_emg.m:1975
-             C.j_single_features.params.activity_threshold_value: leaf name "activity_threshold_value" appears nowhere in the code
-  [info   ] config/config_emg.m:2001
-             C.k_activation_profiles.params.ylabel_text_normalized: leaf name "ylabel_text_normalized" appears nowhere in the code
-  [info   ] config/config_emg.m:2008
-             C.k_activation_profiles.params.ylabel_text: leaf name "ylabel_text" appears nowhere in the code
-  [info   ] config/config_emg.m:2076
-             C.l_spm.params.ylabel_text_normalized: leaf name "ylabel_text_normalized" appears nowhere in the code
-  [info   ] config/config_emg.m:2088
-             C.l_spm.params.plot_normalized_outliers: leaf name "plot_normalized_outliers" appears nowhere in the code
-  [info   ] config/config_emg.m:2114
-             C.l_spm.params.amplitude_qc_exclusion_method: leaf name "amplitude_qc_exclusion_method" appears nowhere in the code
 
 ===== summary =====
   errors   : 17
-  warnings : 18
-  info     : 230
+  warnings : 7
+  info     : 69
   Code Analyzer messages across project files: 333
