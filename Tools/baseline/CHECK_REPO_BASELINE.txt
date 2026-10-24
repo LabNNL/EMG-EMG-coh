@@ -76,15 +76,11 @@
   [warning] config/config_emg.m:2124
              C.l_spm.params.plot_random_outlier_signal_examples assigned 2 times (lines 2096, 2124); line 2124 wins
 
-===== checkcode (3) =====
-  [error  ] Functions/d_a_clustering_cleaning/d_a_clustering_cleaning_helpers/hartigansdipsigniftest.m:2
-             [FNDEF] Function name 'HartigansDipSignifTest' is known to MATLAB by its file name: 'hartigansdipsigniftest'.
+===== checkcode (1) =====
   [error  ] Functions/d_b_rule_based_cleaning/d_b_rule_based_cleaning.m:236
              [NOPRT] Add a semicolon after the statement to hide the output (in a function).
-  [error  ] Functions/g_coherence/g_coherence_helpers/get_phase_color.M
-             Code Analyzer cannot read this file: Unable to open file "Functions/g_coherence/g_coherence_helpers/get_phase_color.M". File is not found or is not a supported MATLAB code file.
 
-===== config_dead (223) =====
+===== config_dead (231) =====
   [info   ] config/config_emg.m:30
              C.physio.phase_windows_pct.TAprox_TAdist: leaf name "TAprox_TAdist" appears nowhere in the code
   [info   ] config/config_emg.m:33
@@ -155,6 +151,12 @@
              C.plotting.colors.Adolescents: leaf name "Adolescents" appears nowhere in the code
   [info   ] config/config_emg.m:187
              C.plotting.colors.Adultes: leaf name "Adultes" appears nowhere in the code
+  [info   ] config/config_emg.m:192
+             C.plotting.colors.Full: leaf name "Full" appears nowhere in the code
+  [info   ] config/config_emg.m:193
+             C.plotting.colors.Stance: leaf name "Stance" appears nowhere in the code
+  [info   ] config/config_emg.m:194
+             C.plotting.colors.Swing: leaf name "Swing" appears nowhere in the code
   [info   ] config/config_emg.m:201
              C.plotting.colors.Medium: leaf name "Medium" appears nowhere in the code
   [info   ] config/config_emg.m:202
@@ -269,6 +271,8 @@
              C.d_cluster_manual.keep.condition.Medium: leaf name "Medium" appears nowhere in the code
   [info   ] config/config_emg.m:619
              C.d_cluster_manual.keep.condition.High: leaf name "High" appears nowhere in the code
+  [info   ] config/config_emg.m:662
+             C.d_rule_based.params.min_cycles: leaf name "min_cycles" appears nowhere in the code
   [info   ] config/config_emg.m:691
              C.d_rule_based.params.check_abs_amplitude: leaf name "check_abs_amplitude" appears nowhere in the code
   [info   ] config/config_emg.m:693
@@ -287,6 +291,14 @@
              C.d_rule_based.params.early_exit_fail: leaf name "early_exit_fail" appears nowhere in the code
   [info   ] config/config_emg.m:705
              C.d_rule_based.params.check_saturation_plateau: leaf name "check_saturation_plateau" appears nowhere in the code
+  [info   ] config/config_emg.m:709
+             C.d_rule_based.params.max_plateau_frac_fail: leaf name "max_plateau_frac_fail" appears nowhere in the code
+  [info   ] config/config_emg.m:710
+             C.d_rule_based.params.max_plateau_frac_warn: leaf name "max_plateau_frac_warn" appears nowhere in the code
+  [info   ] config/config_emg.m:714
+             C.d_rule_based.params.max_rail_frac_fail: leaf name "max_rail_frac_fail" appears nowhere in the code
+  [info   ] config/config_emg.m:715
+             C.d_rule_based.params.max_rail_frac_warn: leaf name "max_rail_frac_warn" appears nowhere in the code
   [info   ] config/config_emg.m:766
              C.d_rule_based.params.burst.context_ms: leaf name "context_ms" appears nowhere in the code
   [info   ] config/config_emg.m:791
@@ -533,7 +545,7 @@
              C.l_spm.params.amplitude_qc_exclusion_method: leaf name "amplitude_qc_exclusion_method" appears nowhere in the code
 
 ===== summary =====
-  errors   : 22
+  errors   : 20
   warnings : 15
-  info     : 224
-  Code Analyzer messages across project files: 406
+  info     : 232
+  Code Analyzer messages across project files: 345

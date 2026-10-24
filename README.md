@@ -68,10 +68,18 @@ EMG-EMG-coh/
 ├── main_coherence_analysis.m        # entry point: stages a → h
 ├── main_time_domain_analysis.m      # entry point: j → k → l (+ optional i)
 ├── main_kinematics_analysis.m       # entry point: kinematics on coherence cycles
-├── diagnostic_plot_heel_marker_axes.m   # standalone marker-axis check
-├── participant_summary_matlab.m     # standalone cohort descriptives
+├── startup.m                        # puts the project on the MATLAB path
 ├── config/
-│   └── config_emg.m                 # all paths, cohort, parameters, run flags
+│   ├── config_emg.m                 # cohort, parameters, run flags, derived paths
+│   ├── local_paths.template.m       # copy to local_paths.m and set your data folder
+│   └── local_paths.m                # your data folder (git-ignored)
+├── scripts/                         # one-off scripts, not pipeline stages
+│   ├── diagnostic_plot_heel_marker_axes.m
+│   └── participant_summary_matlab.m
+├── Tools/
+│   ├── check_repo.m                 # static checks over the project code
+│   └── baseline/                    # reference check report + output checksums
+├── attic/                           # retired code, deliberately off the path
 ├── Functions/
 │   ├── a_data_extraction/           # .c3d → concatenated raw gait cycles
 │   ├── b_preprocessing/             # filtering + envelopes
@@ -85,10 +93,9 @@ EMG-EMG-coh/
 │   ├── time_domain_analysis/        # i, j, k, l modules
 │   ├── kinematics_analysis/         # build + analyse stride metrics
 │   ├── general/                     # small shared utilities (colors, safe getters, …)
-│   ├── simulations_helpers/         # coherence-bias simulation helpers (not called by the pipeline)
 │   └── toolboxes/                   # vendored: BTK bridge, spm1d, wtc-r16
 ├── Metadata/                        # participant metadata, channel mapping (git-ignored)
-└── Results/                         # tables, CSV/XLSX recaps, PNG figures (git-ignored except PNGs)
+└── Results/                         # tables, recaps, figures (git-ignored)
 ```
 
 Each stage folder has one entry function named after the folder plus a `*_helpers/` subfolder. `config_emg()` adds the whole `Functions/` tree to the MATLAB path, and some stages rely on helpers that live in other stage folders (for example `get_fs_from_entry_or_config` in `g_coherence_helpers` is used by stages c and d_a).
@@ -343,11 +350,11 @@ Run with [main_kinematics_analysis.m](main_kinematics_analysis.m); the code is i
 
 ## Standalone scripts
 
-- [diagnostic_plot_heel_marker_axes.m](diagnostic_plot_heel_marker_axes.m)
+- [scripts/diagnostic_plot_heel_marker_axes.m](scripts/diagnostic_plot_heel_marker_axes.m)
   - A visual check of which marker axis is the walking direction; this justifies `forward_dim`.
   - Set the subject, leg, pair and band at the top of the file.
   - Writes to `Results/kinematics_coherence_cycles/heel_marker_axis_diagnostics/`.
-- [participant_summary_matlab.m](participant_summary_matlab.m)
+- [scripts/participant_summary_matlab.m](scripts/participant_summary_matlab.m)
   - Cohort descriptives (overall and by age group) from `participants_metadata_EMG.csv`.
   - Writes to `Results/participant_summary_outputs/` and `Results/png_visualisation/participant_summary_plots/`.
 
@@ -394,4 +401,4 @@ These are the problems in the current code that affect running it.
 - In h_stats, `infer_spm_object_switch` is defined only inside `run_spm_mixed_age_condition_on_spectrum.m`. As a result the one-way age and condition spectrum SPMs fall into their `catch` branch and no significance bars are drawn.
 - d_a needs a key press (`pause`), so the full pipeline cannot run unattended.
 - c, d_a, d_b and e always plot one hard-coded example signal (for example `CTL_79 / Flat / right`). These plots fail if that subject is missing.
-- `Metadata/ParticipantGroup.m`, `Metadata/PhysicalActivity_EMG.csv` and `Functions/simulations_helpers/` are not used by any code.
+- `Metadata/ParticipantGroup.m` and `Metadata/PhysicalActivity_EMG.csv` are not used by any code. (They stay where they are: `Metadata/` is git-ignored and untracked, so deleting anything there cannot be undone.)
