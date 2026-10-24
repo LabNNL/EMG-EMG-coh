@@ -144,6 +144,105 @@ have been changed since.
 and in any case it would only concern frequencies far above the 60 Hz ceiling
 of this analysis.
 
+### Filters and the Alpha band
+
+Two filters act on the EMG before coherence is computed, and both have their
+low corner close to the bottom of the Alpha band (8–12 Hz):
+
+- **On the sensor**, the Delsys mode's high-pass, either 10 Hz or 20 Hz (the
+  data cannot settle which, see above).
+- **In the pipeline**, stage b's band-pass, `C.b_preproc.bandpass = [8 450]`:
+  a 4th-order Butterworth with its −3 dB point at exactly 8 Hz, applied with
+  `filtfilt` (so twice) in `pp_preprocess_signal.m`. Its output is what stages
+  c, d_b, f and g all work on.
+
+**In short: they reduce Alpha power, they do not bias Alpha coherence, and
+neither should change.**
+
+#### A filter fades a band out, it does not delete it
+
+A filter corner is where the signal is reduced by about 30% in amplitude, not
+a wall. Below the corner the signal shrinks gradually. Amplitude kept by the
+pipeline's band-pass after `filtfilt`:
+
+| Frequency | 4 Hz | 8 Hz | 10 Hz | 12 Hz | 15 Hz | 20 Hz |
+|---|---|---|---|---|---|---|
+| gain | −25.0 dB | −6.0 dB | −2.9 dB | −1.5 dB | −0.6 dB | −0.2 dB |
+| amplitude kept | ~6% | ~50% | ~72% | ~84% | ~93% | ~98% |
+
+The sensor filter did not delete 8 Hz either. The audit spectra are computed
+on the raw `.c3d` signals — after the Delsys filter, before the pipeline's —
+and there 8 Hz is only about 4–6 dB below the strongest frequencies, against a
+numerical floor about 58 dB down. A deleted band would sit at that floor.
+
+#### Why reducing a band does not change its coherence
+
+Coherence measures how consistently the two signals move together at each
+frequency, across cycles. It is in effect a correlation coefficient computed
+frequency by frequency, and a correlation does not change when a variable is
+scaled: multiply one variable by 0.5 and both its covariance with the other
+and its own standard deviation halve, leaving the ratio as it was.
+
+Formally, coherence is |Sxy|² / (Sxx·Syy). If the two channels pass through
+filters H₁ and H₂, the cross-spectrum gains |H₁|²|H₂|² and the auto-spectra
+gain |H₁|² and |H₂|², which cancel. This holds even if the two filters
+differ, so small sensor-to-sensor differences in the hardware filter do not
+matter either. A filter also shifts the phase, but by the same amount in every
+cycle, which leaves the consistency of the relationship unchanged.
+
+Checked on four real pairs from `CTL_01_Plat_03.c3d`, using `mscohere` (1 s
+Hann windows, 50% overlap) on the raw signals and on the same signals passed
+through the pipeline's band-pass. Mean coherence over each band:
+
+| Pair | Alpha raw | Alpha band-passed | Beta raw | Beta band-passed |
+|---|---|---|---|---|
+| TAprox–TAdist right | 0.755 | 0.764 | 0.492 | 0.492 |
+| TAprox–TAdist left | 0.107 | 0.104 | 0.369 | 0.369 |
+| SOL–GM right | 0.217 | 0.220 | 0.217 | 0.216 |
+| SOL–GM left | 0.306 | 0.313 | 0.244 | 0.244 |
+
+Alpha moves by at most 0.01, in both directions; Beta does not move at all to
+three decimals. The small Alpha differences come from strong sub-8 Hz content
+in the raw signal leaking into the neighbouring bins, which the band-pass
+removes — not from the attenuation itself.
+
+#### Where it would break
+
+The argument assumes the band stays well above noise added *after* the filter
+(digitisation, the 74 Hz comb, resampling). Shrink a frequency into that noise
+and coherence there becomes a correlation of noise, falling towards zero. That
+is visible at 4 Hz, where the band-pass keeps only ~6% and coherence in the
+check above fell from 0.38 to 0.25. Alpha is nowhere near this: after both
+filters it sits about 55 dB above the numerical floor. This is also why the
+unresolved 10 Hz vs 20 Hz question about the sensor filter does not matter for
+the coherence results.
+
+#### What the band-pass does still affect
+
+- **Alpha power.** Anything computed on power — the `Alpha_LogPower`
+  covariate, the POI power diagnostics — is reduced by up to 6 dB from the
+  band-pass alone, plus whatever the sensor filter removed. Do not interpret
+  absolute Alpha power. The power-covariate models are currently off
+  (`run_power_control_models = false`, `continuous_age_include_power = false`),
+  so no present result depends on it.
+- **Leakage into Alpha.** Below 8 Hz the raw EMG carries strong movement
+  artifact. The wavelet at 8 Hz also picks up energy from about 6–10 Hz, so
+  without the high-pass that artifact would leak into the lowest Alpha bins.
+  Being shared between neighbouring sensors and locked to the gait cycle, it
+  would inflate coherence. The 8 Hz corner works against this.
+- **Which data is analysed.** Burst detection (stage c) and the rule-based QC
+  (stage d_b) run on the band-passed signal, so its settings decide which
+  bursts and cycles survive into stage f.
+
+#### Should the band-pass change?
+
+No. Its gain has no effect on coherence; lowering the corner would let more
+sub-8 Hz artifact leak into Alpha; raising it would discard signal; and either
+would change which cycles are selected, and so every finalised result. If the
+pipeline is ever rebuilt from scratch, a corner at about 5–6 Hz would put the
+whole analysis band inside the passband, which is tidier practice — but it
+would change Alpha power, not Alpha coherence.
+
 ### Signal available in each band
 
 How much raw signal each band carries turns out to depend on how you average,
