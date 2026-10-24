@@ -32,6 +32,8 @@ function make_spectrum_age_within_condition_figure(Tp, pairName, freqRef, C, HC,
     legendHandlesList = cell(numel(condLevelsAll), 1);
     legendLabelsList  = cell(numel(condLevelsAll), 1);
 
+    HS = apply_followup_alpha_correction(HS, numel(condLevelsAll));
+
     % ===================== PASS 1: plot curves only =====================
     for ic = 1:numel(condLevelsAll)
 
@@ -136,7 +138,7 @@ function make_spectrum_age_within_condition_figure(Tp, pairName, freqRef, C, HC,
         ylim(ax, [0 yTopCommon]);
     end
 
-    sgtitle(fig, sprintf('%s | age effect within each condition | %s', string(pairName), get_pair_phase_text(pairName, C)), 'Interpreter', 'none');
+    sgtitle(fig, {sprintf('%s | age effect within each condition | %s', string(pairName), get_pair_phase_text(pairName, C)), HS.followup_alpha_label}, 'Interpreter', 'none');
 
     outFile = fullfile(outDir, sprintf( 'SPECTRUM_AGE_WITHIN_CONDITION__%s__%s__%s.png', char(string(pairName)), lower(char(string(HS.scope))), lower(char(string(HS.spectrum_source)))));
 

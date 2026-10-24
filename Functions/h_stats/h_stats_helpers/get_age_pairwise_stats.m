@@ -1,6 +1,7 @@
 function pairwiseStats = get_age_pairwise_stats(T, dvName, PH)
 % Pairwise age-group comparisons across all available subjects
-% Uses independent tests
+% Uses independent tests on one value per subject (mean over that subject's
+% conditions), so a subject is not counted once per condition
 
     PH = fill_posthoc_defaults(PH);
 
@@ -14,6 +15,11 @@ function pairwiseStats = get_age_pairwise_stats(T, dvName, PH)
     if isempty(T)
         return;
     end
+
+    [G, subj] = findgroups(T.subject);
+    y  = splitapply(@(v) mean(v, 'omitnan'), T.(dvName), G);
+    ag = splitapply(@(a) a(1), T.age_group, G);
+    T = table(subj, ag, y, 'VariableNames', {'subject', 'age_group', dvName});
 
     if iscategorical(T.age_group)
         T.age_group = removecats(T.age_group);

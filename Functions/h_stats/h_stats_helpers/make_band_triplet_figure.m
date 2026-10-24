@@ -1,6 +1,13 @@
-function make_band_triplet_figure(T, pairName, metricFamily, plotMode, outFile, visibleMode, C, HC)
+function make_band_triplet_figure(T, pairName, metricFamily, plotMode, outFile, visibleMode, C, HC, primaryTbl)
 % metricFamily = 'mean' or 'auc'
 % plotMode = 'condition', 'age', or 'age_condition'
+% primaryTbl = CONTINUOUS_AGE_LME_TABLE: the omnibus p-values shown are the
+% Holm-adjusted ones of the primary model (continuous age x condition); the
+% figure never fits a model of its own. Age groups are for display only.
+
+    if nargin < 9
+        primaryTbl = table();
+    end
 
     fig = figure('Visible', visibleMode, 'Color', 'w', 'Position', [100 100 1800 520]);
 
@@ -62,9 +69,9 @@ function make_band_triplet_figure(T, pairName, metricFamily, plotMode, outFile, 
                     legendLabelsMaster = legL;
                 end
 
-                p_main = get_term_pvalue_from_lme_formula(Tsub, sprintf('%s ~ age_group * condition + (1|subject)', dv), 'condition');
+                [~, p_main, ~, ok] = primary_model_p(primaryTbl, pairName, dv);
 
-                txtLines = {format_p_text('Condition p', p_main)};
+                txtLines = omnibus_lines(ok, {format_p_text('Condition p_{Holm}', p_main)});
                 add_omnibus_text(ax, txtLines);
 
                 pw = get_condition_pairwise_stats(Tsub, dv, HC.posthoc);
@@ -88,9 +95,9 @@ function make_band_triplet_figure(T, pairName, metricFamily, plotMode, outFile, 
                     legendLabelsMaster = legL;
                 end
 
-                p_main = get_term_pvalue_from_lme_formula(Tsub, sprintf('%s ~ age_group * condition + (1|subject)', dv), 'age_group');
+                [p_main, ~, ~, ok] = primary_model_p(primaryTbl, pairName, dv);
 
-                txtLines = {format_p_text('Age p', p_main)};
+                txtLines = omnibus_lines(ok, {format_p_text('Age (continuous) p_{Holm}', p_main)});
                 add_omnibus_text(ax, txtLines);
 
                 pw = get_age_pairwise_stats(Tsub, dv, HC.posthoc);
@@ -114,11 +121,9 @@ function make_band_triplet_figure(T, pairName, metricFamily, plotMode, outFile, 
                     legendLabelsMaster = legL;
                 end
 
-                p_age  = get_term_pvalue_from_lme_formula(Tsub, sprintf('%s ~ age_group * condition + (1|subject)', dv), 'age_group');
-                p_cond = get_term_pvalue_from_lme_formula(Tsub, sprintf('%s ~ age_group * condition + (1|subject)', dv), 'condition');
-                p_int  = get_term_pvalue_from_lme_formula(Tsub, sprintf('%s ~ age_group * condition + (1|subject)', dv), 'age_group:condition');
+                [p_age, p_cond, p_int, ok] = primary_model_p(primaryTbl, pairName, dv);
 
-                txtLines = { format_p_text('Age p', p_age), format_p_text('Condition p', p_cond), format_p_text('Age x Condition p', p_int)};
+                txtLines = omnibus_lines(ok, { format_p_text('Age (continuous) p_{Holm}', p_age), format_p_text('Condition p_{Holm}', p_cond), format_p_text('Age x Condition p_{Holm}', p_int)});
                 add_omnibus_text(ax, txtLines);
 
                 pw = get_condition_pairwise_stats_within_age_simple(Tsub, dv, HC.posthoc);
@@ -145,11 +150,9 @@ function make_band_triplet_figure(T, pairName, metricFamily, plotMode, outFile, 
                     legendLabelsMaster = legL;
                 end
 
-                p_age  = get_term_pvalue_from_lme_formula(Tsub, sprintf('%s ~ age_group * condition + (1|subject)', dv), 'age_group');
-                p_cond = get_term_pvalue_from_lme_formula(Tsub, sprintf('%s ~ age_group * condition + (1|subject)', dv), 'condition');
-                p_int  = get_term_pvalue_from_lme_formula(Tsub, sprintf('%s ~ age_group * condition + (1|subject)', dv), 'age_group:condition');
+                [p_age, p_cond, p_int, ok] = primary_model_p(primaryTbl, pairName, dv);
 
-                txtLines = { format_p_text('Age p', p_age), format_p_text('Condition p', p_cond), format_p_text('Age x Condition p', p_int)};
+                txtLines = omnibus_lines(ok, { format_p_text('Age (continuous) p_{Holm}', p_age), format_p_text('Condition p_{Holm}', p_cond), format_p_text('Age x Condition p_{Holm}', p_int)});
                 add_omnibus_text(ax, txtLines);
 
                 pw = get_age_pairwise_stats_within_condition_simple(Tsub, dv, HC.posthoc);
@@ -182,8 +185,36 @@ function make_band_triplet_figure(T, pairName, metricFamily, plotMode, outFile, 
         lgd.Position = [0.70 0.93 0.20 0.04];
     end
 
+    footer = sprintf(['Omnibus p: primary model DV ~ AgeYears_z * condition + (1|subject), %s coding, %s, %s DF, ' ...
+        'Holm-adjusted across the models of CONTINUOUS_AGE_LME_TABLE. Bars: %s post hoc, %s-corrected. ' ...
+        'Age groups are for display only.'], HC.lme.dummy_var_coding, HC.lme.fit_method, HC.lme.df_method, HC.posthoc.mode, HC.posthoc.correction);
+    annotation(fig, 'textbox', [0 0 1 0.04], 'String', footer, 'EdgeColor', 'none', ...
+        'HorizontalAlignment', 'center', 'FontSize', 8, 'Interpreter', 'none');
+
     saveas(fig, outFile);
     close(fig);
+end
+
+function [pAge, pCond, pInt, ok] = primary_model_p(primaryTbl, pairName, dv)
+% Holm-adjusted p-values of the primary model for this pair and metric
+    pAge = NaN; pCond = NaN; pInt = NaN; ok = false;
+    if ~istable(primaryTbl) || isempty(primaryTbl) || ~ismember('p_age_linear_holm', primaryTbl.Properties.VariableNames)
+        return;
+    end
+    r = find(string(primaryTbl.pair_name) == string(pairName) & string(primaryTbl.metric) == string(dv), 1);
+    if isempty(r)
+        return;
+    end
+    ok = true;
+    pAge  = primaryTbl.p_age_linear_holm(r);
+    pCond = primaryTbl.p_condition_holm(r);
+    pInt  = primaryTbl.p_age_condition_holm(r);
+end
+
+function txtLines = omnibus_lines(ok, txtLines)
+    if ~ok
+        txtLines = {'not in primary model'};
+    end
 end
 
 function [groupLevels, legendHandles, legendLabels] = plot_simple_boxpanel(ax, T, dv, groupVar, groupOrder, colorFun, xLabel, panelTitle, pairName, C)

@@ -1322,6 +1322,7 @@ C.h_stats.io.models_dir = fullfile(C.h_stats.io.out_dir, 'models');
 C.h_stats.io.plots_dir = fullfile(C.paths.plot_dir, 'h_coherence_stats_pair_phase_main');
 C.h_stats.io.workspace_mat = fullfile(C.h_stats.io.mat_dir, 'COHERENCE_STATS_PAIR_PHASE_MAIN.mat');
 C.h_stats.io.band_triplet_dir = fullfile(C.h_stats.io.plots_dir, 'band_triplets');
+C.h_stats.io.archive_stale_outputs = true; % move tables/models/plots not rewritten by this run into _stale_<time>/ (never deletes)
 
 % ===================== ANALYSIS =====================
 C.h_stats.analysis = struct();
@@ -1452,6 +1453,14 @@ C.h_stats.plot.correlation_ylim = C.h_stats.plot.coherence_ylim;
 
 % ===================== POST HOC =====================
 C.h_stats.posthoc = struct();
+% ===================== Mixed models (every fitlme in stage h goes through fit_h_lme) =====================
+% 'effects' coding: the age term is the age slope averaged over conditions, the
+% condition term is averaged over age. Under 'reference' coding (MATLAB's default)
+% the age term is the slope in the first condition (Flat) only.
+C.h_stats.lme.dummy_var_coding = 'effects';
+C.h_stats.lme.fit_method = 'REML';            % 'REML' | 'ML'
+C.h_stats.lme.df_method = 'satterthwaite';    % 'satterthwaite' | 'residual'
+
 C.h_stats.posthoc.mode = 'nonparametric';   % 'adaptive', 'parametric', 'nonparametric'
 C.h_stats.posthoc.min_n_parametric = 8;
 C.h_stats.posthoc.outlier_z_thresh = 3.5;
@@ -1512,6 +1521,7 @@ C.h_stats.spectrum.mixed_require_complete_case = true;
 % C.h_stats.spectrum.mixed_nonparam_iterations = 5000;
 
 C.h_stats.spectrum.make_followup_subplot_spm = true;
+C.h_stats.spectrum.followup_alpha_correction = 'bonferroni'; % follow-up SPM per stratum: 'bonferroni' (alpha / number of strata) or 'none'
 
 % Minimum unique subjects for running subplot SPM.
 % Plots are still shown if n is lower, but SPM is skipped.
@@ -1525,6 +1535,7 @@ C.h_stats.spectrum.fixed_ylim = [0 1];
 
 % Continuous-age LME sensitivity models
 C.h_stats.analysis.run_continuous_age_lme = true;
+C.h_stats.analysis.run_continuous_age_sensitivity = true; % SENSITIVITY_CONTINUOUS_AGE.csv: quadratic age, Fisher z, raw + log(n cycles), cycle-bias-corrected
 C.h_stats.analysis.run_categorical_age_lme = false;
 C.h_stats.analysis.run_power_control_models = false;
 C.h_stats.analysis.run_age_correlations = false;

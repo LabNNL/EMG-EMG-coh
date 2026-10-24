@@ -50,6 +50,7 @@ function h_coherence_stats()
     addpath(genpath(C.paths.helpers.stats));
 
     HC = C.h_stats;
+    runStart = datetime('now') - seconds(1);
 
     ANALYSIS_TAG = make_h_stats_analysis_tag(HC);
 
@@ -78,7 +79,8 @@ function h_coherence_stats()
 
     fprintf('\n=== Running coherence stats: pair-specific main phase analysis ===\n');
 
-    varNamesDebug = { 'subject','age_group','condition','leg','pair_name', 'n_cycles_used', 'n_cycles_available_ref', 'Alpha_n_cycles_used_for_metric', 'Beta_n_cycles_used_for_metric', 'Gamma_n_cycles_used_for_metric', 'Alpha_cycle_count_source', 'Beta_cycle_count_source', 'Gamma_cycle_count_source', 'metric_scope','coherence_source', 'Alpha','Beta','Gamma', 'Alpha_AUC_norm','Beta_AUC_norm','Gamma_AUC_norm', 'Alpha_Peak','Beta_Peak','Gamma_Peak', 'Alpha_LogPower','Beta_LogPower','Gamma_LogPower'};
+    varNamesDebug = { 'subject','age_group','condition','leg','pair_name', 'n_cycles_used', 'n_cycles_available_ref', 'Alpha_n_cycles_used_for_metric', 'Beta_n_cycles_used_for_metric', 'Gamma_n_cycles_used_for_metric', 'Alpha_cycle_count_source', 'Beta_cycle_count_source', 'Gamma_cycle_count_source', 'metric_scope','coherence_source', 'Alpha','Beta','Gamma', 'Alpha_AUC_norm','Beta_AUC_norm','Gamma_AUC_norm', 'Alpha_Peak','Beta_Peak','Gamma_Peak', 'Alpha_LogPower','Beta_LogPower','Gamma_LogPower', ...
+        'Alpha_AUC_norm__raw','Beta_AUC_norm__raw','Gamma_AUC_norm__raw', 'Alpha_AUC_norm__cycle_bias_corrected','Beta_AUC_norm__cycle_bias_corrected','Gamma_AUC_norm__cycle_bias_corrected', 'Alpha_n_cycles__raw','Beta_n_cycles__raw','Gamma_n_cycles__raw'}; % sensitivity columns (run_continuous_age_sensitivity)
 
     contAgeLmmPlotDir = fullfile(HC.io.plots_dir, 'continuous_age_lmm_by_condition');
     if ~exist(contAgeLmmPlotDir, 'dir')
@@ -201,7 +203,10 @@ function h_coherence_stats()
 
                     ri = ri + 1;
 
-                    ROW(ri,:) = { string(subjID), string(age_group), string(cond), string(leg), string(pairName), nCycles, nCyclesAvailableRef, cycleAlpha.n_used_for_metric, cycleBeta.n_used_for_metric, cycleGamma.n_used_for_metric, string(cycleAlpha.source), string(cycleBeta.source), string(cycleGamma.source), string(HC.analysis.metric_scope), string(HC.analysis.coherence_source), get_scalar_from_result(R_alpha, 'Alpha', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_beta,  'Beta',  HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_gamma, 'Gamma', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_alpha, 'Alpha_AUC_norm', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_beta,  'Beta_AUC_norm',  HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_gamma, 'Gamma_AUC_norm', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_alpha, 'Alpha_Peak', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_beta,  'Beta_Peak',  HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_gamma, 'Gamma_Peak', HC.analysis.metric_scope, HC.analysis.coherence_source), get_power_by_scope(R_ref, 'Alpha', HC.analysis.metric_scope), get_power_by_scope(R_ref, 'Beta',  HC.analysis.metric_scope), get_power_by_scope(R_ref, 'Gamma', HC.analysis.metric_scope) };
+                    ROW(ri,:) = { string(subjID), string(age_group), string(cond), string(leg), string(pairName), nCycles, nCyclesAvailableRef, cycleAlpha.n_used_for_metric, cycleBeta.n_used_for_metric, cycleGamma.n_used_for_metric, string(cycleAlpha.source), string(cycleBeta.source), string(cycleGamma.source), string(HC.analysis.metric_scope), string(HC.analysis.coherence_source), get_scalar_from_result(R_alpha, 'Alpha', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_beta,  'Beta',  HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_gamma, 'Gamma', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_alpha, 'Alpha_AUC_norm', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_beta,  'Beta_AUC_norm',  HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_gamma, 'Gamma_AUC_norm', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_alpha, 'Alpha_Peak', HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_beta,  'Beta_Peak',  HC.analysis.metric_scope, HC.analysis.coherence_source), get_scalar_from_result(R_gamma, 'Gamma_Peak', HC.analysis.metric_scope, HC.analysis.coherence_source), get_power_by_scope(R_ref, 'Alpha', HC.analysis.metric_scope), get_power_by_scope(R_ref, 'Beta',  HC.analysis.metric_scope), get_power_by_scope(R_ref, 'Gamma', HC.analysis.metric_scope), ...
+                        get_scalar_from_result(R_alpha, 'Alpha_AUC_norm', HC.analysis.metric_scope, "raw"), get_scalar_from_result(R_beta, 'Beta_AUC_norm', HC.analysis.metric_scope, "raw"), get_scalar_from_result(R_gamma, 'Gamma_AUC_norm', HC.analysis.metric_scope, "raw"), ...
+                        get_scalar_from_result(R_alpha, 'Alpha_AUC_norm', HC.analysis.metric_scope, "cycle_bias_corrected"), get_scalar_from_result(R_beta, 'Beta_AUC_norm', HC.analysis.metric_scope, "cycle_bias_corrected"), get_scalar_from_result(R_gamma, 'Gamma_AUC_norm', HC.analysis.metric_scope, "cycle_bias_corrected"), ...
+                        get_metric_cycle_count_info(R_alpha, "raw").n_used_for_metric, get_metric_cycle_count_info(R_beta, "raw").n_used_for_metric, get_metric_cycle_count_info(R_gamma, "raw").n_used_for_metric };
                 end
             end
         end
@@ -238,7 +243,9 @@ function h_coherence_stats()
     analysisDvList = HC.analysis.dv_list;
     powerVars = {'Alpha_LogPower','Beta_LogPower','Gamma_LogPower'};
 
-    avgVars = unique([analysisDvList, powerVars], 'stable');
+    sensitivityVars = {'Alpha_AUC_norm__raw','Beta_AUC_norm__raw','Gamma_AUC_norm__raw', 'Alpha_AUC_norm__cycle_bias_corrected','Beta_AUC_norm__cycle_bias_corrected','Gamma_AUC_norm__cycle_bias_corrected', 'Alpha_n_cycles__raw','Beta_n_cycles__raw','Gamma_n_cycles__raw'};
+
+    avgVars = unique([analysisDvList, powerVars, sensitivityVars], 'stable');
 
     % keep only variables that exist AND are numeric
     avgVars = avgVars(ismember(avgVars, T_row.Properties.VariableNames));
@@ -1221,6 +1228,12 @@ function h_coherence_stats()
         CONT_AGE_ROWS = {};
         riCA = 0;
 
+        PLOT_3BANDS_BY_PAIR = struct();
+        contAgeDiagDir = fullfile(HC.io.models_dir, 'continuous_age_lmm_diagnostics');
+        if ~exist(contAgeDiagDir, 'dir')
+            mkdir(contAgeDiagDir);
+        end
+
         contAgeDir = fullfile(HC.io.models_dir, 'continuous_age_models');
         if ~exist(contAgeDir, 'dir')
             mkdir(contAgeDir);
@@ -1251,24 +1264,6 @@ function h_coherence_stats()
             for idv = 1:numel(dvList)
 
                 dv = dvList{idv};
-
-                fprintf('\n--- 3-band plot storage debug ---\n');
-                fprintf('dv = %s\n', string(dv));
-
-                if isfield(HC.plot, 'continuous_age_lmm_3bands')
-                    fprintf('3bands field exists: yes\n');
-                    fprintf('3bands enable = %d\n', HC.plot.continuous_age_lmm_3bands.enable);
-
-                    if isfield(HC.plot.continuous_age_lmm_3bands, 'metrics')
-                        disp('metrics requested for 3-band plot:');
-                        disp(string(HC.plot.continuous_age_lmm_3bands.metrics));
-                        fprintf('is current dv requested? %d\n', ismember(string(dv), string(HC.plot.continuous_age_lmm_3bands.metrics)));
-                    else
-                        fprintf('No metrics field found for 3-band plot.\n');
-                    end
-                else
-                    fprintf('3bands field exists: no\n');
-                end
 
                 if ~ismember(dv, Tp.Properties.VariableNames)
                     continue;
@@ -1351,7 +1346,12 @@ function h_coherence_stats()
                 fprintf('\nRunning continuous-age LME for %s | %s\n', pairName, string(dv));
                 fprintf('Formula: %s\n', formula);
 
-                lme = write_lme_report(Tm, dv, formula, outTxt);
+                qqPng = fullfile(contAgeDiagDir, sprintf('QQ__%s__%s__%s.png', char(pairName), dv, ANALYSIS_TAG));
+                [lme, lmeDiag] = write_lme_report(Tm, dv, formula, outTxt, HC, qqPng);
+
+                if isempty(lme)
+                    continue;
+                end
 
                 if isfield(HC.plot, 'continuous_age_lmm') && HC.plot.continuous_age_lmm.enable
 
@@ -1360,102 +1360,106 @@ function h_coherence_stats()
                     plot_continuous_age_lmm_by_condition( Tm, lme, dv, pairName, C, HC, outPng, 'powerVar', powerVar, 'cycleVar', "", 'ageVarRaw', 'AgeYears', 'ageVarModel', 'AgeYears_z', 'conditionVar', 'condition', 'subjectVar', 'subject');
                 end
 
-                % ---------- Store model for 3-band continuous-age plot ----------
+                % ---------- term statistics, all from the model fitted above ----------
+                % Under effects coding the AgeYears_z term is the age slope averaged over conditions.
+                stAge  = get_lme_term_stats(lme, HC, 'AgeYears_z');
+                stCond = get_lme_term_stats(lme, HC, 'condition');
+                stInt  = get_lme_term_stats(lme, HC, 'AgeYears_z:condition');
+                stQuad = get_lme_term_stats(lme, HC, 'AgeYears_z2');
+                stPow  = struct('p', NaN);
+                stCyc  = struct('p', NaN);
+                if usePowerInThisModel
+                    stPow = get_lme_term_stats(lme, HC, char(powerVar));
+                end
+                if useCycleCovInThisModel
+                    stCyc = get_lme_term_stats(lme, HC, 'log_n_cycles');
+                end
+
+                % years per SD of AgeYears_z, to report the slope per year
+                ageSd = NaN;
+                if ismember('AgeYears', Tm.Properties.VariableNames) && numel(unique(Tm.AgeYears_z)) > 1
+                    b = polyfit(Tm.AgeYears_z, Tm.AgeYears, 1);
+                    ageSd = b(1);
+                end
+
+                % ---------- store model for the 3-band plot (drawn after the Holm correction) ----------
                 if isfield(HC.plot, 'continuous_age_lmm_3bands') && HC.plot.continuous_age_lmm_3bands.enable
 
-                    bandNameForPlot = infer_band_from_metric_name(dv);
-                    bandField = char(bandNameForPlot);
+                    bandField = char(infer_band_from_metric_name(dv));
 
                     PLOT_3BANDS.(bandField).Tm = Tm;
                     PLOT_3BANDS.(bandField).lme = lme;
                     PLOT_3BANDS.(bandField).dv = string(dv);
                     PLOT_3BANDS.(bandField).pairName = pairName;
                     PLOT_3BANDS.(bandField).formula = string(formula);
-
-                    if exist('powerVar', 'var')
-                        PLOT_3BANDS.(bandField).powerVar = string(powerVar);
-                    else
-                        PLOT_3BANDS.(bandField).powerVar = "";
-                    end
-
-                    if exist('useCycleCovInThisModel', 'var') && useCycleCovInThisModel
+                    PLOT_3BANDS.(bandField).powerVar = string(powerVar);
+                    PLOT_3BANDS.(bandField).cycleVar = "";
+                    if useCycleCovInThisModel
                         PLOT_3BANDS.(bandField).cycleVar = "log_n_cycles";
-                    else
-                        PLOT_3BANDS.(bandField).cycleVar = "";
                     end
-
-                    PLOT_3BANDS.(bandField).p_age = get_term_pvalue_from_lme_formula(Tm, formula, 'AgeYears_z');
-                    PLOT_3BANDS.(bandField).p_condition = get_term_pvalue_from_lme_formula(Tm, formula, 'condition');
-                    PLOT_3BANDS.(bandField).p_interaction = get_term_pvalue_from_lme_formula(Tm, formula, 'condition:AgeYears_z');
-
-                    if PLOT_3BANDS.(bandField).powerVar ~= ""
-                        PLOT_3BANDS.(bandField).p_power = get_term_pvalue_from_lme_formula(Tm, formula, char(PLOT_3BANDS.(bandField).powerVar));
-                    else
-                        PLOT_3BANDS.(bandField).p_power = NaN;
-                    end
-
-                    if PLOT_3BANDS.(bandField).cycleVar ~= ""
-                        PLOT_3BANDS.(bandField).p_cycle = get_term_pvalue_from_lme_formula(Tm, formula, 'log_n_cycles');
-                    else
-                        PLOT_3BANDS.(bandField).p_cycle = NaN;
-                    end
-                end
-
-                % ---------- p-values ----------
-                p_age_linear = get_term_pvalue_from_lme_formula(Tm, formula, 'AgeYears_z');
-                p_condition  = get_term_pvalue_from_lme_formula(Tm, formula, 'condition');
-
-                if useAgeConditionInteraction
-                    p_age_condition = get_term_pvalue_from_lme_formula(Tm, formula, 'AgeYears_z:condition');
-                else
-                    p_age_condition = NaN;
-                end
-
-                if includeQuadraticAge
-                    p_age_quadratic = get_term_pvalue_from_lme_formula(Tm, formula, 'AgeYears_z2');
-                else
-                    p_age_quadratic = NaN;
-                end
-
-                if usePowerInThisModel
-                    p_power = get_term_pvalue_from_lme_formula(Tm, formula, char(powerVar));
-                else
-                    p_power = NaN;
-                end
-
-                if useCycleCovInThisModel
-                    p_cycle = get_term_pvalue_from_lme_formula(Tm, formula, 'log_n_cycles');
-                else
-                    p_cycle = NaN;
+                    PLOT_3BANDS.(bandField).p_power = stPow.p;
+                    PLOT_3BANDS.(bandField).p_cycle = stCyc.p;
                 end
 
                 riCA = riCA + 1;
-                CONT_AGE_ROWS(riCA,:) = { pairName, string(dv), string(HC.analysis.coherence_source), string(HC.analysis.metric_scope), string(formula), height(Tm), numel(unique(Tm.subject)), useAgeConditionInteraction, includeQuadraticAge, usePowerInThisModel, string(powerVar), useCycleCovInThisModel, string(cycleCovSource), p_age_linear, p_age_quadratic, p_condition, p_age_condition, p_power, p_cycle };
+                CONT_AGE_ROWS(riCA,:) = { pairName, string(dv), string(HC.analysis.coherence_source), string(HC.analysis.metric_scope), string(formula), height(Tm), numel(unique(Tm.subject)), useAgeConditionInteraction, includeQuadraticAge, usePowerInThisModel, string(powerVar), useCycleCovInThisModel, string(cycleCovSource), ...
+                    stAge.p, stQuad.p, stCond.p, stInt.p, stPow.p, stCyc.p, ...
+                    stAge.F, stAge.df1, stAge.df2, stCond.F, stCond.df1, stCond.df2, stInt.F, stInt.df1, stInt.df2, ...
+                    stAge.estimate, stAge.se, stAge.ci_low, stAge.ci_high, ageSd, stAge.estimate / ageSd, stAge.ci_low / ageSd, stAge.ci_high / ageSd, ...
+                    lmeDiag.skewness, lmeDiag.kurtosis, lmeDiag.p_lilliefors, ...
+                    string(HC.lme.dummy_var_coding), string(HC.lme.fit_method), string(HC.lme.df_method) };
             end
 
-            disp('Fields stored in PLOT_3BANDS:');
-            disp(fieldnames(PLOT_3BANDS));
-
-            % ---------- Plot 3 bands together for this pair ----------
-            if isfield(HC.plot, 'continuous_age_lmm_3bands') && HC.plot.continuous_age_lmm_3bands.enable && ~isempty(fieldnames(PLOT_3BANDS))
-
-                fprintf('Plotting continuous-age LMM 3-band plot for pair: %s\n', pairName);
-
-                outPng = fullfile(contAgeLmm3BandPlotDir, sprintf('CONTINUOUS_AGE_LMM_3BANDS__%s__%s__%s.png', char(pairName), char(string(HC.analysis.coherence_source)), lower(char(string(HC.analysis.metric_scope)))));
-
-                plot_continuous_age_lmm_3bands_by_condition( PLOT_3BANDS, C, HC, outPng);
+            if ~isempty(fieldnames(PLOT_3BANDS))
+                PLOT_3BANDS_BY_PAIR.(matlab.lang.makeValidName(pairName)) = PLOT_3BANDS;
             end
         end
 
         if ~isempty(CONT_AGE_ROWS)
 
-            CONTINUOUS_AGE_LME_TABLE = cell2table(CONT_AGE_ROWS, 'VariableNames', { 'pair_name','metric', 'coherence_source','metric_scope', 'model_formula', 'n_rows','n_subjects', 'age_condition_interaction_included', 'quadratic_age_included', 'power_covariate_included','power_covariate', 'cycle_count_covariate_included','cycle_count_source', 'p_age_linear','p_age_quadratic','p_condition','p_age_condition', 'p_power','p_cycle'});
+            CONTINUOUS_AGE_LME_TABLE = cell2table(CONT_AGE_ROWS, 'VariableNames', { 'pair_name','metric', 'coherence_source','metric_scope', 'model_formula', 'n_rows','n_subjects', 'age_condition_interaction_included', 'quadratic_age_included', 'power_covariate_included','power_covariate', 'cycle_count_covariate_included','cycle_count_source', ...
+                'p_age_linear','p_age_quadratic','p_condition','p_age_condition', 'p_power','p_cycle', ...
+                'F_age','df1_age','df2_age','F_condition','df1_condition','df2_condition','F_age_condition','df1_age_condition','df2_age_condition', ...
+                'est_age_per_sd','se_age_per_sd','ci_low_age_per_sd','ci_high_age_per_sd','age_sd_years','est_age_per_year','ci_low_age_per_year','ci_high_age_per_year', ...
+                'resid_skewness','resid_kurtosis','resid_p_lilliefors', ...
+                'dummy_var_coding','fit_method','df_method'});
+
+            % Holm across all models of the table (one family per term)
+            for pv = ["p_age_linear", "p_condition", "p_age_condition"]
+                s = struct('p', num2cell(CONTINUOUS_AGE_LME_TABLE.(pv)));
+                s = apply_pairwise_p_correction(s, 'holm');
+                CONTINUOUS_AGE_LME_TABLE.(pv + "_holm") = [s.p]';
+            end
+            CONTINUOUS_AGE_LME_TABLE.holm_family_size = repmat(height(CONTINUOUS_AGE_LME_TABLE), height(CONTINUOUS_AGE_LME_TABLE), 1);
 
             writetable(CONTINUOUS_AGE_LME_TABLE, fullfile(HC.io.tables_dir, sprintf('CONTINUOUS_AGE_LME_TABLE__%s.csv', ANALYSIS_TAG)));
 
             writetable(CONTINUOUS_AGE_LME_TABLE, fullfile(HC.io.tables_dir, 'CONTINUOUS_AGE_LME_TABLE.csv'));
 
-            disp(CONTINUOUS_AGE_LME_TABLE);
+            disp(CONTINUOUS_AGE_LME_TABLE(:, {'pair_name','metric','p_age_linear','p_age_linear_holm','p_condition','p_condition_holm','p_age_condition','p_age_condition_holm'}));
+
+            % ---------- 3-band plots, annotated with the Holm-adjusted p-values ----------
+            for pairKey = string(fieldnames(PLOT_3BANDS_BY_PAIR))'
+                PLOT_3BANDS = PLOT_3BANDS_BY_PAIR.(pairKey);
+                for bandField = string(fieldnames(PLOT_3BANDS))'
+                    S3 = PLOT_3BANDS.(bandField);
+                    r = find(CONTINUOUS_AGE_LME_TABLE.pair_name == S3.pairName & CONTINUOUS_AGE_LME_TABLE.metric == S3.dv, 1);
+                    PLOT_3BANDS.(bandField).p_age = CONTINUOUS_AGE_LME_TABLE.p_age_linear_holm(r);
+                    PLOT_3BANDS.(bandField).p_condition = CONTINUOUS_AGE_LME_TABLE.p_condition_holm(r);
+                    PLOT_3BANDS.(bandField).p_interaction = CONTINUOUS_AGE_LME_TABLE.p_age_condition_holm(r);
+                    PLOT_3BANDS.(bandField).p_label = "Holm";
+                end
+                pairName = PLOT_3BANDS.(bandField).pairName;
+                fprintf('Plotting continuous-age LMM 3-band plot for pair: %s\n', pairName);
+                outPng = fullfile(contAgeLmm3BandPlotDir, sprintf('CONTINUOUS_AGE_LMM_3BANDS__%s__%s__%s.png', char(pairName), char(string(HC.analysis.coherence_source)), lower(char(string(HC.analysis.metric_scope)))));
+                plot_continuous_age_lmm_3bands_by_condition( PLOT_3BANDS, C, HC, outPng);
+            end
+
+            % ---------- Sensitivity of the primary model ----------
+            if ~isfield(HC.analysis, 'run_continuous_age_sensitivity') || HC.analysis.run_continuous_age_sensitivity
+                SENSITIVITY_CONTINUOUS_AGE = run_continuous_age_sensitivity(T_subj, HC, fullfile(HC.io.tables_dir, 'SENSITIVITY_CONTINUOUS_AGE.csv'));
+                disp(SENSITIVITY_CONTINUOUS_AGE(:, {'pair_name','metric','variant','est_age_per_sd','p_age_linear_holm','p_condition_holm','p_age_condition_holm'}));
+            end
         else
             warning('No continuous-age LME models were computed.');
         end
@@ -1763,17 +1767,15 @@ function h_coherence_stats()
                     Tm = Tm(isfinite(Tm.log_n_cycles), :);
                 end
 
-                lme = write_lme_report(Tm, dv, formula, outTxt);
+                lme = write_lme_report(Tm, dv, formula, outTxt, HC);
 
                 % ---------- omnibus ----------
-                p_age = get_term_pvalue_from_lme_formula( ...
-                    Tm, formula, 'age_group');
-
-                p_condition = get_term_pvalue_from_lme_formula( ...
-                    Tm, formula, 'condition');
-
-                p_interaction = get_term_pvalue_from_lme_formula( ...
-                    Tm, formula, 'age_group:condition');
+                p_age = NaN; p_condition = NaN; p_interaction = NaN;
+                if ~isempty(lme)
+                    p_age = get_lme_term_stats(lme, HC, 'age_group').p;
+                    p_condition = get_lme_term_stats(lme, HC, 'condition').p;
+                    p_interaction = get_lme_term_stats(lme, HC, 'age_group:condition').p;
+                end
 
                 if useCycleCovInThisModel
                     cycleCovariate = "log_n_cycles";
@@ -1998,7 +2000,7 @@ function h_coherence_stats()
                     outTxt = fullfile(HC.io.models_dir, sprintf('MODEL_POWER_CONTROL__%s__%s__%s_%s.txt', char(pairName), dv, string(HC.analysis.coherence_source), cycleTag));
                 end
 
-                lme = write_lme_report(Tm, dv, formula, outTxt);
+                lme = write_lme_report(Tm, dv, formula, outTxt, HC);
             end
         end
     else
@@ -2019,6 +2021,10 @@ function h_coherence_stats()
         end
         plotTypes = { 'condition',     'BY_CONDITION'; 'age',           'BY_AGE'; 'age_condition', 'BY_AGE_AND_CONDITION'; 'condition_age', 'BY_CONDITION_AND_AGE' };
 
+        if ~exist('CONTINUOUS_AGE_LME_TABLE', 'var')
+            CONTINUOUS_AGE_LME_TABLE = table();
+        end
+
         for ip = 1:numel(HC.analysis.pairs_to_analyze)
             pairName = string(HC.analysis.pairs_to_analyze{ip});
             Tp = T_subj(T_subj.pair_name == pairName, :);
@@ -2035,7 +2041,7 @@ function h_coherence_stats()
                     plotType = plotTypes{it, 1};
                     plotLabel = plotTypes{it, 2};
 
-                    make_band_triplet_figure( Tp, pairName, metricType, plotType, fullfile(HC.io.band_triplet_dir, sprintf('TRIPLET_%s__%s__%s__%s_%s.png', metricLabel, pairName, scopeLabelFile, plotLabel, HC.analysis.cycle_triplet_source)), HC.plot.visible, C, HC);
+                    make_band_triplet_figure( Tp, pairName, metricType, plotType, fullfile(HC.io.band_triplet_dir, sprintf('TRIPLET_%s__%s__%s__%s_%s.png', metricLabel, pairName, scopeLabelFile, plotLabel, HC.analysis.cycle_triplet_source)), HC.plot.visible, C, HC, CONTINUOUS_AGE_LME_TABLE);
                 end
             end
         end
@@ -2578,6 +2584,11 @@ function h_coherence_stats()
 
     % Optional latest-copy workspace
     save(HC.io.workspace_mat, 'T_row', 'T_subj', 'DESCRIPTIVE_ALL', 'OMNIBUS_TABLE', 'POSTHOC_TABLE', 'HC', 'ANALYSIS_TAG', '-v7.3');
+
+    % ---------- Move outputs this run did not rewrite out of the way ----------
+    if ~isfield(HC.io, 'archive_stale_outputs') || HC.io.archive_stale_outputs
+        archive_stale_h_outputs({HC.io.tables_dir, HC.io.models_dir, HC.io.plots_dir}, runStart);
+    end
 
     fprintf('\nDone.\n');
     fprintf('Results saved in:\n%s\n', HC.io.out_dir);
