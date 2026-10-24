@@ -328,12 +328,6 @@ C.a_extract_raw.events.to_fallback_ratio = 0.6;
 C.a_extract_raw.mapping = struct();
 C.a_extract_raw.mapping.mode = 'association_script';
 % 'association_script', 'fixed_names', 'mapping_table', 'custom_function'
-C.a_extract_raw.mapping.fixed_names.left = struct( ...
-    'EMG_TAprox', 'TA_L', ...
-    'EMG_SOL',    'SOL_L');
-C.a_extract_raw.mapping.fixed_names.right = struct( ...
-    'EMG_TAprox', 'TA_R', ...
-    'EMG_SOL',    'SOL_R');
 C.a_extract_raw.mapping.association_script = fullfile(C.paths.code_dir, 'Metadata', 'Association.m');
 
 C.a_extract_raw.mapping.fixed_names.left = struct();
@@ -413,10 +407,6 @@ C.b_preproc.output_suffix = '_EMG_PREPROC.mat';
 C.b_preproc.overwrite = true;
 C.b_preproc.inspect_one_output = true;
 C.b_preproc.inspect_depth = 3;
-
-C.c_bursts.inspect = struct();
-C.c_bursts.inspect.inspect_one_output = true;
-C.c_bursts.inspect.inspect_depth = 3;
 
 C.b_preproc.time_domain = struct();
 C.b_preproc.time_domain.save_bandpassed = true;
@@ -746,7 +736,6 @@ C.d_rule_based.params.burst.rail_eps_frac = 0.005;
 C.d_rule_based.params.burst.rail_frac_fail = 0.10;
 
 C.d_rule_based.params.burst.spec = struct();
-C.d_rule_based.params.burst.spec.enable = true;
 C.d_rule_based.params.burst.spec_low = [0 5];
 C.d_rule_based.params.burst.spec_mid = [10 250];
 C.d_rule_based.params.burst.spec_high = [250 450];
@@ -1626,7 +1615,6 @@ C.h_stats.spectrum = struct();
 % SPM / SnPM switch for all spectrum profile analyses
 C.h_stats.spectrum.use_nonparametric = true;
 C.h_stats.spectrum.nonparam_iterations = 5000;
-C.h_stats.spectrum.spm_alpha = 0.05;
 C.h_stats.spectrum.two_tailed = true;
 
 C.h_stats.spectrum.enable = true;
@@ -1949,8 +1937,6 @@ C.j_time_domain.params.extract_signals.bandpassed = true;
 C.j_time_domain.params.extract_signals.rectified  = true;
 C.j_time_domain.params.extract_signals.envelope   = true;
 
-C.j_time_domain.params.store_time_normalized_cycles = true;
-C.j_time_domain.params.n_normalized_points = 1000;
 
 
 %% j_single_muscle_feature_extraction
@@ -2093,8 +2079,6 @@ C.l_spm.params.outlier_plot_normalization_mode = "flat_percentile"; % or "subjec
 C.l_spm.io.outlier_signal_plot_dir = fullfile( ...
     C.paths.plot_dir, 'l_spm_envelope_analysis', 'normalized_outlier_signal_examples');
 
-C.l_spm.params.plot_random_outlier_signal_examples = false;
-C.l_spm.params.n_random_outlier_signal_examples = 10;
 C.l_spm.params.outlier_signal_plot_random_seed = [];   % [] = random every run
 C.l_spm.params.outlier_signal_plot_mode = "all";       % "all" | "flat_percentile" | "subject_percentile"
 
