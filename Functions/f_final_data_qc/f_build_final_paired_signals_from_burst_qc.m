@@ -198,6 +198,11 @@ function f_build_final_paired_signals_from_burst_qc()
                         continue;
                     end
 
+                    % Which trial each cycle came from, and which cycles are
+                    % continuous recording; stage g transforms per run.
+                    [cycle_trial_id, cycle_run_id, cycle_run_note] = get_pair_cycle_run_ids( ...
+                        E1, E2, cycle_starts_pair, cycle_ends_pair, cycle_alignment_note);
+
                     toe_pair_1 = assign_toe_off_to_cycles(cycle_starts_pair, cycle_ends_pair, toe_off_1);
                     toe_pair_2 = assign_toe_off_to_cycles(cycle_starts_pair, cycle_ends_pair, toe_off_2);
 
@@ -297,14 +302,14 @@ function f_build_final_paired_signals_from_burst_qc()
                     end
 
                     % ---------- build final concatenated signals ----------
-                    [final_sig_1, final_sig_2, cycle_segments_table] = build_final_concatenated_pair( x1, x2, cycle_starts_pair, cycle_ends_pair, pair_cycle_keep);
+                    [final_sig_1, final_sig_2, cycle_segments_table] = build_final_concatenated_pair( x1, x2, cycle_starts_pair, cycle_ends_pair, pair_cycle_keep, cycle_run_id, cycle_trial_id);
 
                     band_specific = struct();
 
                     for ib = 1:numel(bandNames)
                         band = bandNames{ib};
 
-                        [sig1_band, sig2_band, Tseg_band] = build_final_concatenated_pair( x1, x2, cycle_starts_pair, cycle_ends_pair, pair_cycle_keep_by_band.(band));
+                        [sig1_band, sig2_band, Tseg_band] = build_final_concatenated_pair( x1, x2, cycle_starts_pair, cycle_ends_pair, pair_cycle_keep_by_band.(band), cycle_run_id, cycle_trial_id);
 
                         Tseg_band = add_toe_off_to_rebuilt_segments(Tseg_band, toe_pair_1);
 
@@ -380,6 +385,9 @@ function f_build_final_paired_signals_from_burst_qc()
                     PairStruct.cycle_starts = cycle_starts_pair;
                     PairStruct.cycle_ends   = cycle_ends_pair;
                     PairStruct.n_cycles_total = nCycles;
+                    PairStruct.cycle_trial_id = cycle_trial_id;
+                    PairStruct.cycle_run_id   = cycle_run_id;
+                    PairStruct.cycle_run_note = cycle_run_note;
                     PairStruct.valid_cycle_numbers = valid_cycle_numbers(:);
                     PairStruct.removed_cycle_numbers = removed_cycle_numbers(:);
 
