@@ -1175,7 +1175,7 @@ function add_spm_significance_bars(ax, spmi, nTimePoints, varargin)
 
         % stars
         if show_stars && ~isempty(pval)
-            stars = p_to_stars(pval);
+            stars = p_to_stars_blank_if_ns(pval);
             if ~isempty(stars)
                 text(ax, xm, y + text_offset, stars, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom', 'Color', col, 'FontWeight', 'bold', 'FontSize', star_font_size, 'Clipping', 'off');
             end
@@ -1189,7 +1189,7 @@ function add_spm_significance_bars(ax, spmi, nTimePoints, varargin)
 end
 
 
-function stars = p_to_stars(p)
+function stars = p_to_stars_blank_if_ns(p)
     if isempty(p) || isnan(p)
         stars = '';
     elseif p < 0.001

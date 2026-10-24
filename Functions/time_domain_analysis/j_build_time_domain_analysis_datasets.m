@@ -475,42 +475,6 @@ function j_build_time_domain_analysis_datasets()
 end
 
 %% ===================== LOCAL FUNCTIONS =====================
-function [cycle_starts, cycle_ends, source_field] = get_cycle_boundaries(E, startCandidates, endCandidates)
-    cycle_starts = [];
-    cycle_ends   = [];
-    source_field = "";
-
-    for i = 1:numel(startCandidates)
-        fn = startCandidates{i};
-        if isfield(E, fn) && ~isempty(E.(fn))
-            cycle_starts = round(E.(fn)(:));
-            cycle_starts = cycle_starts(~isnan(cycle_starts));
-            cycle_starts = unique(cycle_starts, 'stable');
-            source_field = string(fn);
-            break;
-        end
-    end
-
-    if isempty(cycle_starts), return; end
-
-    for i = 1:numel(endCandidates)
-        fn = endCandidates{i};
-        if isfield(E, fn) && ~isempty(E.(fn))
-            cycle_ends = round(E.(fn)(:));
-            cycle_ends = cycle_ends(~isnan(cycle_ends));
-            break;
-        end
-    end
-
-    if isempty(cycle_ends)
-        if numel(cycle_starts) >= 2
-            cycle_ends = [cycle_starts(2:end)-1; NaN];
-        else
-            cycle_ends = NaN(size(cycle_starts));
-        end
-    end
-end
-
 function cycle_ends = finalize_cycle_ends(cycle_starts, cycle_ends, nSamples)
     cycle_starts = cycle_starts(:);
 
@@ -551,34 +515,6 @@ function [toe_off, note] = get_toe_off_in_concat_coordinates_multi(E, candidate_
             return;
         end
     end
-end
-
-function [starts_pair, ends_pair, note] = harmonize_cycle_boundaries(st1, en1, st2, en2, n1, n2)
-    note = "identical";
-
-    st1 = st1(:); en1 = en1(:);
-    st2 = st2(:); en2 = en2(:);
-
-    if ~isempty(en1) && isnan(en1(end)), en1(end) = n1; end
-    if ~isempty(en2) && isnan(en2(end)), en2(end) = n2; end
-
-    if isequal(st1, st2)
-        starts_pair = st1;
-        ends_pair = min(en1, en2);
-        return;
-    end
-
-    commonStarts = intersect(st1, st2, 'stable');
-    if isempty(commonStarts)
-        starts_pair = [];
-        ends_pair = [];
-        note = "no_common_cycle_starts";
-        return;
-    end
-
-    starts_pair = commonStarts(:);
-    ends_pair = [starts_pair(2:end)-1; min(n1,n2)];
-    note = "used_common_cycle_starts_intersection";
 end
 function cyc = evaluate_cycles_for_one_muscle_time_domain(subjID, cond, leg, mf, x, cycle_starts, cycle_ends, bursts, burst_keep, burst_reason, Pcyc)
 

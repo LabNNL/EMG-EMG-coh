@@ -784,51 +784,6 @@ function x = apply_profile_normalization(x, TD, subjID, muscleName, P)
             error('Unknown normalization_mode: %s', modeName);
     end
 end
-
-function T_out = keep_only_complete_subjects_for_conditions(T_in, conditionOrder)
-% Keep only subjects who have all requested conditions
-
-    T_out = T_in;
-
-    if isempty(T_in) || ~ismember('subject', T_in.Properties.VariableNames) || ~ismember('condition', T_in.Properties.VariableNames)
-        return;
-    end
-
-    reqConds = string(conditionOrder(:));
-    reqConds(reqConds == "") = [];
-
-    if isempty(reqConds)
-        return;
-    end
-
-    subjList = categories(removecats(T_in.subject));
-    keepSubs = strings(0,1);
-
-    for iS = 1:numel(subjList)
-        s = subjList{iS};
-        Ts = T_in(T_in.subject == s, :);
-
-        condsHere = categories(removecats(Ts.condition));
-        condsHere = string(condsHere(:));
-
-        if all(ismember(reqConds, condsHere))
-            keepSubs(end+1,1) = string(s); %#ok<AGROW>
-        end
-    end
-
-    if isempty(keepSubs)
-        T_out = T_in([]);
-        return;
-    end
-
-    T_out = T_in(ismember(string(T_in.subject), keepSubs), :);
-
-    if iscategorical(T_out.subject),   T_out.subject   = removecats(T_out.subject); end
-    if iscategorical(T_out.condition), T_out.condition = removecats(T_out.condition); end
-    if iscategorical(T_out.age_group), T_out.age_group = removecats(T_out.age_group); end
-    if iscategorical(T_out.pair_name), T_out.pair_name = removecats(T_out.pair_name); end
-end
-
 function refVal = get_subject_flat_percentile_reference(TD, subjID, muscleName, P)
 
     refVal = NaN;

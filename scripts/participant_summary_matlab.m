@@ -379,7 +379,7 @@ if any(vars == "AgeGroup") && any(string(T.Properties.VariableNames) == "AgeYear
             x = categorical(string(T.AgeGroup(idx)), presentGroups, presentGroups, 'Ordinal', true);
             b = boxchart(ax, x, T.AgeYears(idx), 'DisplayName', char(gName));
 
-            apply_boxchart_color(b, AGEGROUP_COLORS.(matlab.lang.makeValidName(char(gName))));
+            apply_pretty_boxchart_color(b, AGEGROUP_COLORS.(matlab.lang.makeValidName(char(gName))));
             legendHandles(end+1) = b; %#ok<AGROW>
         end
 
@@ -545,7 +545,7 @@ end
 
 fprintf('\nPlots saved in: %s\n', PLOT_DIR);
 
-function apply_boxchart_color(b, baseColor)
+function apply_pretty_boxchart_color(b, baseColor)
 % Apply a "pretty MATLAB" boxchart style:
 % - darker edge / lines
 % - lighter fill

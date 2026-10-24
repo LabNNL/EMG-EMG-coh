@@ -607,7 +607,7 @@ function add_pairwise_significance_annotations(ax, T, Pplot, A)
         yy = baseY + (i-1) * stepY;
         plot(ax, [x1(i) x1(i) x2(i) x2(i)], [yy yy+tickH yy+tickH yy], 'k-', 'LineWidth', 1.0);
 
-        label = p_to_stars(sigRows.p_holm(i));
+        label = p_to_stars_label(sigRows.p_holm(i));
         text(ax, mean([x1(i), x2(i)]), yy + tickH + 0.01*yRange, label, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom', 'FontWeight', 'bold', 'FontSize', 11);
     end
 
@@ -625,7 +625,7 @@ function x = condition_to_x(cond, A)
     end
 end
 
-function label = p_to_stars(p)
+function label = p_to_stars_label(p)
     if isnan(p)
         label = "";
     elseif p < 0.001

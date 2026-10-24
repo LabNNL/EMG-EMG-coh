@@ -89,12 +89,5 @@ Known places that do not follow these rules yet, to fix stage by stage:
 - **Long stage functions.** `h_coherence_stats.m` (2,600 lines), `f_build_final_paired_signals_from_burst_qc.m` (1,760), `g_emg_emg_wavelet_coherence.m` (1,060), `l_spm_envelope_analysis.m` (4,450, off) mix loading, computing, saving and plotting in one function.
 - **Helpers that call `config_emg()` themselves**: three plotting helpers in stages c and d_a, and, as a fallback when no settings are passed, `write_lme_report` and `get_term_pvalue_from_lme_formula`. `h_coherence_stats.m` also reloads the config halfway through.
 - **Missing header comments**: about two thirds of the files.
-- **Same name, different code.** These exist as a shared file *and* as a different local function inside one stage file, so that stage silently uses its own version:
-  - in `i_temporal_coherence_link.m` (off): `get_scalar_from_result`, `write_lme_report` (fits with MATLAB defaults, not `fit_h_lme`), `subject_to_group`, `groupcounts_table`, `zscore_safe`;
-  - in `j_build_time_domain_analysis_datasets.m`: `get_cycle_boundaries`, `harmonize_cycle_boundaries`;
-  - in `k_plot_activation_profiles.m`: `keep_only_complete_subjects_for_conditions`;
-  - `p_to_stars` (h helper, and local in the kinematics analysis and `l_spm_envelope_analysis.m`), `get_group_color` and `get_pretty_group_label` (general helper, and local in d_a and g plots), `apply_boxchart_color` (h helper, and `participant_summary_matlab.m`);
-  - `get_marker_fs`, `get_marker_trial_struct` (kinematics and `diagnostic_plot_heel_marker_axes.m`), `get_ylabel_text` (k and l).
-
-  Each needs a decision: are the differences intended? If yes, rename the local one to say how it differs; if not, keep one.
+- **Same name in two files.** No function shadows a shared one any more. A few private local functions share a name across files and differ on purpose (`zscore_safe` in the f crosstalk QC and in i, `get_ylabel_text` in k and l, `get_marker_fs` and `get_marker_trial_struct` in the kinematics build and its diagnostic script, `parse_args` in Tools). Each is only visible inside its own file, so they cannot be confused at run time.
 - **Repeated nested loops** over subject → condition → leg → pair in every stage.
