@@ -49,13 +49,7 @@ for i = 1:numel(effectFields)
     end
 
     for ic = 1:nCl
-        c = clusters(ic);
-        pval = NaN;
-        if isprop(c, 'P')
-            pval = c.P;
-        elseif isprop(c, 'p')
-            pval = c.p;
-        end
+        pval = get_cluster_p(clusters, ic);
         rows{end+1, 1} = one_row(pair, name, true, nSubj, nRows, nCl, ic, pval); %#ok<AGROW>
     end
 end

@@ -396,7 +396,7 @@ Run with [main_kinematics_analysis.m](main_kinematics_analysis.m); the code is i
 
 ## Known issues
 
-- **The 8 spectrum figures in `Results/png_visualisation/.../spectrum_curves/` dated 2026-09-19 predate a fix and should not be trusted.** Until now the one-way age and condition spectrum SPMs never ran: `infer_spm_object_switch` was a local function in one file and unreachable from the two that called it, so both landed in a `catch` that nothing inspected. The follow-up figures still captioned themselves `SPM n=42 subjects`, so a test that never ran looked like a null result. The code is fixed; rerun stage h to regenerate them.
+- Stage h has been rerun since the spectrum SPM fixes, so the figures and tables on disk are current. The mixed age x condition results now live in `tables/spectrum_curves/MIXED_SPM_RESULTS.csv`; before the fix they were printed to the console with every cluster p-value shown as `NaN`.
 - d_a pauses for manual cluster selection. That is the method, not a defect — but it does mean the pipeline cannot be run unattended from end to end.
 - Stages that are currently switched off (a, b, c, d_a, d_b, e and the whole time-domain branch) had bugs fixed without being run. Run each one before trusting its output.
 - `Metadata/ParticipantGroup.m` duplicates the four participant lists in `config_emg.m` exactly, and nothing reads it. It is a second copy that can drift. `Metadata/PhysicalActivity_EMG.csv` (65 participants, PAQ-C / PAQ-A / GPAQ) is unused but is real data, usable as a covariate if you ever want it — note the scores are not comparable across the three instruments, and the Jeunes Enfants have none.

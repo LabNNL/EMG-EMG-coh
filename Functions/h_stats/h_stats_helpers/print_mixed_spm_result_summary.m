@@ -30,15 +30,9 @@ function print_mixed_spm_result_summary(spmMixedInfo, pairName)
             fprintf('  clusters: %d\n', numel(clusters));
 
             for ic = 1:numel(clusters)
-                c = clusters(ic);
-
-                pval = NaN;
-                if isprop(c, 'P')
-                    pval = c.P;
-                elseif isprop(c, 'p')
-                    pval = c.p;
-                end
-
+                % spmi.clusters is a cell array; indexing it with () gave a
+                % 1x1 cell and so always printed p = NaN.
+                pval = get_cluster_p(clusters, ic);
                 fprintf('    cluster %d: p = %.4g\n', ic, pval);
             end
 
