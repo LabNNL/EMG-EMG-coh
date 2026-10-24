@@ -37,15 +37,3 @@ function R = build_signal_recap_tables(T)
     end
 end
 
-function R = init_empty_signal_recap()
-
-    R = struct();
-    R.n_total = 0;
-    R.by_age = table();
-    R.by_condition = table();
-    R.by_pair = table();
-    R.by_age_condition = table();
-    R.by_pair_age = table();
-    R.by_pair_condition = table();
-    R.by_pair_age_condition = table();
-end

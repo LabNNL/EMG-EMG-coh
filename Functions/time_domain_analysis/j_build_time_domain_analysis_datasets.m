@@ -38,9 +38,9 @@ function j_build_time_domain_analysis_datasets()
 
 
     C  = config_emg();
-    IO = C.i_time_domain.io;
-    P  = C.i_time_domain.params;
-    PL = C.i_time_domain.plot;
+    IO = C.j_time_domain.io;
+    P  = C.j_time_domain.params;
+    PL = C.j_time_domain.plot;
 
     if ~exist(IO.out_dir, 'dir'), mkdir(IO.out_dir); end
     if ~exist(IO.csv_dir, 'dir'), mkdir(IO.csv_dir); end

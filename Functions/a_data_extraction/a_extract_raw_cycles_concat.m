@@ -525,7 +525,7 @@ function a_extract_raw_cycles_concat()
                             continue;
                         end
 
-                        if ~example_fig_done && C.a_extract_raw.input.generate_example_figures
+                        if ~example_fig_done && C.a_extract_raw.output.generate_example_figures
                             % Choose one representative muscle available for this leg
                             example_mus = '';
                             for mm = 1:numel(muscles)
@@ -684,9 +684,16 @@ function a_extract_raw_cycles_concat()
                     end % legs
 
                 catch ME
-                    warning('Erreur sur %s : %s', c3dname, ME.message);
-                    events = btkGetEvents(acq);
-                    disp(fieldnames(events))
+                    % Say exactly where this came from. This block used to
+                    % swallow programming errors as "file read error", which
+                    % silently dropped every trial.
+                    fprintf(2, ['\n[%s] FAILED while processing %s\n' ...
+                                '      %s (%s)\n'], ...
+                        mfilename, c3dname, ME.message, ME.identifier);
+                    if ~isempty(ME.stack)
+                        fprintf(2, '      at %s line %d\n', ...
+                            ME.stack(1).name, ME.stack(1).line);
+                    end
                     if strlength(main_issue) == 0
                         main_issue = "File read error";
                     end

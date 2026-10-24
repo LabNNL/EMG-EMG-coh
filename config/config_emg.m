@@ -212,6 +212,7 @@ C.plotting.colors.reason.abs_amp     = [0.85 0.20 0.65];  % magenta
 C.plotting.colors.reason.too_short   = [0.90 0.90 0.10];  % yellow
 C.plotting.colors.reason.too_long    = [0.55 0.27 0.07];  % brown
 C.plotting.colors.reason.bad_bounds  = [0.15 0.15 0.15];  % almost black
+C.plotting.colors.reason.exclude     = [0.40 0.40 0.40];  % grey: excluded by both methods
 C.plotting.colors.reason.signal_fail = [0.50 0.00 0.00];  % dark red
 C.plotting.colors.reason.flatline    = [0.60 0.60 0.60];  % gray
 C.plotting.colors.reason.other       = [0.60 0.60 0.60];  % fallback
@@ -1927,6 +1928,20 @@ C.l_spm.params.adaptive_outlier_mad_floor_frac = 0.20;  % was 0.10
 
 % signal-level rule after cycle exclusion
 C.l_spm.params.min_cycles_after_amplitude_qc = 7;
+
+%% analyze_kinematics_for_coherence_cycles
+
+% The analysis step used to read C.g2_kinematics_analysis, which was never
+% defined, so it always fell back to built-in defaults. These are those same
+% defaults, now visible and editable. Everything else the step needs
+% (statistical thresholds, metric lists) is still hard-coded in
+% analyze_kinematics_for_coherence_cycles.m.
+C.kinematics_analysis = struct();
+C.kinematics_analysis.io = struct();
+% The "g2_" prefix is historical: this branch was stage g2 at one point. The
+% folder name is kept so new results land beside the existing ones.
+C.kinematics_analysis.io.out_dir = fullfile( ...
+    C.paths.results_dir, 'g2_kinematics_coherence_analysis');
 
 %% kinematics_for_coherence_cycles
 

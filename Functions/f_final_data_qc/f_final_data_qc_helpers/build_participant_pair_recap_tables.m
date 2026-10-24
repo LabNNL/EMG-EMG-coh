@@ -51,13 +51,3 @@ function R = build_participant_pair_recap_tables(T)
     end
 end
 
-function R = init_empty_participant_pair_recap()
-    R = struct();
-    R.summary_by_pair = table();
-    R.by_pair = table();
-    R.by_pair_age = table();
-    R.signals_per_participant_by_pair_age = table();
-    R.conditions_per_participant_by_pair_age = table();
-    R.by_pair_condition = table();
-    R.by_pair_age_condition = table();
-end

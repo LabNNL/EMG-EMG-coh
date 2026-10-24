@@ -60,14 +60,3 @@ function R = build_participant_recap_tables(T)
     end
 end
 
-function R = init_empty_participant_recap()
-
-    R = struct();
-    R.n_total = 0;
-    R.summary = table();
-    R.by_age = table();
-    R.by_condition = table();
-    R.by_age_condition = table();
-    R.signals_per_participant_by_age = table();
-    R.conditions_per_participant_by_age = table();
-end

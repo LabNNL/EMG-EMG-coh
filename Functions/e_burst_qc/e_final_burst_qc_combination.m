@@ -446,10 +446,8 @@ function e_final_burst_qc_combination()
 
                 if isfield(Eplot, 'fs') && ~isempty(Eplot.fs)
                     fs = Eplot.fs;
-                elseif isfield(C, 'analysis') && isfield(C.analysis, 'fs_emg')
-                    fs = C.analysis.fs_emg;
                 else
-                    fs = 2000;
+                    fs = C.general.fs_emg;
                 end
 
                 % Try to recover cycle starts from common field names
@@ -971,7 +969,7 @@ function e_final_burst_qc_combination()
         if isfield(Eplot, 'fs') && ~isempty(Eplot.fs)
             fs = Eplot.fs;
         else
-            fs = C.analysis.fs_emg;
+            fs = C.general.fs_emg;
         end
 
         cycle_starts = [];

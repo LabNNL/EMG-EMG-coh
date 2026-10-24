@@ -77,8 +77,8 @@ end
 function A = get_kinematics_analysis_config(C)
     A = struct();
 
-    if isfield(C, 'g2_kinematics_analysis')
-        A = C.g2_kinematics_analysis;
+    if isfield(C, 'kinematics_analysis')
+        A = C.kinematics_analysis;
     end
 
     A.io = ensure_field(A, 'io', struct());
