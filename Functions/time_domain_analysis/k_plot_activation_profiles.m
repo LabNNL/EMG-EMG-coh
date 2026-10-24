@@ -4,9 +4,7 @@
 % Bottom row = pooled cycle mean (exploratory)
 
 function k_plot_activation_profiles()
-    clc; clear; close all;
 
-    addpath(genpath(fullfile(pwd, 'Functions')));
 
     C   = config_emg();
     IO  = C.k_activation_profiles.io;

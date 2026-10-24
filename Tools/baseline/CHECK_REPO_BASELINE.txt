@@ -1,21 +1,21 @@
 ===== config_missing (9) =====
-  [error  ] Functions/a_data_extraction/a_extract_raw_cycles_concat.m:533
+  [error  ] Functions/a_data_extraction/a_extract_raw_cycles_concat.m:528
              C.a_extract_raw.input.generate_example_figures is not defined by config_emg() (no field "generate_example_figures")
-  [error  ] Functions/e_burst_qc/e_final_burst_qc_combination.m:450
+  [error  ] Functions/e_burst_qc/e_final_burst_qc_combination.m:449
              C.analysis is not defined by config_emg() (no field "analysis")
-  [error  ] Functions/e_burst_qc/e_final_burst_qc_combination.m:451
+  [error  ] Functions/e_burst_qc/e_final_burst_qc_combination.m:450
              C.analysis.fs_emg is not defined by config_emg() (no field "analysis")
-  [error  ] Functions/e_burst_qc/e_final_burst_qc_combination.m:975
+  [error  ] Functions/e_burst_qc/e_final_burst_qc_combination.m:974
              C.analysis.fs_emg is not defined by config_emg() (no field "analysis")
   [error  ] Functions/general/get_exclusion_method_color.m:12
              C.plotting.colors.reason.exclude is not defined by config_emg() (no field "exclude")
-  [error  ] Functions/kinematics_analysis/analyze_kinematics_for_coherence_cycles.m:82
+  [error  ] Functions/kinematics_analysis/analyze_kinematics_for_coherence_cycles.m:81
              C.g2_kinematics_analysis is not defined by config_emg() (no field "g2_kinematics_analysis")
-  [error  ] Functions/time_domain_analysis/j_build_time_domain_analysis_datasets.m:43
+  [error  ] Functions/time_domain_analysis/j_build_time_domain_analysis_datasets.m:41
              C.i_time_domain.io is not defined by config_emg() (no field "i_time_domain")
-  [error  ] Functions/time_domain_analysis/j_build_time_domain_analysis_datasets.m:44
+  [error  ] Functions/time_domain_analysis/j_build_time_domain_analysis_datasets.m:42
              C.i_time_domain.params is not defined by config_emg() (no field "i_time_domain")
-  [error  ] Functions/time_domain_analysis/j_build_time_domain_analysis_datasets.m:45
+  [error  ] Functions/time_domain_analysis/j_build_time_domain_analysis_datasets.m:43
              C.i_time_domain.plot is not defined by config_emg() (no field "i_time_domain")
 
 ===== unresolved (8) =====
@@ -33,7 +33,7 @@
              "infer_spm_object_switch" is called here but resolves to nothing on the path
   [error  ] Functions/h_stats/h_stats_helpers/run_spm_condition_on_spectrum.m:127
              "infer_spm_object_switch" is called here but resolves to nothing on the path
-  [error  ] Functions/time_domain_analysis/k_plot_activation_profiles.m:703
+  [error  ] Functions/time_domain_analysis/k_plot_activation_profiles.m:701
              "get_toe_fraction_from_valid_cycles" is called here but resolves to nothing on the path
 
 ===== duplicates (3) =====
@@ -76,11 +76,9 @@
   [warning] config/config_emg.m:2124
              C.l_spm.params.plot_random_outlier_signal_examples assigned 2 times (lines 2096, 2124); line 2124 wins
 
-===== checkcode (1) =====
-  [error  ] Functions/d_b_rule_based_cleaning/d_b_rule_based_cleaning.m:236
-             [NOPRT] Add a semicolon after the statement to hide the output (in a function).
+===== checkcode (0) =====
 
-===== config_dead (231) =====
+===== config_dead (230) =====
   [info   ] config/config_emg.m:30
              C.physio.phase_windows_pct.TAprox_TAdist: leaf name "TAprox_TAdist" appears nowhere in the code
   [info   ] config/config_emg.m:33
@@ -115,8 +113,6 @@
              C.paths.functions_dir: leaf name "functions_dir" appears nowhere in the code
   [info   ] config/config_emg.m:85
              C.paths.old_data_dir: leaf name "old_data_dir" appears nowhere in the code
-  [info   ] config/config_emg.m:88
-             C.paths.metadata_dir: leaf name "metadata_dir" appears nowhere in the code
   [info   ] config/config_emg.m:92
              C.paths.features_dir: leaf name "features_dir" appears nowhere in the code
   [info   ] config/config_emg.m:93
@@ -545,7 +541,7 @@
              C.l_spm.params.amplitude_qc_exclusion_method: leaf name "amplitude_qc_exclusion_method" appears nowhere in the code
 
 ===== summary =====
-  errors   : 20
+  errors   : 19
   warnings : 15
-  info     : 232
-  Code Analyzer messages across project files: 345
+  info     : 231
+  Code Analyzer messages across project files: 333

@@ -16,7 +16,6 @@
 %   - optional LME model reports
 %   - scatter plots in same general style as h_coherence_stats
 function i_temporal_coherence_link()
-    clc; clear; close all;
 
     %% ===================== SETUP =====================
 

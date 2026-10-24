@@ -14,7 +14,6 @@
 %   3) plots/stats use leg-averaged summaries.
 function analyze_kinematics_for_coherence_cycles()
     
-    addpath(genpath(fullfile(pwd, 'Functions')));
 
     C = config_emg();
     A = get_kinematics_analysis_config(C);

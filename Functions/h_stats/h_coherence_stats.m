@@ -265,7 +265,7 @@ function h_coherence_stats()
 
     %% ===================== ADD CONTINUOUS AGE =====================
 
-    metaFile = fullfile(pwd, 'Metadata', 'participants_metadata_EMG.csv');
+    metaFile = fullfile(C.paths.metadata_dir, 'participants_metadata_EMG.csv');
 
     META = readtable(metaFile, 'Delimiter', ';', 'TreatAsEmpty', {'NA','NaN',''});
 
@@ -1643,7 +1643,6 @@ function h_coherence_stats()
 
     %% ===================== DESCRIPTIVE TABLES =====================
 
-    fprintf('\n=== DEBUG descriptive variables ===\n');
 
     fprintf('\nT_row variables:\n');
     disp(T_row.Properties.VariableNames(:));

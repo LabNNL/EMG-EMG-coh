@@ -154,7 +154,6 @@
 % - Easy to adapt to new datasets without modifying the script
 % -------------------------------------------------------------------------
 function a_extract_raw_cycles_concat()
-    clc; clear; close all;
 
     %% ===================== CONFIGURATION & SÉLECTION ========================
     C = config_emg();  % Load config, everything should be set in config_emg.m (paths, design, parameters)
@@ -192,12 +191,8 @@ function a_extract_raw_cycles_concat()
 
     %% ===================== PRÉPARATION DU WORKSPACE =========================
 
-    % Ajout des fonctions utilitaires au path Matlab
-    addpath(genpath(fullfile(C.paths.helpers.data_extraction)));      % your repo functions
-    addpath(genpath(fullfile(C.paths.helpers.data_extraction, 'Functions','moveck_bridge_btk')));
-
-    rehash toolboxcache
-    savepath
+    % The project path is set up by startup.m; config_emg() also genpaths
+    % Functions/, which covers the helpers and the bundled BTK bridge.
 
     % Vérification et création des dossiers de sortie
     if ~exist(DATA_DIR, 'dir'), error('DATA_DIR inexistant: %s', DATA_DIR); end

@@ -13,7 +13,6 @@
 %   1) reject whole concatenated signals only if fundamentally unusable
 %   2) otherwise classify each detected burst independently as keep/reject
 function d_b_rule_based_cleaning()
-    clc; clear; close all;
 
     C = config_emg();
 
@@ -232,11 +231,6 @@ function d_b_rule_based_cleaning()
     outMat = fullfile(IO.out_dir, 'QC_bursts.mat');
     save(outMat, 'BURST_QC', '-v7.3');
 
-    Scheck = load(outMat, 'BURST_QC');
-    fieldnames(Scheck.BURST_QC.CTL_79)'
-    isfield(Scheck.BURST_QC.CTL_79, 'Flat')
-    isfield(Scheck.BURST_QC.CTL_79, 'Plat')
-
     fprintf('\nSaved burst QC table: %s\n', outCsv);
     fprintf('Saved burst QC struct: %s\n', outMat);
 
@@ -246,10 +240,8 @@ function d_b_rule_based_cleaning()
 
     if R.inspect_saved_table
         T = readtable(fullfile(IO.csv_dir, IO.output_csv));
-        groupcounts(T, 'burst_reason')
+        disp(groupcounts(T, 'burst_reason'));
     end
-
-    groupcounts(T, 'burst_reason')
 
     function plot_specific_rule_based_qc(subject, condition, leg, muscle, C, IO, BURST_QC)
     % Plot one specific signal's rule-based burst QC result.

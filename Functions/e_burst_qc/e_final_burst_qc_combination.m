@@ -68,7 +68,6 @@
 % cleaned signals and paired signals for downstream coherence analysis.
 
 function e_final_burst_qc_combination()
-    clc; clear; close all;
 
     C = config_emg();
 

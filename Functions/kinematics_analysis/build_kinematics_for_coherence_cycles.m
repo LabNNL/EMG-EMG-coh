@@ -15,9 +15,7 @@
 %   The EMG QC output decides which cycles exist in the coherence analysis.
 %   This script only attaches kinematic metrics to those same cycles.
 function build_kinematics_for_coherence_cycles()
-    clc; clear; close all;
 
-    addpath(genpath(fullfile(pwd, 'Functions')));
 
     C = config_emg();
     K = get_kinematics_coherence_config(C);

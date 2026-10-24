@@ -35,9 +35,7 @@
 % -------------------------------------------------------------------------
 function j_build_time_domain_analysis_datasets()
     
-    clc; clear; close all;
 
-    addpath(genpath(fullfile(pwd, 'Functions')));
 
     C  = config_emg();
     IO = C.i_time_domain.io;

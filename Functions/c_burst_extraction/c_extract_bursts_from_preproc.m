@@ -72,7 +72,6 @@
 % duration constraints in the config.
 
 function c_extract_bursts_from_preproc()
-    clc; clear; close all;
 
     %% ===================== CONFIG =====================
     C = config_emg();

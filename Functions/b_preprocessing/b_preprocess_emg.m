@@ -61,7 +61,6 @@
 %   - C.b_preproc.plot_seconds
 % -------------------------------------------------------------------------
 function b_preprocess_emg()
-    clc; clear; close all;
 
     C = config_emg();
     P = C.b_preproc;

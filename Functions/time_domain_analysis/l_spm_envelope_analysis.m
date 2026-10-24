@@ -18,14 +18,11 @@
 %   - for repeated-measures condition analyses, only complete-case subjects
 %     are retained across all requested conditions
 function l_spm_envelope_analysis()
-    clc; clear; close all;
     fprintf('Starting SPM envelope analysis...\n');
 
     set(0, 'DefaultFigureVisible', 'off');
     set(groot, 'DefaultFigureVisible', 'off');
 
-    addpath(genpath(fullfile(pwd, 'Functions')));
-    addpath(genpath(fullfile(pwd, 'Functions', 'spm1dmatlab-master')));
 
     C   = config_emg();
     IO  = C.l_spm.io;
