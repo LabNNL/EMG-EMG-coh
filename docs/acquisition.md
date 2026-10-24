@@ -97,6 +97,10 @@ settle the question either way. The low-frequency evidence is the more
 diagnostic of the two, because the signal there is dominated by movement
 artifact that the hardware either passes or does not.
 
+Being an argument from a pooled spectrum, it also cannot show that every
+participant was recorded in the same mode. That is the reason the coherence
+analysis starts at 20 Hz (see "Why the analysis starts at 20 Hz" below).
+
 **Auxiliary channel rate: 74 Hz.** This one is solid. The mean EMG spectrum
 carries a comb of narrow lines at exact multiples of **74.22 Hz** — measured
 at 4x, 5x, 6x, 7x, 8x, 9x, 10x, 12x and 13x (296, 371, 444, 519, 593, 666,
@@ -105,7 +109,7 @@ auxiliary channels at a lower rate than the EMG and leaking into the EMG
 signal. 74 Hz is exactly the figure Delsys mode strings quote for skin check
 and accelerometer, so the mode in use has a 74 Hz auxiliary stream.
 
-All of those lines sit above 296 Hz, far outside the 8-60 Hz analysis band,
+All of those lines sit above 296 Hz, far outside the 20-60 Hz analysis band,
 and they are 1.6-10.7 dB above the local baseline deep in the noise floor.
 They do not affect the coherence results.
 
@@ -144,10 +148,33 @@ have been changed since.
 and in any case it would only concern frequencies far above the 60 Hz ceiling
 of this analysis.
 
-### Filters and the Alpha band
+### Why the analysis starts at 20 Hz
+
+Since 2026-10 the coherence analysis covers **20–60 Hz only**, in two bands:
+HighBeta (20–30 Hz) and Gamma (31–60 Hz) (`C.shared_wavelet.FreqBands`).
+Before that it covered 8–60 Hz with Alpha (8–12), Beta (13–30) and Gamma.
+
+The reason is that the low end of the spectrum rests on two things that
+cannot be verified from the data:
+
+1. **The sensor setting.** The Delsys high-pass is either 10 Hz or 20 Hz, and
+   nothing in the files records which, let alone that it was the same for every
+   participant. Above 20 Hz, either setting passes the signal.
+2. **Cycle-locked artifact.** Below 20 Hz, walking EMG also carries movement
+   artifact and stride harmonics that are shared between neighbouring sensors
+   and locked to the gait cycle. This pipeline averages spectra over
+   time-normalized cycles, which rewards exactly that kind of component, so
+   it inflates coherence (see "The caveat at the low end" below).
+
+The first point alone would not bias coherence, as the next sections show. A
+high-pass reduces a band's power, not its coherence, as long as the band stays
+above the noise floor, and 8 Hz does. The decision is a conservative one:
+results that start at 20 Hz do not depend on either unverifiable point.
+
+### Filters and the low end of the spectrum
 
 Two filters act on the EMG before coherence is computed, and both have their
-low corner close to the bottom of the Alpha band (8–12 Hz):
+low corner below the analysed range:
 
 - **On the sensor**, the Delsys mode's high-pass, either 10 Hz or 20 Hz (the
   data cannot settle which, see above).
@@ -156,8 +183,10 @@ low corner close to the bottom of the Alpha band (8–12 Hz):
   `filtfilt` (so twice) in `pp_preprocess_signal.m`. Its output is what stages
   c, d_b, f and g all work on.
 
-**In short: they reduce Alpha power, they do not bias Alpha coherence, and
-neither should change.**
+**In short: they reduce low-frequency power, they do not bias coherence, and
+neither needs to change.** The subsections below were written when Alpha was
+still analysed; they explain why the earlier Alpha results were not an
+artifact of the filters.
 
 #### A filter fades a band out, it does not delete it
 
@@ -219,8 +248,8 @@ the coherence results.
 
 #### What the band-pass does still affect
 
-- **Alpha power.** Anything computed on power — the `Alpha_LogPower`
-  covariate, the POI power diagnostics — is reduced by up to 6 dB from the
+- **Alpha power** (when Alpha was analysed). Anything computed on power —
+  the `Alpha_LogPower` covariate, the POI power diagnostics — is reduced by up to 6 dB from the
   band-pass alone, plus whatever the sensor filter removed. Do not interpret
   absolute Alpha power. The power-covariate models are currently off
   (`run_power_control_models = false`, `continuous_age_include_power = false`),
@@ -236,17 +265,15 @@ the coherence results.
 
 #### Should the band-pass change?
 
-No. Its gain has no effect on coherence; lowering the corner would let more
-sub-8 Hz artifact leak into Alpha; raising it would discard signal; and either
-would change which cycles are selected, and so every finalised result. If the
-pipeline is ever rebuilt from scratch, a corner at about 5–6 Hz would put the
-whole analysis band inside the passband, which is tidier practice — but it
-would change Alpha power, not Alpha coherence.
+No. Its corner is now 12 Hz below the analysed range (−0.2 dB at 20 Hz).
+Changing it would change burst detection, and so which cycles are selected
+(stages c–f), for no gain in the 20–60 Hz coherence.
 
 ### Signal available in each band
 
 How much raw signal each band carries turns out to depend on how you average,
-so the tool reports both. Typical values (dB relative to the strongest band):
+so the tool reports both. Typical values (dB relative to the strongest band),
+from the audit run with the earlier 8–60 Hz bands:
 
 | Band | median | mean |
 |---|---|---|
@@ -267,45 +294,82 @@ was supportable.
 
 ### What the coherence results actually show
 
-This is the evidence that settles whether a band is usable, and it is stable.
-Mean `AUC_norm` from `DESCRIPTIVE_TABLE_ALL.csv`:
+Mean `AUC_norm` per participant, `T_subject_after_leg_average.csv`, 20–60 Hz
+analysis:
 
-| Pair | Alpha | Beta | Gamma |
-|---|---|---|---|
-| SOL_GM | 0.163 | 0.144 | 0.172 |
-| TAprox_TAdist | 0.213 | 0.204 | 0.215 |
+| Pair | HighBeta 20–30 Hz | Gamma 31–60 Hz |
+|---|---|---|
+| SOL_GM | 0.130 | 0.172 |
+| TAprox_TAdist | 0.181 | 0.208 |
 
-The three bands come out at comparable magnitudes. And from
-`CONTINUOUS_AGE_LME_TABLE__equalized_poi_auc_nocyclecov.csv`, Alpha carries
-some of the strongest effects in the study:
+Primary model, `AUC_norm ~ AgeYears_z * condition + (1|subject)`, with
+effects coding, REML and Satterthwaite DF. p-values are Holm-adjusted across
+the 4 models (`CONTINUOUS_AGE_LME_TABLE.csv`):
 
-| Pair | Effect | Alpha | Beta | Gamma |
+| Pair | Band | Age | Condition | Age × condition |
 |---|---|---|---|---|
-| SOL_GM | age | **0.0012** | **0.00025** | 0.18 |
-| TAprox_TAdist | age | 0.13 | 0.32 | **0.0021** |
-| TAprox_TAdist | condition | **0.043** | 0.15 | **0.00016** |
+| TAprox_TAdist | HighBeta | **0.0005** (decreases with age) | 1 | 0.55 |
+| TAprox_TAdist | Gamma | **0.028** (decreases with age) | **0.0006** | 0.60 |
+| SOL_GM | HighBeta | **0.028** (increases with age) | 1 | 0.67 |
+| SOL_GM | Gamma | 0.91 | 0.41 | 0.55 |
 
-**There is no case for discarding Alpha.** Doing so would throw away the
-SOL_GM age effect at p = 0.0012.
+`SENSITIVITY_CONTINUOUS_AGE.csv` refits each model with quadratic age,
+Fisher-z coherence, raw coherence plus log(number of cycles), and
+cycle-bias-corrected coherence:
 
-### The caveat that does apply to Alpha
+- **TAprox_TAdist HighBeta age** holds in every variant (Holm p ≤ 0.01). Its
+  residuals are not normal (Lilliefors p = 0.001), but the Fisher-z variant,
+  which addresses that, gives the same result.
+- **TAprox_TAdist Gamma condition** holds in every variant (Holm p ≤ 0.002).
+  The Gamma age effect is borderline in two variants (raw + log cycles 0.06,
+  cycle-bias-corrected 0.07).
+- **SOL_GM HighBeta age** loses significance with a quadratic age term (Holm
+  p = 0.08). Treat it as fragile.
 
-It runs the other way from an SNR argument. During walking, 8–12 Hz content
-is not purely neural: it also contains movement artifact (footstrike
-transients, cable and skin motion) and high-order stride harmonics. Anything
-of that sort which is **shared between the two sensors on a limb, and locked
-to the gait cycle, inflates coherence** rather than suppressing it, because
-this pipeline interpolates each cycle to a common length and averages spectra
-across cycles — exactly the operation that rewards cycle-locked components.
+#### How these differ from the earlier results
 
-So the risk in the Alpha band is **false positives, not false negatives**, and
-it applies most to the lowest frequencies in the band.
+The earlier version of this section reported, for 8–60 Hz with reference
+coding, ML fits and no multiple-comparison correction:
 
-This is testable with machinery the pipeline already has.
-`C.g_coherence.params.surrogate_delta` shuffles the cycle order of one signal
-and subtracts the 95th percentile of the resulting null, which destroys
-cycle-locked common modulation while preserving within-cycle structure. It is
-currently `enable = false`. Turning it on for the Alpha band would show
-whether alpha coherence survives once cycle-locked commonality is removed. If
-it does, the artifact concern is answered; if it collapses, that is worth
-knowing before the results are written up.
+| Pair | Effect | Alpha | Beta 13–30 | Gamma |
+|---|---|---|---|---|
+| SOL_GM | age | 0.0012 | 0.00025 | 0.18 |
+| TAprox_TAdist | age | 0.13 | 0.32 | 0.0021 |
+| TAprox_TAdist | condition | 0.043 | 0.15 | 0.00016 |
+
+Three things were wrong or have changed:
+
+- **The "age" p-values were the slope on flat ground only.** Under MATLAB's
+  default reference coding, with an age × condition interaction in the model,
+  the age row tests the age slope in the reference condition (Flat). The
+  current table tests the age slope averaged over the three conditions.
+- **No correction for testing 6 models.** With Holm, the TAprox_TAdist Alpha
+  condition effect (0.043) would not have survived. The earlier claim that it
+  showed Alpha "carries some of the strongest effects" was wrong.
+- **The bands changed.** The SOL_GM Alpha age effect is no longer analysed.
+  TAprox_TAdist shows an age effect at 20–30 Hz that was not visible over
+  13–30 Hz.
+
+These were all corrected in the same round, together with the per-trial
+wavelet transform (stage g), so the table above is not a one-change-at-a-time
+comparison. The transform change on its own barely moves Beta and Gamma; see
+`Tools/audit_wavelet_transform_scope`.
+
+### The caveat at the low end
+
+During walking, low-frequency content (roughly below 20 Hz) is not purely
+neural: it also contains movement artifact (footstrike transients, cable and
+skin motion) and high-order stride harmonics. Anything of that sort which is
+**shared between the two sensors on a limb, and locked to the gait cycle,
+inflates coherence** rather than suppressing it, because this pipeline
+interpolates each cycle to a common length and averages spectra across cycles,
+which is exactly the operation that rewards cycle-locked components.
+
+So the risk at the low end is **false positives, not false negatives**. It is
+one of the two reasons the analysis now starts at 20 Hz.
+
+The pipeline can test this: `C.g_coherence.params.surrogate_delta` shuffles
+the cycle order of one signal and subtracts the 95th percentile of the
+resulting null, which removes cycle-locked common modulation. It is currently
+`enable = false`. Running it would show how much of the remaining HighBeta and
+Gamma coherence survives once that commonality is removed.
