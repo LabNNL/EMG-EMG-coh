@@ -32,7 +32,6 @@
 %   used for both muscles.
 % -------------------------------------------------------------------------
 function f_build_final_paired_signals_from_burst_qc()
-    clc; clear; close all;
 
     C = config_emg();
 

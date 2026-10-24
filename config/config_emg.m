@@ -9,17 +9,19 @@ C.parameters_running.run_burst_extraction = false; % If true, run c_extract_burs
 C.parameters_running.run_burst_clustering = false;  % If true, run d_a_clustering_cleaning.m
 C.parameters_running.run_burst_rule_based = false;  % If true, run d_b_rule_based_cleaning.m
 C.parameters_running.run_burst_qc = false;         % If true, run e_final_burst_qc_combination.m
-C.parameters_running.run_final_signals_creation = false; % If true, run f_build_final_paired_signals_from_burst_qc.m 
-C.parameters_running.run_coherence_extraction = false; % If true, run g_emg_emg_wavelet_coherence.m
-C.parameters_running.run_coherence_stats = false; % If true, run h_coherence_stats.m
+C.parameters_running.run_final_signals_creation = true; % If true, run f_build_final_paired_signals_from_burst_qc.m 
+C.parameters_running.run_coherence_extraction = true; % If true, run g_emg_emg_wavelet_coherence.m
+C.parameters_running.run_coherence_stats = true; % If true, run h_coherence_stats.m
 
 % Time domain : main_time_domain_analysis.m
 C.parameters_running.run_build_time_domain_analysis_datasets = false; % If true, run j_build_time_domain_analysis_datasets.m
-C.parameters_running.run_activation_profiles = false; % If true, run k_time_domain_stats.m
-C.parameters_running.run_spm = false; % If true, run l_time_domain_plotting.m
-
-% Temporal coherence link
+C.parameters_running.run_activation_profiles = false; % If true, run k_plot_activation_profiles.m
+C.parameters_running.run_spm = false; % If true, run l_spm_envelope_analysis.m
 C.parameters_running.run_temporal_coherence_link = false; % If true, run i_temporal_coherence_link.m
+
+% Kinematics : main_kinematics_analysis.m
+C.parameters_running.run_kinematics_build = true;    % If true, run build_kinematics_for_coherence_cycles.m
+C.parameters_running.run_kinematics_analysis = true; % If true, run analyze_kinematics_for_coherence_cycles.m
 
 %% ===================== PHYSIOLOGICAL CONSTANTS =====================
 
@@ -57,7 +59,7 @@ C.physio.gait_phases.terminal_swing = struct('start_pct', 87, 'end_pct', 100);
 % UPDATE THE FOLLOWING PATHS TO YOUR FOLDER STRUCTURE
 % !!!!!!!!!!!!!!!!!!!!!!!!!
 
-C.paths.project_data_root = '/Users/liogr/Documents/Etudes/Intership_CherniLab'; %TODO: Update this to your project root directory
+C.paths.project_data_root = '/Users/liogr/Documents/MyDocuments/Etudes/Master/MA4_Internship_LNNL/Coherence'; %TODO: Update this to your project root directory
 C.paths.code_dir        = '/Users/liogr/Library/CloudStorage/OneDrive-Bibliothèquespartagées-UniversitedeMontreal/Yosra Cherni - Lio Grienenberger - MSc epfl/Codes/EMG-EMG-coh'; %TODO: Update this to your code directory
 C.paths.functions_dir = fullfile(C.paths.code_dir, 'Functions');
 

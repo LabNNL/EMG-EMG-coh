@@ -41,7 +41,6 @@
 %
 % Those can be added later in separate blocks if needed.
 function h_coherence_stats()
-    clc; clear; close all;
 
     %% ===================== SETUP =====================
 

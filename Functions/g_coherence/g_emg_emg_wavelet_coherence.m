@@ -27,8 +27,6 @@
 
 function g_emg_emg_wavelet_coherence()
 
-    clc; clear; close all;
-
     C = config_emg();
 
     addpath(genpath(C.paths.helpers.general));
@@ -206,8 +204,6 @@ function g_emg_emg_wavelet_coherence()
 
                             N_common_equalized = N_common_by_pair.(pairKey);
                         end
-
-                        P = FINAL_PAIRED_SIGNALS.(subjID).(cond).(leg).(pairName);
 
                         P = FINAL_PAIRED_SIGNALS.(subjID).(cond).(leg).(pairName);
 

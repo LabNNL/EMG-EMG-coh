@@ -766,6 +766,7 @@ function a_extract_raw_cycles_concat()
                     CYCLES_SIGNAL_RAW.(subjID).(cond_out).(leg).(catField).trial_id   = acc.(leg).(mus).trial_id;
                     CYCLES_SIGNAL_RAW.(subjID).(cond_out).(leg).(catField).orig_start = acc.(leg).(mus).orig_start;
                     CYCLES_SIGNAL_RAW.(subjID).(cond_out).(leg).(catField).orig_end   = acc.(leg).(mus).orig_end;
+                    CYCLES_SIGNAL_RAW.(subjID).(cond_out).(leg).(catField).fs = FreqS;
 
                     leg_output_count = leg_output_count + 1;
                     condition_output_count = condition_output_count + 1;
