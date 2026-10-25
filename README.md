@@ -113,6 +113,7 @@ EMG-EMG-coh/
 │   ├── test_compute_pair_tfr.m      # synthetic checks of the stage-g transform
 │   └── baseline/                    # reference check report + output checksums
 ├── attic/                           # retired code, deliberately off the path
+│   └── ResultsArchive/              # outdated results moved out of Results/ (git-ignored)
 ├── Functions/
 │   ├── a_data_extraction/           # .c3d → concatenated raw gait cycles
 │   ├── b_preprocessing/             # filtering + envelopes
@@ -125,13 +126,13 @@ EMG-EMG-coh/
 │   ├── h_stats/                     # LMMs, post hocs, spectrum SPM
 │   ├── time_domain_analysis/        # i, j, k, l modules
 │   ├── kinematics_analysis/         # build + analyse stride metrics
-│   ├── general/                     # small shared utilities (colors, safe getters, …)
+│   ├── general/                     # helpers used by several stages (colors, safe getters, cycle tools, …)
 │   └── toolboxes/                   # vendored: BTK bridge, spm1d, wtc-r16
 ├── Metadata/                        # participant metadata, channel mapping (git-ignored)
-└── Results/                         # tables, recaps, figures (git-ignored)
+└── Results/                         # current tables, recaps, figures (git-ignored)
 ```
 
-Each stage folder has one entry function named after the folder plus a `*_helpers/` subfolder. `config_emg()` adds the whole `Functions/` tree to the MATLAB path, and some stages rely on helpers that live in other stage folders (for example `get_fs_from_entry_or_config` in `g_coherence_helpers` is used by stages c and d_a).
+Each stage folder has one entry function named after the folder plus a `*_helpers/` subfolder; stages f, g and h also have a `*_steps/` subfolder with one function per step, called in order by the entry function. Helpers used by several stages live in `Functions/general/`. `config_emg()` adds the whole `Functions/` tree to the MATLAB path. How code is organised: [docs/conventions.md](docs/conventions.md).
 
 ---
 
@@ -201,7 +202,7 @@ To turn a step on or off, set its switch in `C.parameters_running`.
 | g | `run_coherence_extraction` | `g_emg_emg_wavelet_coherence()` |
 | h | `run_coherence_stats` | `h_coherence_stats()` |
 
-Every stage reads the previous stage's `.mat` output from disk, so you can rerun any subset as long as the upstream files exist. In the current config only f, g and h are switched on.
+Every stage reads the previous stage's `.mat` output from disk, so you can rerun any subset as long as the upstream files exist. In the current config only f, g and h are switched on. They run for the band set in `C.analysis.band_set`, and the run log names it.
 
 **Interactive step:** d_a stops at a `pause` after clustering. Inspect the cluster plots, edit `C.d_cluster_manual.keep.<groupVar>` in the config, save it, then press a key. Also note that `C.d_features.params.run_feature_extraction = false` makes d_a reload an existing `BURST_FEATURES.mat` instead of recomputing features.
 
@@ -229,7 +230,7 @@ Needs stage a and stage f outputs.
 
 ## Coherence pipeline, stage by stage
 
-Intermediate files go to `<project_data_root>/mat_data/<subfolder>` (see [Data and output locations](#data-and-output-locations)). Tables go to `Results/<stage>/` and figures to `Results/png_visualisation/<stage>/`.
+Intermediate files go to `<project_data_root>/mat_data/<subfolder>` (see [Data and output locations](#data-and-output-locations)). Tables go to `Results/<stage>/` and figures to `Results/png_visualisation/<stage>/`; for stages f, g and h both sit under `Results/bands_<set>/` (one folder per band set).
 
 ### a: Raw cycle extraction (`a_extract_raw_cycles_concat`)
 
@@ -301,19 +302,19 @@ Steps, in `Functions/f_final_data_qc/f_final_data_qc_steps/`: `f_select_cycles_a
   - it has no burst, or no good burst
   - it is flat, or more than 1 % of it is flatline
   - a bad burst, padded by the Morlet cone-of-influence half-width of the lowest analysed frequency, overlaps the pair's POI (`reject_if_in_phase_of_interest_padded_for_wavelet_analysis`)
-- **Band-specific cycle masks:** the padding check is repeated with each band's own half-width (from its lowest frequency: 0.080 s for HighBeta, 0.051 s for Gamma), which gives one cycle mask per band.
+- **Band-specific cycle masks:** the padding check is repeated with each band's own half-width (from its lowest frequency, e.g. 0.080 s for HighBeta, 0.051 s for Gamma, 0.199 s for Alpha), which gives one cycle mask per band. The overall mask uses the widest, i.e. the lowest band of the set.
 - **Pair mask:** a cycle is kept only if it is valid in both muscles. A pair signal needs at least 10 valid cycles (`min_cycles_required`).
 - **Cross-talk QC** (currently `TAprox_TAdist`, overall mode). A pair signal is excluded when the cumulant density has a narrow central peak (width ≤ 5 ms, |lag| ≤ 5 ms) **and** either broadband coherence ≥ 0.3 or |zero-lag correlation| ≥ 0.7.
 - **Signal rebuild:** the kept cycles are concatenated into synchronised pair signals, with a segment table that maps them back to the original indices. Each cycle also carries its trial and a run id (`cycle_trial_id`, `cycle_run_id`) marking stretches of continuous recording, which stage g uses.
 - **Recap and statistics outputs:** cycle-retention tables, recap tables per band, Kruskal-Wallis tests and LMMs on cycle counts, a recoverability score, and a readable summary workbook.
 - **Outputs:**
-  - `mat_final_paired_signals/FINAL_PAIRED_SIGNALS.mat`, `FINAL_PAIRED_SIGNALS_OVERALL.mat` and one `FINAL_PAIRED_SIGNALS_<BAND>.mat` per band (`_HIGHBETA`, `_GAMMA`)
+  - `mat_final_paired_signals/bands_<set>/FINAL_PAIRED_SIGNALS.mat`, `FINAL_PAIRED_SIGNALS_OVERALL.mat` and one `FINAL_PAIRED_SIGNALS_<BAND>.mat` per band (e.g. `_HIGHBETA`, `_GAMMA`)
   - many XLSX tables in `Results/bands_<set>/f_cycle_level_qc_and_signal_rebuild/` (including `recap_tables/`, `crosstalk_qc/`, `cycle_count_stat_tests/`)
   - QC figures
 
 ### g: Wavelet coherence (`g_emg_emg_wavelet_coherence`)
 
-Runs once per input dataset: `FULL` (20–60 Hz) and one per band (`HIGHBETA`, `GAMMA`). Each band dataset uses its own band-specific cycle mask from stage f. Steps, in `Functions/g_coherence/g_coherence_steps/`: `g_run_dataset` (one dataset: load, pairs, save, QC plots) calls `g_compute_pair_coherence` for each pair.
+Runs once per input dataset: `FULL` (all bands of the set, e.g. 20–60 Hz) and one per band (e.g. `HIGHBETA`, `GAMMA`). Each band dataset uses its own band-specific cycle mask from stage f. Steps, in `Functions/g_coherence/g_coherence_steps/`: `g_run_dataset` (one dataset: load, pairs, save, QC plots) calls `g_compute_pair_coherence` for each pair.
 
 1. **Wavelet transform** (Morlet CWT, the `wavelet.m` from `wtc-r16`, modified for a linear 1 Hz grid), via `compute_pair_tfr`. With `transform_scope = "per_trial"` (default) each stretch of continuous recording is transformed on its own, padded by symmetric extension to at least 0.6 s, so the wavelet never runs across the glue point between two kept cycles that were not consecutive. Rejected cycles are kept as real context only if they pass the general QC and have no nearby bad burst (`context_policy = "trial_run_safe"`). `"concatenated"` is the pre-2026-10 behaviour: one transform over the glued signal. `Tools/audit_wavelet_transform_scope` compares the two; the difference was about 1% in TA Alpha and negligible in Beta and Gamma.
 2. **Per-cycle spectra.** Each cycle's transform is interpolated to 1000 points. Auto- and cross-spectra are averaged across cycles, and coherence is computed once: `C = |Sxy|² / (Sxx·Syy)`.
@@ -329,7 +330,7 @@ Runs once per input dataset: `FULL` (20–60 Hz) and one per band (`HIGHBETA`, `
    - Which variants are summarised is set by `metric_sources_to_save` (currently `equalized`, `raw` and `cycle_bias_corrected`; the last two feed the stage-h sensitivity table).
 5. **Scalar metrics** for each band and each scope (full cycle, stance, swing, POI): mean, raw AUC, bandwidth-normalized AUC (`*_AUC_norm`) and peak. POI log power is also computed.
 6. **Outputs:**
-   - `mat_coherence_data/COHERENCE_RESULTS_FULL.mat` and one `COHERENCE_RESULTS_<BAND>.mat` per band
+   - `mat_coherence_data/bands_<set>/COHERENCE_RESULTS_FULL.mat` and one `COHERENCE_RESULTS_<BAND>.mat` per band
    - `Results/bands_<set>/g_emg_emg_wavelet_coherence/COHERENCE_SUMMARY_TABLE_<DS>.csv`
    - edge, padding and COI QC
    - Individual, group and final-comparison plots are made only when `C.g_coherence.plot.enable` is `true` (currently `false`, which is much faster).
@@ -362,7 +363,7 @@ Runs once per input dataset: `FULL` (20–60 Hz) and one per band (`HIGHBETA`, `
     - `models/`: text reports of the models
   - figures in `Results/bands_<set>/png_visualisation/h_coherence_stats_pair_phase_main/`: band triplets, continuous-age LMM plots, spectrum curves. The figures print the primary model's Holm-adjusted p-values and never fit a model of their own; age groups in boxplots are for display, and the age post hoc uses one value per participant.
   - tables, models and figures that a run did not rewrite are moved to `attic/ResultsArchive/<same path>/_stale_<time>/` (with a `MANIFEST.csv`), so `Results/` holds only what the last run wrote
-  - workspaces in `mat_stats_data/`
+  - workspaces in `mat_stats_data/bands_<set>/`
   - `TAG` encodes the source, scope, metric family and covariate, e.g. `equalized_poi_auc_nocyclecov`.
 
 ---
@@ -387,7 +388,7 @@ Run with [main_time_domain_analysis.m](main_time_domain_analysis.m); the code is
 - **`i_temporal_coherence_link`** (optional)
   - Uses the same cycles as coherence to compute envelope correlation, co-activation IoU, peak lag and amplitude.
   - Relates these to POI coherence with correlations and LMMs (`coh ~ age_group*condition + predictor + amplitude + (1|subject)`).
-  - Output: `Results/i_temporal_coherence_link/`.
+  - Output: `Results/bands_<set>/i_temporal_coherence_link/`.
 
 ---
 
@@ -398,11 +399,11 @@ Run with [main_kinematics_analysis.m](main_kinematics_analysis.m); the code is i
 - **`build_kinematics_for_coherence_cycles`**
   - For exactly the cycles kept by stage f (overall and per band), computes stride length, stride speed, cycle duration, step duration and step length.
   - Uses heel marker displacement along `C.kinematics_coherence.params.forward_dim` (= 2, the Y axis), with units in mm.
-  - Output: `Results/kinematics_coherence_cycles/`.
+  - Output: `Results/bands_<set>/kinematics_coherence_cycles/`.
 - **`analyze_kinematics_for_coherence_cycles`**
   - Summarizes the metrics per signal, then per leg, then across pairs.
   - Tests condition effects with an LMM against a null model (LRT), a Friedman test, and Holm-corrected paired Wilcoxon tests.
-  - Output: `Results/g2_kinematics_coherence_analysis/` (tables and plots).
+  - Output: `Results/bands_<set>/g2_kinematics_coherence_analysis/` (tables and plots).
 
 ---
 
@@ -414,7 +415,7 @@ Run with [main_kinematics_analysis.m](main_kinematics_analysis.m); the code is i
 - [scripts/diagnostic_plot_heel_marker_axes.m](scripts/diagnostic_plot_heel_marker_axes.m)
   - A visual check of which marker axis is the walking direction; this justifies `forward_dim`.
   - Set the subject, leg, pair and band at the top of the file.
-  - Writes to `Results/kinematics_coherence_cycles/heel_marker_axis_diagnostics/`.
+  - Writes to `Results/bands_<set>/kinematics_coherence_cycles/heel_marker_axis_diagnostics/`.
 - [scripts/participant_summary_matlab.m](scripts/participant_summary_matlab.m)
   - Cohort descriptives (overall and by age group) from `participants_metadata_EMG.csv`.
   - Writes to `Results/participant_summary_outputs/` and `Results/png_visualisation/participant_summary_plots/`.
@@ -461,7 +462,7 @@ Run with [main_kinematics_analysis.m](main_kinematics_analysis.m); the code is i
 - **N_common = 10.** Equalization uses the smallest cycle count in the dataset, which is set by the 10-cycle inclusion cutoff (`min_cycles_required`). Every signal is therefore analysed with 10 cycles, which keeps signals comparable but discards most of the available cycles for the better recordings.
 - **Age is modelled as linear** across age groups with gaps between them. `SENSITIVITY_CONTINUOUS_AGE.csv` adds a quadratic term; the SOL_GM HighBeta age effect does not survive it.
 - d_a pauses for manual cluster selection. That is the method, not a defect — but it does mean the pipeline cannot be run unattended from end to end.
-- Stages a–e were last run on 2026-10-24 (all their outputs carry that date), after the bug fixes of the cleanup. The time-domain branch had bugs fixed without being run; run it before trusting its output.
+- Stages a–e were last run on 2026-10-24, after the bug fixes of the cleanup (d_a reloads the burst features computed in July, `run_feature_extraction = false`). The time-domain and kinematics branches had bugs fixed without being run since; run them before trusting their output. Their earlier results (July, older code and bands) are in `attic/ResultsArchive/`.
 - `Metadata/ParticipantGroup.m` duplicates the four participant lists in `config_emg.m` exactly, and nothing reads it. It is a second copy that can drift. `Metadata/PhysicalActivity_EMG.csv` (65 participants, PAQ-C / PAQ-A / GPAQ) is unused but is real data, usable as a covariate if you ever want it — note the scores are not comparable across the three instruments, and the Jeunes Enfants have none.
 - If an older copy of this project is still on your saved MATLAB path, its files shadow these ones and which copy runs depends on path order. `check_repo`'s `shadowed` check reports this; clear it with `pathtool`.
 
