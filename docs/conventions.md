@@ -86,7 +86,7 @@ One commit per logical change, in the imperative, saying what changed and why, a
 
 Known places that do not follow these rules yet, to fix stage by stage:
 
-- **Long stage functions.** `g_emg_emg_wavelet_coherence.m` (1,060 lines) and `l_spm_envelope_analysis.m` (4,450, off) still mix loading, computing, saving and plotting in one function. Stages f and h have been split into step functions (`*_steps/` folders) and are the model for the others.
+- **Long stage functions.** Stages f, g and h are split into step functions (`*_steps/` folders). In g, the per-pair computation (`g_compute_pair_coherence`, ~790 lines) is still one long function. Off the main path, `l_spm_envelope_analysis.m` (4,450 lines) and the other time-domain and kinematics stages are not split yet.
 - **Helpers that call `config_emg()` themselves**: three plotting helpers in stages c and d_a, and, as a fallback when no settings are passed, `write_lme_report` and `get_term_pvalue_from_lme_formula`. `h_coherence_stats.m` also reloads the config halfway through.
 - **Missing header comments**: about two thirds of the files.
 - **Same name in two files.** No function shadows a shared one any more. A few private local functions share a name across files and differ on purpose (`zscore_safe` in the f crosstalk QC and in i, `get_ylabel_text` in k and l, `get_marker_fs` and `get_marker_trial_struct` in the kinematics build and its diagnostic script, `parse_args` in Tools). Each is only visible inside its own file, so they cannot be confused at run time.

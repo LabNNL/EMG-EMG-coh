@@ -305,7 +305,7 @@ Steps, in `Functions/f_final_data_qc/f_final_data_qc_steps/`: `f_select_cycles_a
 
 ### g: Wavelet coherence (`g_emg_emg_wavelet_coherence`)
 
-Runs once per input dataset: `FULL` (20–60 Hz) and one per band (`HIGHBETA`, `GAMMA`). Each band dataset uses its own band-specific cycle mask from stage f.
+Runs once per input dataset: `FULL` (20–60 Hz) and one per band (`HIGHBETA`, `GAMMA`). Each band dataset uses its own band-specific cycle mask from stage f. Steps, in `Functions/g_coherence/g_coherence_steps/`: `g_run_dataset` (one dataset: load, pairs, save, QC plots) calls `g_compute_pair_coherence` for each pair.
 
 1. **Wavelet transform** (Morlet CWT, the `wavelet.m` from `wtc-r16`, modified for a linear 1 Hz grid), via `compute_pair_tfr`. With `transform_scope = "per_trial"` (default) each stretch of continuous recording is transformed on its own, padded by symmetric extension to at least 0.6 s, so the wavelet never runs across the glue point between two kept cycles that were not consecutive. Rejected cycles are kept as real context only if they pass the general QC and have no nearby bad burst (`context_policy = "trial_run_safe"`). `"concatenated"` is the pre-2026-10 behaviour: one transform over the glued signal. `Tools/audit_wavelet_transform_scope` compares the two; the difference was about 1% in TA Alpha and negligible in Beta and Gamma.
 2. **Per-cycle spectra.** Each cycle's transform is interpolated to 1000 points. Auto- and cross-spectra are averaged across cycles, and coherence is computed once: `C = |Sxy|² / (Sxx·Syy)`.
