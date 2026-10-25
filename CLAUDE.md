@@ -62,7 +62,7 @@ Results (Holm):
 - SOL_GM HighBeta age p = 0.028, which does not survive quadratic age.
 - No interactions.
 
-Previous outputs are in `mat_data/_archive_before_20hz_2026-10/` and `Results/_archive_before_20hz_2026-10/` (and the older `_archive_before_junction_fix_2026-10/`, `_archive_before_correctness_round/`).
+`Results/` holds only current outputs; everything older is in `attic/ResultsArchive/` (git-ignored, with MANIFEST.csv). Previous outputs are in `mat_data/_archive_before_20hz_2026-10/` and `attic/ResultsArchive/_archive_before_20hz_2026-10/` (and the older `_archive_before_junction_fix_2026-10/`, `_archive_before_correctness_round/`).
 
 ## Open
 

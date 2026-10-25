@@ -361,7 +361,7 @@ Runs once per input dataset: `FULL` (20–60 Hz) and one per band (`HIGHBETA`, `
     - `tables/`: row- and subject-level tables, descriptives, `CONTINUOUS_AGE_LME_TABLE__<TAG>.csv`, spectrum tables
     - `models/`: text reports of the models
   - figures in `Results/bands_<set>/png_visualisation/h_coherence_stats_pair_phase_main/`: band triplets, continuous-age LMM plots, spectrum curves. The figures print the primary model's Holm-adjusted p-values and never fit a model of their own; age groups in boxplots are for display, and the age post hoc uses one value per participant.
-  - tables, models and figures that a run did not rewrite are moved to `_stale_<time>/` folders (with a `MANIFEST.csv`), so what sits directly in these folders is from the last run
+  - tables, models and figures that a run did not rewrite are moved to `attic/ResultsArchive/<same path>/_stale_<time>/` (with a `MANIFEST.csv`), so `Results/` holds only what the last run wrote
   - workspaces in `mat_stats_data/`
   - `TAG` encodes the source, scope, metric family and covariate, e.g. `equalized_poi_auc_nocyclecov`.
 
@@ -455,8 +455,8 @@ Run with [main_kinematics_analysis.m](main_kinematics_analysis.m); the code is i
 
 ## Known issues
 
-- Stages f, g and h were rerun on 2026-10-24 with the ≥ 20 Hz bands, the per-trial wavelet transform and the corrected statistics, so the outputs on disk are current. Previous outputs are in `mat_data/_archive_before_20hz_2026-10/` and `Results/_archive_before_20hz_2026-10/` (and, from before the correctness round, `_archive_before_junction_fix_2026-10/` and `_archive_before_correctness_round/`).
-- **OneDrive and `Results/`.** `Results/` is inside the OneDrive-synced repository. Pause syncing during a run, otherwise a table being rewritten can end up empty with its content in a `<name> 2.csv` copy ([docs/reproduce.md](docs/reproduce.md#pause-onedrive-while-it-runs)). Conflict copies from the 2026-10-24 reruns are in `Results/_onedrive_conflicts/`.
+- `Results/` holds only current outputs: the three band sets (`bands_<set>/`, run 2026-10-25), stages a–e (run 2026-10-24) and the acquisition audit. Everything older (pre-correctness and 8–60 Hz runs, July kinematics results, stale outputs, OneDrive conflict copies) is in `attic/ResultsArchive/`, which git ignores, with a `MANIFEST.csv` of where each file came from.
+- **OneDrive and `Results/`.** `Results/` is inside the OneDrive-synced repository. Pause syncing during a run, otherwise a table being rewritten can end up empty with its content in a `<name> 2.csv` copy ([docs/reproduce.md](docs/reproduce.md#pause-onedrive-while-it-runs)). Conflict copies from the 2026-10-24/25 reruns are in `attic/ResultsArchive/_onedrive_conflicts/`.
 - **Residual of the junction fix.** Stage b band-passes each subject's concatenated cycles, across trial boundaries, so a few tens of ms of filter ringing at trial junctions are already in the signal that stage g transforms. Per-trial transforms keep the wavelet from smearing it, but cannot remove it. Fixing it would mean rerunning stages a–e.
 - **N_common = 10.** Equalization uses the smallest cycle count in the dataset, which is set by the 10-cycle inclusion cutoff (`min_cycles_required`). Every signal is therefore analysed with 10 cycles, which keeps signals comparable but discards most of the available cycles for the better recordings.
 - **Age is modelled as linear** across age groups with gaps between them. `SENSITIVITY_CONTINUOUS_AGE.csv` adds a quadratic term; the SOL_GM HighBeta age effect does not survive it.

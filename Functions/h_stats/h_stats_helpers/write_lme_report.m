@@ -3,6 +3,10 @@ function [lme, diag] = write_lme_report(T, dvName, formula, outTxt, HC, qqPng)
 % report: settings, model summary, fixed effects and ANOVA (both with
 % HC.lme.df_method), and residual diagnostics. With qqPng, also saves a
 % normal QQ plot of the conditional residuals.
+%
+% The report is written to a temporary file and moved into place when
+% complete: fitting takes seconds, and a sync client (OneDrive) picking up
+% the half-written file used to leave it truncated.
 
     if nargin < 5 || isempty(HC)
         C = config_emg();
@@ -15,9 +19,10 @@ function [lme, diag] = write_lme_report(T, dvName, formula, outTxt, HC, qqPng)
     lme = [];
     diag = struct('n', height(T), 'skewness', NaN, 'kurtosis', NaN, 'p_lilliefors', NaN);
 
-    fid = fopen(outTxt, 'w');
+    tmpTxt = [tempname '.txt'];
+    fid = fopen(tmpTxt, 'w');
     if fid == -1
-        warning('Could not open model report file:\n%s', outTxt);
+        warning('Could not open a temporary file for the model report:\n%s', outTxt);
         return;
     end
 
@@ -71,4 +76,5 @@ function [lme, diag] = write_lme_report(T, dvName, formula, outTxt, HC, qqPng)
     end
 
     fclose(fid);
+    movefile(tmpTxt, outTxt, 'f');
 end

@@ -99,6 +99,8 @@ C.paths.results_dir   = fullfile(C.paths.code_dir, 'Results');
 C.paths.plot_dir  = fullfile(C.paths.results_dir, 'png_visualisation');
 % Tables and figures of the band-dependent stages (f, g, h, i, kinematics) of this band set
 C.paths.band_results_dir = fullfile(C.paths.results_dir, C.paths.band_set_tag);
+% Outdated results (older runs, stale outputs) are moved here, never deleted; git-ignored
+C.paths.results_archive_dir = fullfile(C.paths.code_dir, 'attic', 'ResultsArchive');
 C.paths.band_plot_dir    = fullfile(C.paths.band_results_dir, 'png_visualisation');
 C.paths.raw_plot_dir = fullfile(C.paths.plot_dir, 'a_extract_raw_cycles_concat');
 C.paths.preproc_plot_dir = fullfile(C.paths.plot_dir, 'b_preprocess_emg');
@@ -1349,7 +1351,7 @@ C.h_stats.io.models_dir = fullfile(C.h_stats.io.out_dir, 'models');
 C.h_stats.io.plots_dir = fullfile(C.paths.band_plot_dir, 'h_coherence_stats_pair_phase_main');
 C.h_stats.io.workspace_mat = fullfile(C.h_stats.io.mat_dir, 'COHERENCE_STATS_PAIR_PHASE_MAIN.mat');
 C.h_stats.io.band_triplet_dir = fullfile(C.h_stats.io.plots_dir, 'band_triplets');
-C.h_stats.io.archive_stale_outputs = true; % move tables/models/plots not rewritten by this run into _stale_<time>/ (never deletes)
+C.h_stats.io.archive_stale_outputs = true; % move tables/models/plots not rewritten by this run to attic/ResultsArchive/.../_stale_<time>/ (never deletes)
 
 % ===================== ANALYSIS =====================
 C.h_stats.analysis = struct();

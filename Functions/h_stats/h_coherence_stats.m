@@ -75,7 +75,7 @@ function h_coherence_stats()
 
     % ---------- Move outputs this run did not rewrite out of the way ----------
     if ~isfield(HC.io, 'archive_stale_outputs') || HC.io.archive_stale_outputs
-        archive_stale_h_outputs({HC.io.tables_dir, HC.io.models_dir, HC.io.plots_dir}, runStart);
+        archive_stale_h_outputs({HC.io.tables_dir, HC.io.models_dir, HC.io.plots_dir}, runStart, C.paths.results_dir, C.paths.results_archive_dir);
     end
 
     fprintf('\nDone.\n');

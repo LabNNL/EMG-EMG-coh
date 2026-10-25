@@ -66,10 +66,10 @@ Figures: the band-triplet and continuous-age plots print the Holm-adjusted p-val
 ## Checking a rerun
 
 - Previous outputs:
-  - `mat_data/_archive_before_20hz_2026-10/` and `Results/_archive_before_20hz_2026-10/`: the 8–60 Hz run with stage-f run ids, just before the ≥ 20 Hz rerun. The `Results` one also holds the transform-scope audit CSVs.
-  - `mat_data/_archive_before_junction_fix_2026-10/` and `Results/_archive_before_correctness_round/`: from before the 2026-10 correctness round.
+  - `mat_data/_archive_before_20hz_2026-10/` and `attic/ResultsArchive/_archive_before_20hz_2026-10/`: the 8–60 Hz run with stage-f run ids, just before the ≥ 20 Hz rerun. The `Results` one also holds the transform-scope audit CSVs.
+  - `mat_data/_archive_before_junction_fix_2026-10/` and `attic/ResultsArchive/_archive_before_correctness_round/`: from before the 2026-10 correctness round.
 - **`check_against_baseline`** works on the band set chosen in the config and compares every table of stages f, g and h (each CSV, each XLSX sheet) number by number against a saved reference: same columns, same rows, numbers within 1e-10, text identical. Run `check_against_baseline('MakeReference', true)` before a change that should not alter results (one reference per band set, in `Results/bands_<set>/_reference_tables/`), rerun the stages, then `check_against_baseline()`. Everything is deterministic: a rerun of unchanged code gives "same" on all tables, since the SPM permutation tests are seeded (`C.h_stats.spectrum.nonparam_seed`).
 - `Tools/baseline/RESULTS_BASELINE_<date>_band_sets.sha256` lists the checksum of every table and figure of the three band sets (Results/bands_<set>/). From the repository root, `shasum -a 256 -c Tools/baseline/RESULTS_BASELINE_<date>.sha256 | grep -v OK$` lists what differs. Figures can differ byte-wise across MATLAB versions; compare the CSVs first.
 - `Tools/test_compute_pair_tfr` checks the wavelet transform scopes on synthetic data (seconds).
 - `Tools/audit_wavelet_transform_scope` recomputes the equalized coherence of every pair under the old and new transform scopes and reports the differences (~30 min per dataset; `'FromRows'` rebuilds the summary from a saved run).
-- Stage h moves tables and figures it did not rewrite into `_stale_<time>/` folders (with a `MANIFEST.csv`), so whatever sits directly in `tables/`, `models/` and the figure folders comes from the last run.
+- Stage h moves tables and figures it did not rewrite to `attic/ResultsArchive/<same path>/_stale_<time>/` (with a `MANIFEST.csv`), so whatever sits in `tables/`, `models/` and the figure folders comes from the last run.

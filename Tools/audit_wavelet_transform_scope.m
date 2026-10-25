@@ -13,7 +13,7 @@ function [T, S] = audit_wavelet_transform_scope(varargin)
 %   'ArchiveDir' folder with the COHERENCE_SUMMARY_TABLE_<DATASET>.csv of the
 %               run before the junction fix, used to check that the
 %               "concatenated" scope reproduces it
-%               (default Results/_archive_before_correctness_round/g_emg_emg_wavelet_coherence)
+%               (default attic/ResultsArchive/_archive_before_correctness_round/g_emg_emg_wavelet_coherence)
 %   'FromRows'  path of a saved TRANSFORM_SCOPE_AUDIT_ROWS.csv: skip the
 %               recomputation and only rebuild the summary and reproduction check
 %
@@ -50,7 +50,7 @@ GP = C.g_coherence.group_plot;
 
 if isempty(opt.OutDir), opt.OutDir = fullfile(C.g_coherence.io.summary_csv_dir, 'transform_scope_audit'); end
 if isempty(opt.ArchiveDir)
-    opt.ArchiveDir = fullfile(C.paths.results_dir, '_archive_before_correctness_round', 'g_emg_emg_wavelet_coherence');
+    opt.ArchiveDir = fullfile(C.paths.results_archive_dir, '_archive_before_correctness_round', 'g_emg_emg_wavelet_coherence');
 end
 if ~isfolder(opt.OutDir), mkdir(opt.OutDir); end
 

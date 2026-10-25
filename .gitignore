@@ -13,6 +13,8 @@ config/local_paths.m
 # descend into an excluded directory, so a negation inside it has no effect.)
 Results/*
 Results_reworked/*
+# Outdated results moved out of Results/ (older runs, stale and sync-conflict copies)
+attic/ResultsArchive/
 
 # Participant data and channel mapping: not public
 Metadata/*
