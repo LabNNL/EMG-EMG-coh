@@ -36,12 +36,24 @@ assert(isfolder(opt.Reference), 'No reference at %s. Run check_against_baseline(
 refFiles = list_tables(opt.Reference, opt.Stages);
 curFiles = list_tables(C.paths.results_dir, opt.Stages);
 
+% A sync client (OneDrive) rewriting a file while MATLAB writes it leaves an
+% empty file and a copy named '<name> 2.csv'. Say so instead of a cryptic diff.
+conflicts = curFiles(~cellfun(@isempty, regexp(cellstr(curFiles), ' \d+\.(csv|xlsx)$', 'once')));
+for k = 1:numel(conflicts)
+    warning('check_against_baseline:syncConflict', 'Looks like a sync-conflict copy: %s. Compare it with the original and keep the complete one.', conflicts(k));
+end
+
 rows = {};
 for k = 1:numel(refFiles)
     rel = refFiles(k);
     cur = fullfile(C.paths.results_dir, rel);
     if ~isfile(cur)
         rows(end+1, :) = {rel, "", "missing", NaN, "not in the current run"}; %#ok<AGROW>
+        continue;
+    end
+    d = dir(cur);
+    if d.bytes == 0
+        rows(end+1, :) = {rel, "", "differs", NaN, "empty file (interrupted write or sync conflict)"}; %#ok<AGROW>
         continue;
     end
     for sheet = sheets_of(fullfile(opt.Reference, rel))

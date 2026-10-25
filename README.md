@@ -287,6 +287,8 @@ Intermediate files go to `<project_data_root>/mat_data/<subfolder>` (see [Data a
 
 ### f: Cycle-level QC and paired-signal rebuild (`f_build_final_paired_signals_from_burst_qc`)
 
+Steps, in `Functions/f_final_data_qc/f_final_data_qc_steps/`: `f_select_cycles_and_rebuild_pairs` → `f_build_qc_tables` → `f_cycle_count_recaps_and_tests` → `f_recoverability_recaps` → `f_analyzable_signal_recaps` → `f_qc_example_plots` → `f_save_outputs`.
+
 - **Per-muscle cycle QC** (`C.f_final_signals.params.cycle_policy`). A cycle is rejected if any of these holds:
   - it has no burst, or no good burst
   - it is flat, or more than 1 % of it is flatline
