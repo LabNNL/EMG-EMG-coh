@@ -10,6 +10,9 @@ function R = check_against_baseline(varargin)
 %   'Tol'            numeric tolerance, absolute or relative (default 1e-10)
 %   'Stages'         Results subfolders to cover (default the f, g and h outputs)
 %
+% Works on the band set chosen in the config (C.analysis.band_set): tables in
+% Results/bands_<set>/, reference in Results/bands_<set>/_reference_tables.
+%
 % Compares every .csv and every sheet of every .xlsx: same files, same
 % columns, same rows, numbers equal to within Tol, text identical. Figures
 % and the text model reports are not compared (their bytes and layout vary
@@ -21,12 +24,14 @@ function R = check_against_baseline(varargin)
 
 opt = parse_args(varargin);
 C   = config_emg();
+root = C.paths.band_results_dir;   % this band set's tables
+fprintf('Band set: %s\n', C.analysis.band_set);
 if isempty(opt.Reference)
-    opt.Reference = fullfile(C.paths.results_dir, '_reference_tables');
+    opt.Reference = fullfile(root, '_reference_tables');
 end
 
 if opt.MakeReference
-    make_reference(C.paths.results_dir, opt.Reference, opt.Stages);
+    make_reference(root, opt.Reference, opt.Stages);
     R = table();
     return;
 end
@@ -34,7 +39,7 @@ end
 assert(isfolder(opt.Reference), 'No reference at %s. Run check_against_baseline(''MakeReference'', true) first.', opt.Reference);
 
 refFiles = list_tables(opt.Reference, opt.Stages);
-curFiles = list_tables(C.paths.results_dir, opt.Stages);
+curFiles = list_tables(root, opt.Stages);
 
 % A sync client (OneDrive) rewriting a file while MATLAB writes it leaves an
 % empty file and a copy named '<name> 2.csv'. Say so instead of a cryptic diff.
@@ -46,7 +51,7 @@ end
 rows = {};
 for k = 1:numel(refFiles)
     rel = refFiles(k);
-    cur = fullfile(C.paths.results_dir, rel);
+    cur = fullfile(root, rel);
     if ~isfile(cur)
         rows(end+1, :) = {rel, "", "missing", NaN, "not in the current run"}; %#ok<AGROW>
         continue;

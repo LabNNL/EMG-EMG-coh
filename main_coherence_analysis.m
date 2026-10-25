@@ -25,4 +25,4 @@ stages = {
     R.run_coherence_stats,        F.stats,               'h_coherence_stats',                          'h   coherence statistics'
 };
 
-run_pipeline_stages(stages, 'Coherence pipeline', {C.paths.results_dir, C.paths.mat_dir});
+run_pipeline_stages(stages, sprintf('Coherence pipeline | band set %s', C.analysis.band_set), {C.paths.results_dir, C.paths.mat_dir});

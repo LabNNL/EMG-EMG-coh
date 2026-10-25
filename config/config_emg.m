@@ -1,5 +1,15 @@
 function C = config_emg()
 
+%% ===================== FREQUENCY BAND SET =====================
+% Which frequency bands stages f, g and h analyse. Each set has its own output
+% folders (mat_data/<stage>/bands_<set>/ and Results/bands_<set>/), so the sets
+% live side by side; stages a-e are shared. A set needs its own run from stage f,
+% because the cycle selection depends on the lowest band.
+%   "highbeta_gamma"   HighBeta 20-30, Gamma 31-60 Hz   (primary analysis, docs/acquisition.md)
+%   "beta_gamma"       Beta 13-30, Gamma 31-60 Hz
+%   "alpha_beta_gamma" Alpha 8-12, Beta 13-30, Gamma 31-60 Hz (the bands used before 2026-10)
+C.analysis.band_set = "highbeta_gamma";
+
 %% ===================== PIPELINE TOGGLING PARAMETERS =====================
 
 %Frequency domain
@@ -78,13 +88,18 @@ C.paths.features_dir = fullfile(C.paths.mat_dir, 'mat_burst_features');
 C.paths.clustering_dir = fullfile(C.paths.mat_dir, 'mat_clustering_data');
 C.paths.rule_based_dir = fullfile(C.paths.mat_dir, 'mat_rule_based_data');
 C.paths.burst_decision_dir = fullfile(C.paths.mat_dir, 'mat_final_burst_decision');
-C.paths.final_signals_dir = fullfile(C.paths.mat_dir, 'mat_final_paired_signals');
-C.paths.coherence_dir = fullfile(C.paths.mat_dir, 'mat_coherence_data');
-C.paths.stats_dir = fullfile(C.paths.mat_dir, 'mat_stats_data');
+% Stages f, g and h depend on the band set: one subfolder per set
+C.paths.band_set_tag = char("bands_" + C.analysis.band_set);
+C.paths.final_signals_dir = fullfile(C.paths.mat_dir, 'mat_final_paired_signals', C.paths.band_set_tag);
+C.paths.coherence_dir = fullfile(C.paths.mat_dir, 'mat_coherence_data', C.paths.band_set_tag);
+C.paths.stats_dir = fullfile(C.paths.mat_dir, 'mat_stats_data', C.paths.band_set_tag);
 
 % The results will be saved in a "Results" folder within the code directory, with subfolders for plots and other outputs.
 C.paths.results_dir   = fullfile(C.paths.code_dir, 'Results');
 C.paths.plot_dir  = fullfile(C.paths.results_dir, 'png_visualisation');
+% Tables and figures of the band-dependent stages (f, g, h, i, kinematics) of this band set
+C.paths.band_results_dir = fullfile(C.paths.results_dir, C.paths.band_set_tag);
+C.paths.band_plot_dir    = fullfile(C.paths.band_results_dir, 'png_visualisation');
 C.paths.raw_plot_dir = fullfile(C.paths.plot_dir, 'a_extract_raw_cycles_concat');
 C.paths.preproc_plot_dir = fullfile(C.paths.plot_dir, 'b_preprocess_emg');
 C.paths.preproc_qc_plot_dir = fullfile(C.paths.preproc_plot_dir, 'QC_RawVsPreproc');
@@ -190,7 +205,6 @@ C.plotting.colors.High = [0.66 0.10 0.10];   % dark red
 C.plotting.age_order = ["JeunesEnfants", "Enfants", "Adolescents", "Adultes"];
 C.plotting.sex_order = ["Femmes", "Hommes"];
 C.plotting.phase_order = ["Full", "Stance", "Swing"];
-C.plotting.band_order = ["HighBeta", "Gamma"];   % analysed bands, see C.shared_wavelet.FreqBands
 C.plotting.condition_order = ["Flat", "Medium", "High"];
 
 C.plotting.AlphaTransparency = 0.5; % 
@@ -245,22 +259,29 @@ C.general.fs_emg = 2000;   % Hz (default sampling rate for EMG, can be overridde
 %% ===================== SHARED COHERENCE / WAVELET SETTINGS =====================
 C.shared_wavelet = struct();
 C.shared_wavelet.WaveNumber = 7;
-% The analysed bands. Only >= 20 Hz is analysed (decided 2026-10-24): the
-% Delsys high-pass (10 or 20 Hz) cannot be confirmed for every participant,
-% and below 20 Hz cycle-locked movement artifact can inflate coherence
-% (docs/acquisition.md). Before 2026-10 the bands were Alpha [8 12],
-% Beta [13 30], Gamma [31 60]. Every stage loops over these names, so a
-% band is added or removed here only; names must start with a capital
-% letter and contain no underscore (they prefix column names such as
-% HighBeta_AUC_norm).
-C.shared_wavelet.FreqBands = struct( ...
-    'HighBeta', [20 30], ...
-    'Gamma',    [31 60]);
+% The analysed bands, set by C.analysis.band_set (top of this file). The
+% primary analysis uses >= 20 Hz only (decided 2026-10-24): the Delsys
+% high-pass (10 or 20 Hz) cannot be confirmed for every participant, and below
+% 20 Hz cycle-locked movement artifact can inflate coherence
+% (docs/acquisition.md). Every stage loops over these names; names must start
+% with a capital letter and contain no underscore (they prefix column names
+% such as HighBeta_AUC_norm).
+switch C.analysis.band_set
+    case "highbeta_gamma"
+        C.shared_wavelet.FreqBands = struct('HighBeta', [20 30], 'Gamma', [31 60]);
+    case "beta_gamma"
+        C.shared_wavelet.FreqBands = struct('Beta', [13 30], 'Gamma', [31 60]);
+    case "alpha_beta_gamma"
+        C.shared_wavelet.FreqBands = struct('Alpha', [8 12], 'Beta', [13 30], 'Gamma', [31 60]);
+    otherwise
+        error('Unknown C.analysis.band_set "%s". Use "highbeta_gamma", "beta_gamma" or "alpha_beta_gamma".', C.analysis.band_set);
+end
 C.shared_wavelet.band_names = fieldnames(C.shared_wavelet.FreqBands)';
 bandEdges = struct2cell(C.shared_wavelet.FreqBands);
 bandEdges = vertcat(bandEdges{:});
-C.shared_wavelet.FreqMin = min(bandEdges(:,1)); % 20 Hz
+C.shared_wavelet.FreqMin = min(bandEdges(:,1)); % 20, 13 or 8 Hz depending on the set
 C.shared_wavelet.FreqMax = max(bandEdges(:,2)); % 60 Hz
+C.plotting.band_order = string(C.shared_wavelet.band_names);   % analysed bands, in order
 
 %% a_extract_raw_cycles_concat settings
 
@@ -793,7 +814,7 @@ C.f_final_signals.io.bursts_dir = C.paths.bursts_dir;
 C.f_final_signals.io.out_dir = C.paths.final_signals_dir;
 C.f_final_signals.io.out_mat = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS.mat');
 
-C.f_final_signals.io.xlsx_dir = fullfile(C.paths.results_dir, 'f_cycle_level_qc_and_signal_rebuild');
+C.f_final_signals.io.xlsx_dir = fullfile(C.paths.band_results_dir, 'f_cycle_level_qc_and_signal_rebuild');
 C.f_final_signals.io.recap_xlsx_dir = fullfile(C.f_final_signals.io.xlsx_dir, 'recap_tables');
 C.f_final_signals.io.cycle_qc_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'CYCLE_QC_TABLE.xlsx');
 C.f_final_signals.io.pair_cycle_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PAIR_CYCLE_QC_TABLE.xlsx');
@@ -801,7 +822,7 @@ C.f_final_signals.io.signal_sum_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, '
 
 
 C.f_final_signals.io.excluded_burst_position_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'EXCLUDED_CYCLE_BURST_POSITION_TABLE.xlsx');
-C.f_final_signals.io.excluded_burst_position_plot_dir = fullfile(C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'excluded_burst_position_plots');
+C.f_final_signals.io.excluded_burst_position_plot_dir = fullfile(C.paths.band_plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'excluded_burst_position_plots');
 
 
 % ---------- Pair definitions ----------
@@ -867,23 +888,23 @@ C.f_final_signals.params.cycle_end_field_candidates = { ...
 % ---------- Plot settings ----------
 C.f_final_signals.plot = struct();
 
-C.f_final_signals.plot.hist_cycles_dir = fullfile(C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'hist_cycles_per_signal');
+C.f_final_signals.plot.hist_cycles_dir = fullfile(C.paths.band_plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'hist_cycles_per_signal');
 
 C.f_final_signals.plot.excluded = struct();
 C.f_final_signals.plot.excluded.enable = true;
 C.f_final_signals.plot.excluded.n_random_pairs = 10;
 C.f_final_signals.plot.excluded.random_seed = [];
-C.f_final_signals.plot.excluded.out_dir = fullfile(C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'qc_excluded_pair_plots');
+C.f_final_signals.plot.excluded.out_dir = fullfile(C.paths.band_plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'qc_excluded_pair_plots');
 
 C.f_final_signals.plot.rebuilt = struct();
 C.f_final_signals.plot.rebuilt.enable = true;
 C.f_final_signals.plot.rebuilt.n_random = 10;
 C.f_final_signals.plot.rebuilt.random_seed = [];
-C.f_final_signals.plot.rebuilt.out_dir = fullfile(C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'final_rebuilt_signal_examples');
+C.f_final_signals.plot.rebuilt.out_dir = fullfile(C.paths.band_plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'final_rebuilt_signal_examples');
 C.f_final_signals.plot.rebuilt.delete_old_png = false;
 
 C.f_final_signals.plot.manual.enable = true;
-C.f_final_signals.plot.manual.out_dir = fullfile(C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'manual_pair_plots');
+C.f_final_signals.plot.manual.out_dir = fullfile(C.paths.band_plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'manual_pair_plots');
 C.f_final_signals.plot.manual.requests = {
     struct('subject',"CTL_79",'condition',"Flat",'leg',"right",'pair_name',"TAprox_TAdist")
     %struct('subject',"CTL_37",'condition',"High",'leg',"left",'pair_name',"TAprox_TAdist")
@@ -896,7 +917,7 @@ C.f_final_signals.plot.wavelet_roi.enable = true;
 C.f_final_signals.plot.wavelet_roi.n_random_pairs = 10;
 C.f_final_signals.plot.wavelet_roi.random_seed = [];
 C.f_final_signals.plot.wavelet_roi.delete_old_png = true;
-C.f_final_signals.plot.wavelet_roi.out_dir = fullfile(C.paths.plot_dir, ...
+C.f_final_signals.plot.wavelet_roi.out_dir = fullfile(C.paths.band_plot_dir, ...
     'f_cycle_level_qc_and_signal_rebuild', 'wavelet_roi_exclusion_examples');
 
 % % ---------- Wavelet-aware contamination QC ----------
@@ -928,7 +949,7 @@ C.f_final_signals.plot.rebuilt_band.enable = true;
 C.f_final_signals.plot.rebuilt_band.n_random_per_band = 10;
 C.f_final_signals.plot.rebuilt_band.random_seed = [];
 C.f_final_signals.plot.rebuilt_band.out_dir = fullfile( ...
-    C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'band_specific_rebuilt_examples');
+    C.paths.band_plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'band_specific_rebuilt_examples');
 
 
 C.f_final_signals.plot.excluded_band = struct();
@@ -936,7 +957,7 @@ C.f_final_signals.plot.excluded_band.enable = true;
 C.f_final_signals.plot.excluded_band.n_random_per_band = 10;
 C.f_final_signals.plot.excluded_band.random_seed = [];
 C.f_final_signals.plot.excluded_band.out_dir = fullfile( ...
-    C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'band_specific_excluded_examples');
+    C.paths.band_plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'band_specific_excluded_examples');
 
 C.f_final_signals.io.out_mat_overall = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS_OVERALL.mat');
 % One export per band: FINAL_PAIRED_SIGNALS_<BAND>.mat
@@ -1002,7 +1023,7 @@ C.f_final_signals.crosstalk.thresholds.mean_coh_beta = 0.30;
 C.f_final_signals.crosstalk.thresholds.mean_coh_gamma = 0.30;
 
 C.f_final_signals.crosstalk.out_dir = fullfile(C.f_final_signals.io.xlsx_dir, 'crosstalk_qc');
-C.f_final_signals.crosstalk.plot_dir = fullfile(C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'crosstalk_qc');
+C.f_final_signals.crosstalk.plot_dir = fullfile(C.paths.band_plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'crosstalk_qc');
 
 C.f_final_signals.crosstalk.out_xlsx = fullfile(C.f_final_signals.crosstalk.out_dir, 'CROSSTALK_QC_TABLE.xlsx');
 C.f_final_signals.crosstalk.out_suspicious_xlsx = fullfile(C.f_final_signals.crosstalk.out_dir, 'CROSSTALK_QC_SUSPICIOUS.xlsx');
@@ -1021,13 +1042,13 @@ C.g_coherence.io = struct();
 C.g_coherence.io.final_paired_mat = fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS.mat'); % fichier d'entrée principal
 C.g_coherence.io.out_dir = C.paths.coherence_dir;                                                    % dossier de sortie principal
 C.g_coherence.io.out_mat = fullfile(C.g_coherence.io.out_dir, 'COHERENCE_RESULTS.mat');             % fichier .mat final
-C.g_coherence.io.summary_csv_dir = fullfile(C.paths.results_dir, 'g_emg_emg_wavelet_coherence');    % dossier pour les csv/résumés éventuels
+C.g_coherence.io.summary_csv_dir = fullfile(C.paths.band_results_dir, 'g_emg_emg_wavelet_coherence');    % dossier pour les csv/résumés éventuels
 
 % ===================== Plot settings =====================
 C.g_coherence.plot = struct();
 C.g_coherence.plot.enable = false;   % setting to false makes it much faster                                                                  % true = faire les plots individuels
 C.g_coherence.plot.save_png = true;                                                                  % true = sauvegarder les figures en png
-C.g_coherence.plot.dir = fullfile(C.paths.plot_dir, 'g_emg_emg_wavelet_coherence');                 % dossier global des plots
+C.g_coherence.plot.dir = fullfile(C.paths.band_plot_dir, 'g_emg_emg_wavelet_coherence');                 % dossier global des plots
 C.g_coherence.plot.individual_plots_dir = fullfile(C.g_coherence.plot.dir, 'individual_plots');     % cartes de cohérence par signal
 C.g_coherence.plot.before_after_plots_dir = fullfile(C.g_coherence.plot.dir, 'before_after_plots'); % plots raw vs thresholded / avant-après
 C.g_coherence.plot.delete_old_png = false;                                                           % true si tu veux supprimer les anciens plots à chaque run
@@ -1149,7 +1170,7 @@ C.g_coherence.plot.cycle_band_qc.max_pooled = 20;
 % ===================== Edge-effect QC =====================
 C.g_coherence.params.qc_edge.enable = true;
 C.g_coherence.params.qc_edge.dir = fullfile(C.g_coherence.plot.dir, 'edge_effect_qc');
-C.g_coherence.params.qc_edge.csv_dir = fullfile(C.paths.results_dir, 'g_emg_emg_wavelet_coherence', 'edge_effect_qc');
+C.g_coherence.params.qc_edge.csv_dir = fullfile(C.paths.band_results_dir, 'g_emg_emg_wavelet_coherence', 'edge_effect_qc');
 
 
 % ===================== Frequency bands =====================
@@ -1322,10 +1343,10 @@ C.h_stats.io = struct();
 C.h_stats.io.coh_mat = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_FULL.mat');
 
 C.h_stats.io.mat_dir = C.paths.stats_dir;
-C.h_stats.io.out_dir = fullfile(C.paths.results_dir, 'h_coherence_stats_pair_phase_main');
+C.h_stats.io.out_dir = fullfile(C.paths.band_results_dir, 'h_coherence_stats_pair_phase_main');
 C.h_stats.io.tables_dir = fullfile(C.h_stats.io.out_dir, 'tables');
 C.h_stats.io.models_dir = fullfile(C.h_stats.io.out_dir, 'models');
-C.h_stats.io.plots_dir = fullfile(C.paths.plot_dir, 'h_coherence_stats_pair_phase_main');
+C.h_stats.io.plots_dir = fullfile(C.paths.band_plot_dir, 'h_coherence_stats_pair_phase_main');
 C.h_stats.io.workspace_mat = fullfile(C.h_stats.io.mat_dir, 'COHERENCE_STATS_PAIR_PHASE_MAIN.mat');
 C.h_stats.io.band_triplet_dir = fullfile(C.h_stats.io.plots_dir, 'band_triplets');
 C.h_stats.io.archive_stale_outputs = true; % move tables/models/plots not rewritten by this run into _stale_<time>/ (never deletes)
@@ -1584,12 +1605,12 @@ C.h_stats.plot.continuous_age_lmm_3bands.show_significance = true;
 
 C.temporal_coherence_link = struct();
 
-TCroot = fullfile(C.paths.results_dir, 'i_temporal_coherence_link');
+TCroot = fullfile(C.paths.band_results_dir, 'i_temporal_coherence_link');
 
 C.temporal_coherence_link.out_dir    = TCroot;
 C.temporal_coherence_link.tables_dir = fullfile(TCroot, 'tables');
 C.temporal_coherence_link.models_dir = fullfile(TCroot, 'models');
-C.temporal_coherence_link.plots_dir  = fullfile(C.paths.plot_dir, 'i_temporal_coherence_link');
+C.temporal_coherence_link.plots_dir  = fullfile(C.paths.band_plot_dir, 'i_temporal_coherence_link');
 
 % ---------- Input coherence files ----------
 C.temporal_coherence_link.coh_mat_default = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_FULL.mat');
@@ -1958,7 +1979,7 @@ C.kinematics_analysis.io = struct();
 % The "g2_" prefix is historical: this branch was stage g2 at one point. The
 % folder name is kept so new results land beside the existing ones.
 C.kinematics_analysis.io.out_dir = fullfile( ...
-    C.paths.results_dir, 'g2_kinematics_coherence_analysis');
+    C.paths.band_results_dir, 'g2_kinematics_coherence_analysis');
 
 %% kinematics_for_coherence_cycles
 
@@ -1968,7 +1989,7 @@ C.kinematics_coherence.io = struct();
 C.kinematics_coherence.io.final_paired_mat = C.f_final_signals.io.out_mat;
 C.kinematics_coherence.io.raw_cycles_dir = C.paths.raw_dir;
 C.kinematics_coherence.io.out_dir = fullfile( ...
-    C.paths.results_dir, 'kinematics_coherence_cycles');
+    C.paths.band_results_dir, 'kinematics_coherence_cycles');
 
 C.kinematics_coherence.params = struct();
 C.kinematics_coherence.params.only_included_signals = true;
