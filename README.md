@@ -70,7 +70,15 @@ Raw files and the visual-QC spreadsheet use `Plat` instead of `Flat`; stage a re
 
 POI windows live in `C.physio.phase_windows_pct`.
 
-**Frequency bands** (`C.shared_wavelet.FreqBands`): HighBeta 20–30 Hz and Gamma 31–60 Hz. Only ≥ 20 Hz is analysed, because the Delsys sensor high-pass (10 or 20 Hz) cannot be confirmed for every participant and lower frequencies carry cycle-locked movement artifact ([docs/acquisition.md](docs/acquisition.md)). Until 2026-10 the bands were Alpha 8–12, Beta 13–30 and Gamma 31–60 Hz. Every stage loops over this list, so changing the bands is a config edit. Morlet wave number 7.
+**Frequency bands**: chosen by `C.analysis.band_set` at the top of `config/config_emg.m`:
+
+| `band_set` | Bands | |
+|---|---|---|
+| `"highbeta_gamma"` (default) | HighBeta 20–30, Gamma 31–60 Hz | the primary analysis |
+| `"beta_gamma"` | Beta 13–30, Gamma 31–60 Hz | comparison |
+| `"alpha_beta_gamma"` | Alpha 8–12, Beta 13–30, Gamma 31–60 Hz | comparison; the bands used until 2026-10 |
+
+The primary analysis uses ≥ 20 Hz only, because the Delsys sensor high-pass (10 or 20 Hz) cannot be confirmed for every participant and lower frequencies carry cycle-locked movement artifact ([docs/acquisition.md](docs/acquisition.md)). Each set has its own outputs for stages f, g and h (`mat_data/<stage folder>/bands_<set>/` and `Results/bands_<set>/`), so the sets live side by side; a set needs its own run from stage f, because which cycles are kept depends on the lowest band. Morlet wave number 7.
 
 ---
 
@@ -300,7 +308,7 @@ Steps, in `Functions/f_final_data_qc/f_final_data_qc_steps/`: `f_select_cycles_a
 - **Recap and statistics outputs:** cycle-retention tables, recap tables per band, Kruskal-Wallis tests and LMMs on cycle counts, a recoverability score, and a readable summary workbook.
 - **Outputs:**
   - `mat_final_paired_signals/FINAL_PAIRED_SIGNALS.mat`, `FINAL_PAIRED_SIGNALS_OVERALL.mat` and one `FINAL_PAIRED_SIGNALS_<BAND>.mat` per band (`_HIGHBETA`, `_GAMMA`)
-  - many XLSX tables in `Results/f_cycle_level_qc_and_signal_rebuild/` (including `recap_tables/`, `crosstalk_qc/`, `cycle_count_stat_tests/`)
+  - many XLSX tables in `Results/bands_<set>/f_cycle_level_qc_and_signal_rebuild/` (including `recap_tables/`, `crosstalk_qc/`, `cycle_count_stat_tests/`)
   - QC figures
 
 ### g: Wavelet coherence (`g_emg_emg_wavelet_coherence`)
@@ -322,7 +330,7 @@ Runs once per input dataset: `FULL` (20–60 Hz) and one per band (`HIGHBETA`, `
 5. **Scalar metrics** for each band and each scope (full cycle, stance, swing, POI): mean, raw AUC, bandwidth-normalized AUC (`*_AUC_norm`) and peak. POI log power is also computed.
 6. **Outputs:**
    - `mat_coherence_data/COHERENCE_RESULTS_FULL.mat` and one `COHERENCE_RESULTS_<BAND>.mat` per band
-   - `Results/g_emg_emg_wavelet_coherence/COHERENCE_SUMMARY_TABLE_<DS>.csv`
+   - `Results/bands_<set>/g_emg_emg_wavelet_coherence/COHERENCE_SUMMARY_TABLE_<DS>.csv`
    - edge, padding and COI QC
    - Individual, group and final-comparison plots are made only when `C.g_coherence.plot.enable` is `true` (currently `false`, which is much faster).
 
@@ -349,10 +357,10 @@ Runs once per input dataset: `FULL` (20–60 Hz) and one per band (`HIGHBETA`, `
   - age × condition (`anova2onerm`)
   - follow-up tests of condition within each age group and age within each condition, Bonferroni-corrected over the strata of each figure
 - **Outputs:**
-  - in `Results/h_coherence_stats_pair_phase_main/`:
+  - in `Results/bands_<set>/h_coherence_stats_pair_phase_main/`:
     - `tables/`: row- and subject-level tables, descriptives, `CONTINUOUS_AGE_LME_TABLE__<TAG>.csv`, spectrum tables
     - `models/`: text reports of the models
-  - figures in `Results/png_visualisation/h_coherence_stats_pair_phase_main/`: band triplets, continuous-age LMM plots, spectrum curves. The figures print the primary model's Holm-adjusted p-values and never fit a model of their own; age groups in boxplots are for display, and the age post hoc uses one value per participant.
+  - figures in `Results/bands_<set>/png_visualisation/h_coherence_stats_pair_phase_main/`: band triplets, continuous-age LMM plots, spectrum curves. The figures print the primary model's Holm-adjusted p-values and never fit a model of their own; age groups in boxplots are for display, and the age post hoc uses one value per participant.
   - tables, models and figures that a run did not rewrite are moved to `_stale_<time>/` folders (with a `MANIFEST.csv`), so what sits directly in these folders is from the last run
   - workspaces in `mat_stats_data/`
   - `TAG` encodes the source, scope, metric family and covariate, e.g. `equalized_poi_auc_nocyclecov`.
@@ -426,12 +434,12 @@ Run with [main_kinematics_analysis.m](main_kinematics_analysis.m); the code is i
 | `mat_clustering_data/` | d_a | `CLUSTER_RESULTS.mat` |
 | `mat_rule_based_data/` | d_b | `QC_bursts.mat` |
 | `mat_final_burst_decision/` | e | `FINAL_BURST_QC.mat` |
-| `mat_final_paired_signals/` | f | `FINAL_PAIRED_SIGNALS[_OVERALL/_HIGHBETA/_GAMMA].mat` |
-| `mat_coherence_data/` | g | `COHERENCE_RESULTS_{FULL,HIGHBETA,GAMMA}.mat` |
-| `mat_stats_data/` | h | `COHERENCE_STATS_PAIR_PHASE_MAIN.mat`, `workspace__<TAG>.mat` |
+| `mat_final_paired_signals/bands_<set>/` | f | `FINAL_PAIRED_SIGNALS.mat`, `_OVERALL.mat`, one `_<BAND>.mat` per band |
+| `mat_coherence_data/bands_<set>/` | g | `COHERENCE_RESULTS_FULL.mat`, one `_<BAND>.mat` per band |
+| `mat_stats_data/bands_<set>/` | h | `COHERENCE_STATS_PAIR_PHASE_MAIN.mat`, `workspace__<TAG>.mat` |
 | `mat_time_domain_data/` | j | `TIME_DOMAIN_DATA.mat` |
 
-**Tables and figures** go to `Results/` inside the repo: one folder per stage for CSV/XLSX outputs, and `Results/png_visualisation/<stage>/` for figures.
+**Tables and figures** go to `Results/` inside the repo: one folder per stage for CSV/XLSX outputs, and `Results/png_visualisation/<stage>/` for figures. Stages f, g and h (and the temporal-link and kinematics stages, which read them) write into `Results/bands_<set>/` instead, with the same layout inside, one folder per band set.
 
 ---
 

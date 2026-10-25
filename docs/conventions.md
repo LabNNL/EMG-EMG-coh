@@ -26,9 +26,9 @@ How code in this repository is organized, and how to change it without changing 
 function g_emg_emg_wavelet_coherence()
 % G_EMG_EMG_WAVELET_COHERENCE  Wavelet coherence for every included muscle pair.
 %
-% Reads   mat_final_paired_signals/FINAL_PAIRED_SIGNALS[_<BAND>].mat   (stage f)
-% Writes  mat_coherence_data/COHERENCE_RESULTS_<DATASET>.mat
-%         Results/g_emg_emg_wavelet_coherence/COHERENCE_SUMMARY_TABLE_<DATASET>.csv
+% Reads   mat_final_paired_signals/bands_<set>/FINAL_PAIRED_SIGNALS[_<BAND>].mat   (stage f)
+% Writes  mat_coherence_data/bands_<set>/COHERENCE_RESULTS_<DATASET>.mat
+%         Results/bands_<set>/g_emg_emg_wavelet_coherence/COHERENCE_SUMMARY_TABLE_<DATASET>.csv
 % Settings  C.g_coherence (config/config_emg.m)
 ```
 
@@ -57,7 +57,7 @@ function [trial_id, run_id, note] = get_pair_cycle_run_ids(E1, E2, cycle_starts,
 | functions, variables | `lower_snake_case` | `build_transform_segments`, `n_valid_cycles` |
 | stage entry points | letter prefix in pipeline order | `f_build_final_paired_signals_from_burst_qc` |
 | config blocks | `C.<stage>.params / .io / .plot` | `C.g_coherence.params.transform_scope` |
-| frequency bands | `C.shared_wavelet.FreqBands`, CamelCase, no underscore | `HighBeta`, `Gamma` |
+| frequency bands | `C.shared_wavelet.FreqBands` (set by `C.analysis.band_set`), CamelCase, no underscore | `HighBeta`, `Gamma` |
 | per-band columns | `<Band>_<metric>` | `HighBeta_AUC_norm` |
 | saved structs | upper case, as saved | `FINAL_PAIRED_SIGNALS`, `COHERENCE_RESULTS` |
 

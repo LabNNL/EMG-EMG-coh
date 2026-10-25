@@ -1,6 +1,6 @@
 # What is inside the saved files
 
-The stages pass data to each other as `.mat` files in `mat_data/` (see the README for the folder of each). Almost all of them hold one **nested struct** with the same shape:
+The stages pass data to each other as `.mat` files in `mat_data/` (see the README for the folder of each). Stages f, g and h write into a subfolder per band set, e.g. `mat_coherence_data/bands_highbeta_gamma/`. Almost all of them hold one **nested struct** with the same shape:
 
 ```
 S.(subject).(condition).(leg).(muscle or pair)
@@ -135,7 +135,7 @@ R.Metrics.equalized.poi.auc_norm.Gamma     % the number that goes into the stati
 
 ## Stage h: tables
 
-h flattens the results into tables in `Results/h_coherence_stats_pair_phase_main/tables/`, which are easier to work with than the structs:
+h flattens the results into tables in `Results/bands_<set>/h_coherence_stats_pair_phase_main/tables/`, which are easier to work with than the structs:
 
 | Table | One row per |
 |---|---|
@@ -146,4 +146,4 @@ h flattens the results into tables in `Results/h_coherence_stats_pair_phase_main
 | `DESCRIPTIVE_TABLE_ALL.csv` | pair × age group × condition × metric |
 | `spectrum_curves/*.csv` | spectra and SPM results |
 
-`mat_stats_data/COHERENCE_STATS_PAIR_PHASE_MAIN.mat` holds `T_row` and `T_subj` as MATLAB tables.
+`mat_stats_data/bands_<set>/COHERENCE_STATS_PAIR_PHASE_MAIN.mat` holds `T_row` and `T_subj` as MATLAB tables.

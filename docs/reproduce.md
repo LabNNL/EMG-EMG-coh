@@ -21,6 +21,8 @@ The repository, and with it `Results/`, sits in a OneDrive folder. The pipeline 
 
 ## Which stages to run
 
+Choose the band set first (`C.analysis.band_set`, top of `config/config_emg.m`). Running another set does not touch the outputs of the others.
+
 Every stage reads the previous stage's `.mat` files from `mat_data/`, so you only rerun from the first stage whose inputs or code changed. The switches are `C.parameters_running.run_*` at the top of `config/config_emg.m`; then run `main_coherence_analysis`.
 
 | Starting point | Switches on | Time (M-series Mac) | Notes |
@@ -35,7 +37,7 @@ All in `config/config_emg.m`. Changing any of these changes the results.
 
 | Setting | Value | Meaning |
 |---|---|---|
-| `C.shared_wavelet.FreqBands` | HighBeta [20 30], Gamma [31 60] Hz | Only ≥ 20 Hz is analysed (see `docs/acquisition.md`, "Why the analysis starts at 20 Hz"). Before 2026-10: Alpha [8 12], Beta [13 30], Gamma [31 60]. Changing the bands needs a rerun from f: stage f's cycle-rejection boundaries depend on the lowest band. |
+| `C.analysis.band_set` | `"highbeta_gamma"`: HighBeta [20 30], Gamma [31 60] Hz | The primary analysis uses ≥ 20 Hz only (see `docs/acquisition.md`, "Why the analysis starts at 20 Hz"). `"beta_gamma"` and `"alpha_beta_gamma"` are kept for comparison. Each set has its own outputs (`mat_data/<stage>/bands_<set>/`, `Results/bands_<set>/`) and needs its own run from stage f, because stage f's cycle-rejection boundaries depend on the lowest band. |
 | `C.b_preproc.bandpass` | 8–450 Hz, 4th-order Butterworth, zero phase | Does not bias coherence (see `docs/acquisition.md`). |
 | `C.f_final_signals.params.cycle_policy` | see config | Which cycles are kept, per band. |
 | `C.g_coherence.params.transform_scope` | `"per_trial"` | One wavelet transform per stretch of continuous recording. Before 2026-10 it was one transform over the glued kept cycles (`"concatenated"`), which put artificial jumps into the signal at every trial boundary and every rejected cycle. |
@@ -55,7 +57,7 @@ AUC_norm ~ AgeYears_z * condition + (1|subject)
 
 It is fitted with effects coding, REML and Satterthwaite degrees of freedom. Under effects coding, the `AgeYears_z` row is the age slope averaged over the three conditions. Under MATLAB's default reference coding, which earlier versions used, it was the slope on flat ground only. The p-values for age, condition and age × condition are Holm-adjusted across the 4 models (2 pairs × 2 bands), in the `*_holm` columns. The current numbers, and how they differ from the earlier 8–60 Hz results, are in `docs/acquisition.md`.
 
-Results: `Results/h_coherence_stats_pair_phase_main/tables/CONTINUOUS_AGE_LME_TABLE.csv`, with one model report per pair and band in `models/continuous_age_models/` and residual QQ plots in `models/continuous_age_lmm_diagnostics/`.
+Results: `Results/bands_<set>/h_coherence_stats_pair_phase_main/tables/CONTINUOUS_AGE_LME_TABLE.csv`, with one model report per pair and band in `models/continuous_age_models/` and residual QQ plots in `models/continuous_age_lmm_diagnostics/`.
 
 `tables/SENSITIVITY_CONTINUOUS_AGE.csv` refits the same model with quadratic age, Fisher-z coherence, raw coherence plus log(number of cycles), and cycle-bias-corrected coherence. A conclusion that only holds in the primary row should be reported with that caveat.
 
@@ -66,8 +68,8 @@ Figures: the band-triplet and continuous-age plots print the Holm-adjusted p-val
 - Previous outputs:
   - `mat_data/_archive_before_20hz_2026-10/` and `Results/_archive_before_20hz_2026-10/`: the 8–60 Hz run with stage-f run ids, just before the ≥ 20 Hz rerun. The `Results` one also holds the transform-scope audit CSVs.
   - `mat_data/_archive_before_junction_fix_2026-10/` and `Results/_archive_before_correctness_round/`: from before the 2026-10 correctness round.
-- **`check_against_baseline`** compares every table of stages f, g and h (each CSV, each XLSX sheet) number by number against a saved reference: same columns, same rows, numbers within 1e-10, text identical. Run `check_against_baseline('MakeReference', true)` before a change that should not alter results, rerun the stages, then `check_against_baseline()`. Everything is deterministic: a rerun of unchanged code gives "same" on all tables, since the SPM permutation tests are seeded (`C.h_stats.spectrum.nonparam_seed`).
-- `Tools/baseline/RESULTS_BASELINE_<date>.sha256` lists the checksum of every table and figure of the reported run. From the repository root, `shasum -a 256 -c Tools/baseline/RESULTS_BASELINE_<date>.sha256 | grep -v OK$` lists what differs. Figures can differ byte-wise across MATLAB versions; compare the CSVs first.
+- **`check_against_baseline`** works on the band set chosen in the config and compares every table of stages f, g and h (each CSV, each XLSX sheet) number by number against a saved reference: same columns, same rows, numbers within 1e-10, text identical. Run `check_against_baseline('MakeReference', true)` before a change that should not alter results (one reference per band set, in `Results/bands_<set>/_reference_tables/`), rerun the stages, then `check_against_baseline()`. Everything is deterministic: a rerun of unchanged code gives "same" on all tables, since the SPM permutation tests are seeded (`C.h_stats.spectrum.nonparam_seed`).
+- `Tools/baseline/RESULTS_BASELINE_<date>_band_sets.sha256` lists the checksum of every table and figure of the three band sets (Results/bands_<set>/). From the repository root, `shasum -a 256 -c Tools/baseline/RESULTS_BASELINE_<date>.sha256 | grep -v OK$` lists what differs. Figures can differ byte-wise across MATLAB versions; compare the CSVs first.
 - `Tools/test_compute_pair_tfr` checks the wavelet transform scopes on synthetic data (seconds).
 - `Tools/audit_wavelet_transform_scope` recomputes the equalized coherence of every pair under the old and new transform scopes and reports the differences (~30 min per dataset; `'FromRows'` rebuilds the summary from a saved run).
 - Stage h moves tables and figures it did not rewrite into `_stale_<time>/` folders (with a `MANIFEST.csv`), so whatever sits directly in `tables/`, `models/` and the figure folders comes from the last run.

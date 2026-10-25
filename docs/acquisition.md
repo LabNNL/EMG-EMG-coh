@@ -150,9 +150,11 @@ of this analysis.
 
 ### Why the analysis starts at 20 Hz
 
-Since 2026-10 the coherence analysis covers **20–60 Hz only**, in two bands:
-HighBeta (20–30 Hz) and Gamma (31–60 Hz) (`C.shared_wavelet.FreqBands`).
-Before that it covered 8–60 Hz with Alpha (8–12), Beta (13–30) and Gamma.
+Since 2026-10 the primary analysis covers **20–60 Hz only**, in two bands:
+HighBeta (20–30 Hz) and Gamma (31–60 Hz) (`C.analysis.band_set =
+"highbeta_gamma"`). Before that it covered 8–60 Hz with Alpha (8–12), Beta
+(13–30) and Gamma. Those bands can still be run for comparison
+(`"beta_gamma"`, `"alpha_beta_gamma"`); see "Other band sets" below.
 
 The reason is that the low end of the spectrum rests on two things that
 cannot be verified from the data:
@@ -354,6 +356,46 @@ These were all corrected in the same round, together with the per-trial
 wavelet transform (stage g), so the table above is not a one-change-at-a-time
 comparison. The transform change on its own barely moves Beta and Gamma; see
 `Tools/audit_wavelet_transform_scope`.
+
+### Other band sets, for comparison
+
+The same pipeline run with the other band sets (`C.analysis.band_set`, each
+in its own `Results/bands_<set>/`). Holm-adjusted p-values; the Holm family
+is the pair × band models of that set (4, 4 and 6 models), so the same raw
+p-value is adjusted differently in each set.
+
+| Pair | Band | `highbeta_gamma` age / condition | `beta_gamma` age / condition | `alpha_beta_gamma` age / condition |
+|---|---|---|---|---|
+| TAprox_TAdist | Alpha 8–12 | — | — | 1 / 0.68 |
+| TAprox_TAdist | Beta 13–30 | — | **0.029** / 0.41 | **0.036** / 0.68 |
+| TAprox_TAdist | HighBeta 20–30 | **0.0005** / 1 | — | — |
+| TAprox_TAdist | Gamma | **0.028** / **0.0006** | **0.029** / **0.0006** | **0.036** / **0.0009** |
+| SOL_GM | Alpha 8–12 | — | — | **0.019** / 0.98 |
+| SOL_GM | Beta 13–30 | — | **0.029** / 0.41 | **0.036** / 0.79 |
+| SOL_GM | HighBeta 20–30 | **0.028** / 1 | — | — |
+| SOL_GM | Gamma | 0.91 / 0.41 | 0.91 / 0.41 | 1 / 0.68 |
+
+No age × condition interaction in any set (Holm p ≥ 0.55).
+
+What the comparison shows:
+
+- **TAprox_TAdist, age.** The decrease with age is clearest at 20–30 Hz
+  (p = 0.0005, robust in every sensitivity variant). Over 13–30 Hz it is
+  weaker (0.029–0.036) and does not survive quadratic age, raw coherence
+  with log(cycles), or cycle-bias correction.
+- **TAprox_TAdist Gamma** (age and condition) is the same in all sets.
+- **SOL_GM, age.** The increase with age appears in Beta 13–30, HighBeta
+  20–30 and Alpha 8–12 (Holm 0.019–0.036). None of these is robust: each
+  loses significance in at least one sensitivity variant (quadratic age in
+  all three).
+- **Alpha** shows no TAprox_TAdist effect. The earlier TAprox Alpha
+  condition effect (uncorrected p = 0.043) is gone (Holm 0.68).
+
+Gamma is not exactly identical across sets. Its cycle masks and equalized
+cycles are, but which rejected cycles may serve as wavelet context
+(`trial_run_safe`) is judged with the set's widest contamination boundary,
+which depends on the lowest band. Gamma AUC_norm differs by at most 0.004
+across sets, and its model p-values by at most 0.003.
 
 ### The caveat at the low end
 

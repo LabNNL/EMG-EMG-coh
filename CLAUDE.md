@@ -13,7 +13,8 @@ MATLAB pipeline for EMG-EMG wavelet coherence during gait (stages a→h; see REA
 
 ## Key decisions
 
-- **Only ≥ 20 Hz is analysed**: bands HighBeta [20 30] and Gamma [31 60] Hz (`C.shared_wavelet.FreqBands`), decided 2026-10-24. The Delsys high-pass (10 or 20 Hz) cannot be confirmed for every participant, and below 20 Hz cycle-locked movement artifact inflates coherence. Every stage loops over the band list; band names have no underscore (they prefix columns such as `HighBeta_AUC_norm`). Stage b's 8–450 Hz band-pass stays.
+- **Band set toggle** `C.analysis.band_set` (top of the config): `highbeta_gamma` (primary), `beta_gamma`, `alpha_beta_gamma`. Each set has its own f/g/h outputs: `mat_data/<stage>/bands_<set>/`, `Results/bands_<set>/`, own regression reference. All three were run on 2026-10-25; comparison in `docs/acquisition.md` ("Other band sets").
+- **The primary analysis uses only ≥ 20 Hz**: bands HighBeta [20 30] and Gamma [31 60] Hz, decided 2026-10-24. The Delsys high-pass (10 or 20 Hz) cannot be confirmed for every participant, and below 20 Hz cycle-locked movement artifact inflates coherence. Every stage loops over the band list; band names have no underscore (they prefix columns such as `HighBeta_AUC_norm`). Stage b's 8–450 Hz band-pass stays.
 - Primary model: `AUC_norm ~ AgeYears_z * condition + (1|subject)` per pair (TAprox_TAdist, SOL_GM) and band, POI scope, `equalized` source, legs averaged.
 - Effects coding, REML and Satterthwaite DF for every stage-h model (`C.h_stats.lme`, `fit_h_lme`, `get_lme_term_stats`). The interaction is kept.
 - Holm correction per term across the pair × band models (currently 4).
