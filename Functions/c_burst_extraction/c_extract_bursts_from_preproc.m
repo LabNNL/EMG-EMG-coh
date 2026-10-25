@@ -72,7 +72,6 @@
 % duration constraints in the config.
 
 function c_extract_bursts_from_preproc()
-    clc; clear; close all;
 
     %% ===================== CONFIG =====================
     C = config_emg();
@@ -340,7 +339,16 @@ function c_extract_bursts_from_preproc()
     leg       = 'right';
     muscle    = 'EMG_TAdist_Concat';
 
-    plot_one_saved_burst_detection(C, subject, condition, leg, muscle);
+    % Optional single-signal example. The plot helper validates the entry and
+    % errors if this participant is not in the processed set, and this sits at
+    % the end of the stage, so an absent participant would otherwise throw away
+    % a completed run. Warn and carry on instead.
+    try
+        plot_one_saved_burst_detection(C, subject, condition, leg, muscle);
+    catch ME
+        warning('Example QC plot skipped (%s | %s | %s | %s): %s', ...
+            subject, condition, leg, muscle, ME.message);
+    end
 
     %% ===================== Inspecting saved burst files =====================
 

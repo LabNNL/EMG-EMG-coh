@@ -2,13 +2,15 @@ function plot_continuous_age_lmm_3bands_by_condition(PLOT_3BANDS, C, HC, outFile
 
     P = HC.plot.continuous_age_lmm_3bands;
 
-    bandOrder = ["Alpha", "Beta", "Gamma"];
+    % One panel per configured band (C.shared_wavelet.FreqBands)
+    bandOrder = string(fieldnames(C.shared_wavelet.FreqBands))';
+    nBands = numel(bandOrder);
 
-    fig = figure( 'Visible', P.visible, 'Color', 'w', 'Position', [100 100 1500 520]);
+    fig = figure( 'Visible', P.visible, 'Color', 'w', 'Position', [100 100 500*nBands 520]);
 
-    tl = tiledlayout(fig, 1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
+    tl = tiledlayout(fig, 1, nBands, 'TileSpacing', 'compact', 'Padding', 'compact');
 
-    axAll = gobjects(1,3);
+    axAll = gobjects(1,nBands);
 
     for ib = 1:numel(bandOrder)
 
@@ -152,7 +154,11 @@ function plot_continuous_age_lmm_3bands_by_condition(PLOT_3BANDS, C, HC, outFile
         % ============================================================
         if isfield(P, 'show_significance') && P.show_significance
 
-            txt = sprintf('Age: %s\nCond: %s\nAge×Cond: %s', p_to_stars_with_p(S.p_age), p_to_stars_with_p(S.p_condition), p_to_stars_with_p(S.p_interaction));
+            pLab = "";
+            if isfield(S, 'p_label') && strlength(S.p_label) > 0
+                pLab = " (" + S.p_label + ")";
+            end
+            txt = sprintf('Age%s: %s\nCond%s: %s\nAge×Cond%s: %s', pLab, p_to_stars_with_p(S.p_age), pLab, p_to_stars_with_p(S.p_condition), pLab, p_to_stars_with_p(S.p_interaction));
 
             if isfield(S, 'p_power') && isfinite(S.p_power)
                 txt = sprintf('%s\nPower: %s', txt, p_to_stars_with_p(S.p_power));
@@ -179,12 +185,16 @@ function plot_continuous_age_lmm_3bands_by_condition(PLOT_3BANDS, C, HC, outFile
 
     % ---------- Shared title ----------
     pairName = "";
+    modelTxt = "";
     fields = fieldnames(PLOT_3BANDS);
     if ~isempty(fields)
         pairName = string(PLOT_3BANDS.(fields{1}).pairName);
+        modelTxt = strrep(PLOT_3BANDS.(fields{1}).formula, PLOT_3BANDS.(fields{1}).dv, "DV");
     end
 
-    sgtitle(tl, sprintf('%s | Continuous-age LMM predictions', pairName), 'Interpreter', 'none');
+    sgtitle(tl, {sprintf('%s | Continuous-age LMM predictions', pairName), ...
+        sprintf('%s | %s coding, %s, %s DF | p Holm-adjusted across the models of CONTINUOUS_AGE_LME_TABLE', ...
+        modelTxt, HC.lme.dummy_var_coding, HC.lme.fit_method, HC.lme.df_method)}, 'Interpreter', 'none', 'FontSize', 10);
 
     % ---------- Legends ----------
     % Age-group legend from scatter handles

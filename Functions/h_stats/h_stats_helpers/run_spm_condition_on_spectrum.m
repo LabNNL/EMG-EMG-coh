@@ -108,6 +108,9 @@ function spmInfo = run_spm_condition_on_spectrum(T, condLevels, freqRef, HS)
         spmInfo.clusters = [];
         spmInfo.spmi = [];
         spmInfo.nTimePoints = 0;
+        % Say so. Callers only read .spmi, so without this the failure is
+        % invisible and the figure looks like a null result.
+        warning('%s', spmInfo.label);
     end
 end
 

@@ -18,14 +18,11 @@
 %   - for repeated-measures condition analyses, only complete-case subjects
 %     are retained across all requested conditions
 function l_spm_envelope_analysis()
-    clc; clear; close all;
     fprintf('Starting SPM envelope analysis...\n');
 
     set(0, 'DefaultFigureVisible', 'off');
     set(groot, 'DefaultFigureVisible', 'off');
 
-    addpath(genpath(fullfile(pwd, 'Functions')));
-    addpath(genpath(fullfile(pwd, 'Functions', 'spm1dmatlab-master')));
 
     C   = config_emg();
     IO  = C.l_spm.io;
@@ -794,108 +791,6 @@ function xcell = get_profile_cell_from_valid_cycles(VC, P)
     end
 end
 
-% function TD = add_normalized_signal_fields(TD, subjFields, P)
-
-%     normMode = string(P.normalization_mode);
-%     sigName  = string(P.signal_name);
-
-%     if normMode == "none"
-%         fprintf('\nNo amplitude normalization applied.\n');
-%         return;
-%     end
-
-%     fprintf('\nAdding normalized signal fields...\n');
-%     fprintf('Normalization mode: %s\n', normMode);
-
-%     if isfield(P, 'norm_reference_percentile') && ~isempty(P.norm_reference_percentile)
-%         prc = P.norm_reference_percentile;
-%     else
-%         prc = 100;
-%     end
-
-%     for iS = 1:numel(subjFields)
-
-%         subjID = subjFields{iS};
-
-%         % ---------------------------------------------------------
-%         % 1) Compute reference value per subject x muscle
-%         % ---------------------------------------------------------
-%         refByMuscle = struct();
-
-%         switch normMode
-
-%             case "flatmax"
-%                 refByMuscle = compute_subject_muscle_reference( ...
-%                     TD, subjID, sigName, "Flat", 100);
-
-%             case "flat_percentile"
-%                 refByMuscle = compute_subject_muscle_reference( ...
-%                     TD, subjID, sigName, "Flat", prc);
-
-%             case "subject_percentile"
-%                 refByMuscle = compute_subject_muscle_reference( ...
-%                     TD, subjID, sigName, "__ALL_CONDITIONS__", prc);
-
-%             case "cyclemax"
-%                 % handled later cycle-by-cycle
-%                 refByMuscle = struct();
-
-%             otherwise
-%                 error('Unknown normalization_mode: %s', normMode);
-%         end
-
-%         % ---------------------------------------------------------
-%         % 2) Apply normalization to all conditions / legs / muscles
-%         % ---------------------------------------------------------
-%         condFields = fieldnames(TD.(subjID));
-
-%         for ic = 1:numel(condFields)
-
-%             cond = condFields{ic};
-%             legFields = fieldnames(TD.(subjID).(cond));
-
-%             for il = 1:numel(legFields)
-
-%                 leg = legFields{il};
-%                 muscleFields = fieldnames(TD.(subjID).(cond).(leg));
-
-%                 for iM = 1:numel(muscleFields)
-
-%                     muscleName = muscleFields{iM};
-%                     S = TD.(subjID).(cond).(leg).(muscleName);
-
-%                     if ~isfield(S, 'valid_cycles') || isempty(S.valid_cycles)
-%                         continue;
-%                     end
-
-%                     VC = S.valid_cycles;
-
-%                     if normMode == "cyclemax"
-%                         VC = add_cyclemax_normalized_fields(VC, sigName, P);
-%                     else
-%                         if ~isfield(refByMuscle, muscleName)
-%                             VC = add_nan_normalized_fields_to_VC(VC, sigName, P);
-%                         else
-%                             refVal = refByMuscle.(muscleName);
-
-%                             if isempty(refVal) || ~isfinite(refVal) || refVal <= 0
-%                                 VC = add_nan_normalized_fields_to_VC(VC, sigName, P);
-%                             else
-%                                 VC = add_reference_normalized_fields_to_VC(VC, sigName, refVal, P);
-%                             end
-%                         end
-%                     end
-
-%                     TD.(subjID).(cond).(leg).(muscleName).valid_cycles = VC;
-%                 end
-%             end
-%         end
-%     end
-
-%     fprintf('Done adding normalized signal fields.\n');
-% end
-
-
 function TD = add_normalized_signal_fields(TD, subjFields, P)
 
     normMode = string(P.normalization_mode);
@@ -1072,26 +967,6 @@ function [Y, A] = build_oneway_design(Ycell)
 end
 
 %% ===================== PLOTTING FUNCTIONS =====================
-
-function plot_mean_sem(ax, X, col, labelText, alphaVal)
-    if isempty(X), return; end
-
-    M = mean(X, 1, 'omitnan');
-    S = std(X, 0, 1, 'omitnan') ./ sqrt(size(X,1));
-    x = linspace(0, 100, numel(M));
-
-    fill(ax, [x fliplr(x)], [M-S fliplr(M+S)], col, 'FaceAlpha', alphaVal, 'EdgeColor', 'none', 'HandleVisibility', 'off');
-
-    plot(ax, x, M, 'LineWidth', 2, 'Color', col, 'DisplayName', labelText);
-end
-
-function col = get_color_safe(colorStruct, fieldName, fallback)
-    if isfield(colorStruct, fieldName)
-        col = colorStruct.(fieldName);
-    else
-        col = fallback;
-    end
-end
 function ytxt = get_ylabel_text(P)
 
 
@@ -1300,7 +1175,7 @@ function add_spm_significance_bars(ax, spmi, nTimePoints, varargin)
 
         % stars
         if show_stars && ~isempty(pval)
-            stars = p_to_stars(pval);
+            stars = p_to_stars_blank_if_ns(pval);
             if ~isempty(stars)
                 text(ax, xm, y + text_offset, stars, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom', 'Color', col, 'FontWeight', 'bold', 'FontSize', star_font_size, 'Clipping', 'off');
             end
@@ -1314,7 +1189,7 @@ function add_spm_significance_bars(ax, spmi, nTimePoints, varargin)
 end
 
 
-function stars = p_to_stars(p)
+function stars = p_to_stars_blank_if_ns(p)
     if isempty(p) || isnan(p)
         stars = '';
     elseif p < 0.001
@@ -2163,35 +2038,6 @@ function prettyName = get_pretty_test_name(testName)
         prettyName = string(testName);
     end
 end
-
-function prettymuscleName = prettymuscle(muscleName)
-    % Convert internal muscle names to more readable format
-    % Take out EMG and Concat first
-    prettymuscleName = regexprep(muscleName, 'EMG_|_Concat', '');
-    % Replace underscores with spaces
-    prettymuscleName = strrep(prettymuscleName, '_', ' ');
-    %if contains TA replace by 'Tibialis Anterior'
-    if contains(prettymuscleName, 'TAdist')
-        prettymuscleName = strrep(prettymuscleName, 'TAdist', 'Tibialis Anterior dist');
-    elseif contains(prettymuscleName, 'TAprox')
-        prettymuscleName = strrep(prettymuscleName, 'TAprox', 'Tibialis Anterior prox');
-    elseif contains(prettymuscleName, 'SOL')
-        prettymuscleName = strrep(prettymuscleName, 'SOL', 'Soleus');
-    elseif contains(prettymuscleName, 'GMED')
-        prettymuscleName = strrep(prettymuscleName, 'GMED', 'Gluteus Medius');
-    elseif contains(prettymuscleName, 'GM')
-        prettymuscleName = strrep(prettymuscleName, 'GM', 'Gastrocnemius Medialis');
-    elseif contains(prettymuscleName, 'VL')
-        prettymuscleName = strrep(prettymuscleName, 'VL', 'Vastus Lateralis');
-    elseif contains(prettymuscleName, 'RF')
-        prettymuscleName = strrep(prettymuscleName, 'RF', 'Rectus Femoris');
-    elseif contains(prettymuscleName, 'ST')
-        prettymuscleName = strrep(prettymuscleName, 'ST', 'Semitendinosus');
-    end
-end
-
-% Symmetry analyses
-
 function [Y_left, Y_right, subjectIDs] = collect_subject_mean_profiles_by_leg( TD, subjFields, muscleName, condName, ageName, P)
 
     Y_left = [];
@@ -2631,81 +2477,6 @@ function apply_boxchart_color_local(b, col)
     catch
     end
 end
-
-% function refByMuscle = compute_subject_muscle_reference(TD, subjID, sigName, condMode, prc)
-
-%     refByMuscle = struct();
-
-%     if condMode == "Flat"
-%         if ~isfield(TD.(subjID), 'Flat')
-%             return;
-%         end
-%         condFields = {'Flat'};
-%     else
-%         condFields = fieldnames(TD.(subjID));
-%     end
-
-%     allValsByMuscle = struct();
-
-%     for ic = 1:numel(condFields)
-
-%         cond = condFields{ic};
-
-%         if ~isfield(TD.(subjID), cond)
-%             continue;
-%         end
-
-%         legFields = fieldnames(TD.(subjID).(cond));
-
-%         for il = 1:numel(legFields)
-
-%             leg = legFields{il};
-%             muscleFields = fieldnames(TD.(subjID).(cond).(leg));
-
-%             for iM = 1:numel(muscleFields)
-
-%                 muscleName = muscleFields{iM};
-%                 S = TD.(subjID).(cond).(leg).(muscleName);
-
-%                 if ~isfield(S, 'included_for_analysis') || ~S.included_for_analysis
-%                     continue;
-%                 end
-
-%                 if ~isfield(S, 'valid_cycles') || isempty(S.valid_cycles)
-%                     continue;
-%                 end
-
-%                 VC = S.valid_cycles;
-
-%                 vals = collect_values_from_VC(VC, sigName);
-
-%                 if isempty(vals)
-%                     continue;
-%                 end
-
-%                 if ~isfield(allValsByMuscle, muscleName)
-%                     allValsByMuscle.(muscleName) = vals;
-%                 else
-%                     allValsByMuscle.(muscleName) = [allValsByMuscle.(muscleName); vals]; %#ok<AGROW>
-%                 end
-%             end
-%         end
-%     end
-
-%     muscles = fieldnames(allValsByMuscle);
-
-%     for iM = 1:numel(muscles)
-%         muscleName = muscles{iM};
-%         vals = allValsByMuscle.(muscleName);
-%         vals = vals(isfinite(vals));
-
-%         if isempty(vals)
-%             continue;
-%         end
-
-%         refByMuscle.(muscleName) = prctile(vals, prc);
-%     end
-% end
 
 function refByLegMuscle = compute_subject_muscle_reference(TD, subjID, sigName, condMode, prc)
 
@@ -3576,73 +3347,6 @@ function X = get_signal_cycle_matrix(TD, subjID, condName, leg, muscleName, P)
     xcell = get_profile_cell_from_valid_cycles(S.valid_cycles, P);
     X = cell_to_valid_matrix(xcell);
 end
-
-% function Xref = get_reference_cycle_matrix(TD, subjID, muscleName, P)
-
-%     Xref = [];
-
-%     if ~isfield(TD, subjID)
-%         return;
-%     end
-
-%     normMode = string(P.normalization_mode);
-
-%     switch normMode
-%         case {"flatmax", "flat_percentile"}
-%             condList = "Flat";
-
-%         case "subject_percentile"
-%             condList = string(fieldnames(TD.(subjID)));
-
-%         otherwise
-%             % for "none" or "cyclemax", no common reference pool to plot
-%             return;
-%     end
-
-%     rows = {};
-
-%     for iC = 1:numel(condList)
-%         condName = char(condList(iC));
-
-%         if ~isfield(TD.(subjID), condName)
-%             continue;
-%         end
-
-%         legFields = fieldnames(TD.(subjID).(condName));
-
-%         for il = 1:numel(legFields)
-
-%             leg = legFields{il};
-
-%             if ~isfield(TD.(subjID).(condName).(leg), muscleName)
-%                 continue;
-%             end
-
-%             S = TD.(subjID).(condName).(leg).(muscleName);
-
-%             if ~isfield(S, 'included_for_analysis') || ~S.included_for_analysis
-%                 continue;
-%             end
-
-%             if ~isfield(S, 'valid_cycles') || isempty(S.valid_cycles)
-%                 continue;
-%             end
-
-%             xcell = get_profile_cell_from_valid_cycles(S.valid_cycles, P);
-
-%             for iX = 1:numel(xcell)
-%                 x = xcell{iX};
-%                 if isnumeric(x) && ~isempty(x) && all(isfinite(x(:)))
-%                     rows{end+1,1} = x(:)'; %#ok<AGROW>
-%                 end
-%             end
-%         end
-%     end
-
-%     if ~isempty(rows)
-%         Xref = vertcat(rows{:});
-%     end
-% end
 
 function Xref = get_reference_cycle_matrix(TD, subjID, legName, muscleName, P)
 % Return the normalized reference cycles used for plotting QC.

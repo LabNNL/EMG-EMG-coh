@@ -35,14 +35,12 @@
 % -------------------------------------------------------------------------
 function j_build_time_domain_analysis_datasets()
     
-    clc; clear; close all;
 
-    addpath(genpath(fullfile(pwd, 'Functions')));
 
     C  = config_emg();
-    IO = C.i_time_domain.io;
-    P  = C.i_time_domain.params;
-    PL = C.i_time_domain.plot;
+    IO = C.j_time_domain.io;
+    P  = C.j_time_domain.params;
+    PL = C.j_time_domain.plot;
 
     if ~exist(IO.out_dir, 'dir'), mkdir(IO.out_dir); end
     if ~exist(IO.csv_dir, 'dir'), mkdir(IO.csv_dir); end
@@ -477,53 +475,6 @@ function j_build_time_domain_analysis_datasets()
 end
 
 %% ===================== LOCAL FUNCTIONS =====================
-
-function fs = get_fs_from_entry_or_default(E, C)
-    if isfield(E,'fs') && ~isempty(E.fs)
-        fs = E.fs;
-    elseif isfield(C,'general') && isfield(C.general,'fs_emg') && ~isempty(C.general.fs_emg)
-        fs = C.general.fs_emg;
-    else
-        fs = 2000;
-    end
-end
-
-function [cycle_starts, cycle_ends, source_field] = get_cycle_boundaries(E, startCandidates, endCandidates)
-    cycle_starts = [];
-    cycle_ends   = [];
-    source_field = "";
-
-    for i = 1:numel(startCandidates)
-        fn = startCandidates{i};
-        if isfield(E, fn) && ~isempty(E.(fn))
-            cycle_starts = round(E.(fn)(:));
-            cycle_starts = cycle_starts(~isnan(cycle_starts));
-            cycle_starts = unique(cycle_starts, 'stable');
-            source_field = string(fn);
-            break;
-        end
-    end
-
-    if isempty(cycle_starts), return; end
-
-    for i = 1:numel(endCandidates)
-        fn = endCandidates{i};
-        if isfield(E, fn) && ~isempty(E.(fn))
-            cycle_ends = round(E.(fn)(:));
-            cycle_ends = cycle_ends(~isnan(cycle_ends));
-            break;
-        end
-    end
-
-    if isempty(cycle_ends)
-        if numel(cycle_starts) >= 2
-            cycle_ends = [cycle_starts(2:end)-1; NaN];
-        else
-            cycle_ends = NaN(size(cycle_starts));
-        end
-    end
-end
-
 function cycle_ends = finalize_cycle_ends(cycle_starts, cycle_ends, nSamples)
     cycle_starts = cycle_starts(:);
 
@@ -565,96 +516,6 @@ function [toe_off, note] = get_toe_off_in_concat_coordinates_multi(E, candidate_
         end
     end
 end
-
-function [starts_pair, ends_pair, note] = harmonize_cycle_boundaries(st1, en1, st2, en2, n1, n2)
-    note = "identical";
-
-    st1 = st1(:); en1 = en1(:);
-    st2 = st2(:); en2 = en2(:);
-
-    if ~isempty(en1) && isnan(en1(end)), en1(end) = n1; end
-    if ~isempty(en2) && isnan(en2(end)), en2(end) = n2; end
-
-    if isequal(st1, st2)
-        starts_pair = st1;
-        ends_pair = min(en1, en2);
-        return;
-    end
-
-    commonStarts = intersect(st1, st2, 'stable');
-    if isempty(commonStarts)
-        starts_pair = [];
-        ends_pair = [];
-        note = "no_common_cycle_starts";
-        return;
-    end
-
-    starts_pair = commonStarts(:);
-    ends_pair = [starts_pair(2:end)-1; min(n1,n2)];
-    note = "used_common_cycle_starts_intersection";
-end
-
-function bursts = get_bursts_idx_from_qc_or_entry(Q, E)
-    if isfield(Q, 'bursts_idx') && ~isempty(Q.bursts_idx)
-        bursts = round(Q.bursts_idx);
-    elseif isfield(E, 'bursts_idx') && ~isempty(E.bursts_idx)
-        bursts = round(E.bursts_idx);
-    else
-        bursts = zeros(0,2);
-    end
-end
-
-function keep = get_final_keep_mask(Q, nB)
-    if isfield(Q,'final_keep_mask') && ~isempty(Q.final_keep_mask)
-        keep = logical(Q.final_keep_mask(:));
-    else
-        keep = true(nB,1);
-    end
-    if numel(keep) ~= nB
-        error('final_keep_mask length mismatch with bursts_idx.');
-    end
-end
-
-function reason = get_final_reason(Q, nB)
-    if isfield(Q,'final_reason') && ~isempty(Q.final_reason)
-        reason = string(Q.final_reason(:));
-    else
-        reason = repmat("", nB, 1);
-    end
-    if numel(reason) ~= nB
-        error('final_reason length mismatch with bursts_idx.');
-    end
-end
-
-function toeInfo = assign_toe_off_to_cycles(cycle_starts, cycle_ends, toe_off_idx)
-    nCycles = numel(cycle_starts);
-
-    toeInfo = struct();
-    toeInfo.has_toe_off = false(nCycles,1);
-    toeInfo.toe_off_original_idx = nan(nCycles,1);
-    toeInfo.toe_off_relative_idx = nan(nCycles,1);
-    toeInfo.toe_off_relative_fraction = nan(nCycles,1);
-    toeInfo.n_toe_off_in_cycle = zeros(nCycles,1);
-    toeInfo.toe_off_all_in_cycle = cell(nCycles,1);
-
-    for iC = 1:nCycles
-        c1 = cycle_starts(iC);
-        c2 = cycle_ends(iC);
-
-        idx = toe_off_idx(toe_off_idx >= c1 & toe_off_idx <= c2);
-
-        toeInfo.n_toe_off_in_cycle(iC) = numel(idx);
-        toeInfo.toe_off_all_in_cycle{iC} = idx;
-
-        if ~isempty(idx)
-            toeInfo.has_toe_off(iC) = true;
-            toeInfo.toe_off_original_idx(iC) = idx(1);
-            toeInfo.toe_off_relative_idx(iC) = idx(1) - c1 + 1;
-            toeInfo.toe_off_relative_fraction(iC) = (idx(1) - c1 + 1) / (c2 - c1 + 1);
-        end
-    end
-end
-
 function cyc = evaluate_cycles_for_one_muscle_time_domain(subjID, cond, leg, mf, x, cycle_starts, cycle_ends, bursts, burst_keep, burst_reason, Pcyc)
 
     nCycles = numel(cycle_starts);
@@ -931,48 +792,6 @@ function S = ensure_td_pair_fields(S, subjID, cond, leg)
     if ~isfield(S.(subjID), cond), S.(subjID).(cond) = struct(); end
     if ~isfield(S.(subjID).(cond), leg), S.(subjID).(cond).(leg) = struct(); end
 end
-
-function age_group = subject_to_group(subjID, C)
-    age_group = "Unknown";
-    if isfield(C, 'groups') && isa(C.groups, 'containers.Map')
-        if isKey(C.groups, subjID)
-            age_group = string(C.groups(subjID));
-        end
-    end
-end
-
-function merged = merge_segments_local(segs)
-    if isempty(segs)
-        merged = zeros(0,2);
-        return;
-    end
-
-    segs = sortrows(segs, 1);
-    merged = segs(1,:);
-
-    for i = 2:size(segs,1)
-        cur = segs(i,:);
-        last = merged(end,:);
-        if cur(1) <= last(2) + 1
-            merged(end,2) = max(last(2), cur(2));
-        else
-            merged = [merged; cur]; %#ok<AGROW>
-        end
-    end
-end
-
-function runs = logical_to_runs_local(mask)
-    mask = logical(mask(:));
-    if isempty(mask) || ~any(mask)
-        runs = zeros(0,2);
-        return;
-    end
-    d = diff([false; mask; false]);
-    starts = find(d == 1);
-    ends   = find(d == -1) - 1;
-    runs = [starts, ends];
-end
-
 function T = rows_to_table(rows, varNames)
     if isempty(rows)
         T = table();

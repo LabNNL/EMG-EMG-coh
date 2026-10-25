@@ -122,34 +122,3 @@ function plot_group_mean_maps(Gpair, groupVals, groupField, pairName, outDir, fr
     saveas(fig, fullfile(outDir, fname));
     close(fig);
 end
-
-function lbl = get_pretty_group_label(gv, groupField)
-    gv = string(gv);
-
-    switch char(groupField)
-        case 'age_group'
-            switch gv
-                case "JeunesEnfants"
-                    lbl = "Jeunes / Enfants";
-                case "JeunesAdultes"
-                    lbl = "Jeunes / Adultes";
-                case "OlderAdults"
-                    lbl = "Older adults";
-                otherwise
-                    lbl = gv;
-            end
-        case 'condition'
-            switch gv
-                case "Plat"
-                    lbl = "Flat";
-                case "Medium"
-                    lbl = "Medium";
-                case "High"
-                    lbl = "High";
-                otherwise
-                    lbl = gv;
-            end
-        otherwise
-            lbl = gv;
-    end
-end

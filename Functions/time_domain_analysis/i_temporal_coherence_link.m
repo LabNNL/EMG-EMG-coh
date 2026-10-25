@@ -16,7 +16,6 @@
 %   - optional LME model reports
 %   - scatter plots in same general style as h_coherence_stats
 function i_temporal_coherence_link()
-    clc; clear; close all;
 
     %% ===================== SETUP =====================
 
@@ -89,11 +88,11 @@ function i_temporal_coherence_link()
                         nCyclesUsedForThisRow = sum(cycleMask);
 
                         % ---------- Coherence metrics ----------
-                        coh_mean = get_scalar_from_result( R, char(bandName), TC.metric_scope, TC.coherence_source, 'mean');
+                        coh_mean = get_band_metric_from_result( R, char(bandName), TC.metric_scope, TC.coherence_source, 'mean');
 
-                        coh_auc_norm = get_scalar_from_result( R, char(bandName), TC.metric_scope, TC.coherence_source, 'auc_norm');
+                        coh_auc_norm = get_band_metric_from_result( R, char(bandName), TC.metric_scope, TC.coherence_source, 'auc_norm');
 
-                        coh_peak = get_scalar_from_result( R, char(bandName), TC.metric_scope, TC.coherence_source, 'peak');
+                        coh_peak = get_band_metric_from_result( R, char(bandName), TC.metric_scope, TC.coherence_source, 'peak');
 
                         if isnan(coh_mean) && isnan(coh_auc_norm) && isnan(coh_peak)
                             continue;
@@ -140,7 +139,7 @@ function i_temporal_coherence_link()
 
     fprintf('\nBuilding alignment sanity-check table...\n');
 
-    T_alignment = groupcounts_table(T_row, {'pair_name','band','age_group','condition'});
+    T_alignment = count_rows_and_subjects(T_row, {'pair_name','band','age_group','condition'});
     writetable(T_alignment, fullfile(TC.tables_dir, 'TEMPORAL_COHERENCE_ALIGNMENT_RECAP.csv'));
 
     disp(T_alignment);
@@ -303,7 +302,7 @@ function i_temporal_coherence_link()
 
                         outTxt = fullfile(TC.models_dir, sprintf('MODEL_TEMPORAL_LINK__%s__%s__%s__%s.txt', char(pairName), char(bandName), dv, pred));
 
-                        write_lme_report(Tm, dv, formula, outTxt);
+                        write_lme_report(Tm, dv, formula, outTxt, C.h_stats);
 
 
                         riM = riM + 1;
@@ -400,9 +399,9 @@ function i_temporal_coherence_link()
                         % ---------- Controlled model ----------
                         ctrlFormula = sprintf('%s ~ age_group * condition + %s + %s + (1|subject)', dv, predZ, ampZ);
 
-                        base = fit_lme_extract_terms(Tm, baseFormula, {'age_group','condition','age_group:condition'});
+                        base = fit_lme_extract_terms(Tm, baseFormula, {'age_group','condition','age_group:condition'}, C.h_stats);
 
-                        ctrl = fit_lme_extract_terms(Tm, ctrlFormula, {'age_group','condition','age_group:condition', predZ, ampZ});
+                        ctrl = fit_lme_extract_terms(Tm, ctrlFormula, {'age_group','condition','age_group:condition', predZ, ampZ}, C.h_stats);
 
                         riOC = riOC + 1;
 
@@ -551,30 +550,13 @@ function COH = load_coherence_sources(TC)
     assert(isfield(L, 'COHERENCE_RESULTS'), 'COHERENCE_RESULTS missing from:\n%s', TC.coh_mat_default);
 
     COH.default = L.COHERENCE_RESULTS;
-    COH.Alpha = COH.default;
-    COH.Beta  = COH.default;
-    COH.Gamma = COH.default;
-
-    if TC.use_band_specific_datasets
-
-        if isfield(TC, 'coh_mat_alpha') && isfile(TC.coh_mat_alpha)
-            La = load(TC.coh_mat_alpha);
-            if isfield(La, 'COHERENCE_RESULTS')
-                COH.Alpha = La.COHERENCE_RESULTS;
-            end
-        end
-
-        if isfield(TC, 'coh_mat_beta') && isfile(TC.coh_mat_beta)
-            Lb = load(TC.coh_mat_beta);
-            if isfield(Lb, 'COHERENCE_RESULTS')
-                COH.Beta = Lb.COHERENCE_RESULTS;
-            end
-        end
-
-        if isfield(TC, 'coh_mat_gamma') && isfile(TC.coh_mat_gamma)
-            Lg = load(TC.coh_mat_gamma);
-            if isfield(Lg, 'COHERENCE_RESULTS')
-                COH.Gamma = Lg.COHERENCE_RESULTS;
+    % One results file per analysed band (TC.coh_mat_band.<Band>); FULL is the fallback
+    for bandName = string(TC.bands_to_analyze)
+        COH.(bandName) = COH.default;
+        if TC.use_band_specific_datasets && isfield(TC, 'coh_mat_band') && isfield(TC.coh_mat_band, bandName) && isfile(TC.coh_mat_band.(bandName))
+            Lband = load(TC.coh_mat_band.(bandName));
+            if isfield(Lband, 'COHERENCE_RESULTS')
+                COH.(bandName) = Lband.COHERENCE_RESULTS;
             end
         end
     end
@@ -947,7 +929,7 @@ function idx = get_time_indices_for_scope(R, metricScope, nTime)
     idx = idx(:)';
 end
 
-function val = get_scalar_from_result(R, bandName, metricScope, coherenceSource, metricType)
+function val = get_band_metric_from_result(R, bandName, metricScope, coherenceSource, metricType)
 
     val = NaN;
 
@@ -993,85 +975,6 @@ function val = get_scalar_from_result(R, bandName, metricScope, coherenceSource,
         val = NaN;
     end
 end
-
-function tf = result_has_poi(R)
-
-    tf = isfield(R, 'POI') && isfield(R.POI, 'has_poi') && R.POI.has_poi && isfield(R.POI, 'indices') && ~isempty(R.POI.indices);
-end
-
-function R = get_nested_result(S, subjID, cond, leg, pairName)
-
-    R = [];
-
-    try
-        if ~isstruct(S), return; end
-        if ~isfield(S, subjID), return; end
-        if ~isfield(S.(subjID), cond), return; end
-        if ~isfield(S.(subjID).(cond), leg), return; end
-        if ~isfield(S.(subjID).(cond).(leg), pairName), return; end
-
-        R = S.(subjID).(cond).(leg).(pairName);
-    catch
-        R = [];
-    end
-end
-
-function out = union_of_nested_fields(structList, fieldPath)
-
-    out = {};
-
-    for i = 1:numel(structList)
-
-        S = structList{i};
-
-        try
-            T = S;
-
-            for j = 1:numel(fieldPath)
-                if ~isstruct(T) || ~isfield(T, fieldPath{j})
-                    T = [];
-                    break;
-                end
-                T = T.(fieldPath{j});
-            end
-
-            if isstruct(T)
-                out = union(out, fieldnames(T));
-            end
-        catch
-        end
-    end
-end
-
-function age_group = subject_to_group(subjID, C)
-
-    age_group = "Unknown";
-
-    if isfield(C, 'groups') && isa(C.groups, 'containers.Map')
-        if isKey(C.groups, char(subjID))
-            age_group = string(C.groups(char(subjID)));
-        end
-    end
-end
-
-function c = get_age_color(ageName, C)
-
-    if isfield(C.plotting.colors, char(string(ageName)))
-        c = C.plotting.colors.(char(string(ageName)));
-    else
-        c = [0.4 0.4 0.4];
-    end
-end
-
-function c = get_condition_color(condName, C)
-
-    if isfield(C.plotting.colors, char(string(condName)))
-        c = C.plotting.colors.(char(string(condName)));
-    else
-        c = [0.4 0.4 0.4];
-    end
-end
-
 function z = zscore_safe(x)
 
     z = x;
@@ -1119,7 +1022,7 @@ function txt = label_from_var(v)
     end
 end
 
-function T = groupcounts_table(Tin, groupVars)
+function T = count_rows_and_subjects(Tin, groupVars)
 
     if isempty(Tin)
         T = table();
@@ -1131,42 +1034,9 @@ function T = groupcounts_table(Tin, groupVars)
     T.n_rows = splitapply(@numel, Tin.subject, G);
     T.n_subjects = splitapply(@(x) numel(unique(x)), Tin.subject, G);
 end
-
-function write_lme_report(T, dvName, formula, outTxt)
-
-    fid = fopen(outTxt, 'w');
-
-    if fid == -1
-        warning('Could not open model report file:\n%s', outTxt);
-        return;
-    end
-
-    fprintf(fid, 'Dependent variable: %s\n', dvName);
-    fprintf(fid, 'Formula: %s\n\n', formula);
-    fprintf(fid, 'N rows: %d\n', height(T));
-    fprintf(fid, 'N subjects: %d\n\n', numel(unique(T.subject)));
-
-    try
-        lme = fitlme(T, formula);
-
-        fprintf(fid, '===== MODEL SUMMARY =====\n');
-        fprintf(fid, '%s\n\n', evalc('disp(lme)'));
-
-        fprintf(fid, '===== FIXED EFFECTS =====\n');
-        fprintf(fid, '%s\n\n', evalc('disp(lme.Coefficients)'));
-
-        fprintf(fid, '===== ANOVA =====\n');
-        fprintf(fid, '%s\n\n', evalc('disp(anova(lme))'));
-
-    catch ME
-        fprintf(fid, 'Model failed.\n');
-        fprintf(fid, '%s\n', ME.message);
-    end
-
-    fclose(fid);
-end
-
-function S = fit_lme_extract_terms(T, formula, requestedTerms)
+function S = fit_lme_extract_terms(T, formula, requestedTerms, HC)
+% Fits with the stage-h settings (fit_h_lme: effects coding, REML) and reads
+% term p-values from anova with HC.lme.df_method
 
     S = struct();
 
@@ -1178,10 +1048,10 @@ function S = fit_lme_extract_terms(T, formula, requestedTerms)
     S.model_ok      = false;
 
     try
-        lme = fitlme(T, formula);
+        lme = fit_h_lme(T, formula, HC);
 
         % Use ANOVA for term-level / omnibus effects
-        A = anova(lme);
+        A = anova(lme, 'DFMethod', HC.lme.df_method);
 
         S.model_ok = true;
 

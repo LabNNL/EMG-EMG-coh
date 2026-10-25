@@ -12,6 +12,7 @@ function plot_pooled_cycle_band_coherence(COHERENCE_RESULTS, outDir, nBins)
     end
 
     entries = {};
+    bandNames = {};
     subjFields = fieldnames(COHERENCE_RESULTS);
 
     for iS = 1:numel(subjFields)
@@ -35,11 +36,10 @@ function plot_pooled_cycle_band_coherence(COHERENCE_RESULTS, outDir, nBins)
                     end
 
                     C = R.CycleBandCoherence;
-                    if ~isfield(C, 'Alpha') || ~isfield(C, 'Beta') || ~isfield(C, 'Gamma')
-                        continue;
+                    if isempty(bandNames)
+                        bandNames = cycle_band_names(C);
                     end
-
-                    if all(isnan(C.Alpha)) && all(isnan(C.Beta)) && all(isnan(C.Gamma))
+                    if isempty(bandNames) || all(cellfun(@(b) ~isfield(C, b) || all(isnan(C.(b))), bandNames))
                         continue;
                     end
 
@@ -54,9 +54,8 @@ function plot_pooled_cycle_band_coherence(COHERENCE_RESULTS, outDir, nBins)
         return;
     end
 
-    Alpha_mat = nan(size(entries,1), nBins);
-    Beta_mat  = nan(size(entries,1), nBins);
-    Gamma_mat = nan(size(entries,1), nBins);
+    nBands = numel(bandNames);
+    band_mat = repmat({nan(size(entries,1), nBins)}, 1, nBands);
 
     outer_pos_left  = nan(size(entries,1),1);
     outer_pos_right = nan(size(entries,1),1);
@@ -75,9 +74,6 @@ function plot_pooled_cycle_band_coherence(COHERENCE_RESULTS, outDir, nBins)
         C = R.CycleBandCoherence;
 
         cyc = C.cycle_number(:);
-        alphaVals = C.Alpha(:);
-        betaVals  = C.Beta(:);
-        gammaVals = C.Gamma(:);
 
         nCyc = numel(cyc);
         if nCyc < 3
@@ -86,9 +82,11 @@ function plot_pooled_cycle_band_coherence(COHERENCE_RESULTS, outDir, nBins)
 
         relPos = linspace(0, 100, nCyc)';
 
-        Alpha_mat(iE,:) = interp1(relPos, alphaVals, xbin, 'linear', NaN);
-        Beta_mat(iE,:)  = interp1(relPos, betaVals,  xbin, 'linear', NaN);
-        Gamma_mat(iE,:) = interp1(relPos, gammaVals, xbin, 'linear', NaN);
+        for ib = 1:nBands
+            if isfield(C, bandNames{ib})
+                band_mat{ib}(iE,:) = interp1(relPos, C.(bandNames{ib})(:), xbin, 'linear', NaN);
+            end
+        end
 
         if isfield(C, 'mask_real_outer')
             idx = find(C.mask_real_outer(:));
@@ -109,9 +107,9 @@ function plot_pooled_cycle_band_coherence(COHERENCE_RESULTS, outDir, nBins)
 
     fig = figure('Visible','off','Color','w','Position',[100 100 1100 900]);
 
-    plot_one_pooled_band_panel(Alpha_mat, xbin, outer_pos_left, outer_pos_right, retained_outer_left, retained_outer_right, 'Alpha', 1);
-    plot_one_pooled_band_panel(Beta_mat,  xbin, outer_pos_left, outer_pos_right, retained_outer_left, retained_outer_right, 'Beta',  2);
-    plot_one_pooled_band_panel(Gamma_mat, xbin, outer_pos_left, outer_pos_right, retained_outer_left, retained_outer_right, 'Gamma', 3);
+    for ib = 1:nBands
+        plot_one_pooled_band_panel(band_mat{ib}, xbin, outer_pos_left, outer_pos_right, retained_outer_left, retained_outer_right, bandNames{ib}, ib, nBands);
+    end
 
     sgtitle(sprintf('Pooled cycle-band coherence across signals (n=%d)', size(entries,1)));
 
@@ -122,9 +120,9 @@ function plot_pooled_cycle_band_coherence(COHERENCE_RESULTS, outDir, nBins)
 end
 
 
-function plot_one_pooled_band_panel(M, xbin, outer_pos_left, outer_pos_right, retained_outer_left, retained_outer_right, bandLabel, panelIdx)
+function plot_one_pooled_band_panel(M, xbin, outer_pos_left, outer_pos_right, retained_outer_left, retained_outer_right, bandLabel, panelIdx, nPanels)
 
-    subplot(3,1,panelIdx); hold on;
+    subplot(nPanels,1,panelIdx); hold on;
 
     % thin grey individual profiles
     for i = 1:size(M,1)

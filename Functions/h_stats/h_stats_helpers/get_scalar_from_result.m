@@ -1,4 +1,5 @@
 function val = get_scalar_from_result(R, vname, metricScope, coherenceSource)
+% Scalar coherence metric vname of result R, NaN when absent
 
     val = NaN;
 
@@ -18,35 +19,24 @@ function val = get_scalar_from_result(R, vname, metricScope, coherenceSource)
 
         M = R.Metrics.(coherenceSource).(metricScope);
 
-        switch char(string(vname))
+        % vname = <Band>[_AUC_norm | _AUC_raw | _Peak], e.g. HighBeta_AUC_norm
+        vname = string(vname);
+        band = extractBefore(vname + "_", "_");
+        switch extractAfter(vname, strlength(band))
+            case ""
+                type = 'mean';
+            case "_AUC_norm"
+                type = 'auc_norm';
+            case "_AUC_raw"
+                type = 'auc_raw';
+            case "_Peak"
+                type = 'peak';
+            otherwise
+                return;
+        end
 
-            case 'Alpha'
-                val = M.mean.Alpha;
-            case 'Beta'
-                val = M.mean.Beta;
-            case 'Gamma'
-                val = M.mean.Gamma;
-
-            case 'Alpha_AUC_norm'
-                val = M.auc_norm.Alpha;
-            case 'Beta_AUC_norm'
-                val = M.auc_norm.Beta;
-            case 'Gamma_AUC_norm'
-                val = M.auc_norm.Gamma;
-
-            case 'Alpha_AUC_raw'
-                val = M.auc_raw.Alpha;
-            case 'Beta_AUC_raw'
-                val = M.auc_raw.Beta;
-            case 'Gamma_AUC_raw'
-                val = M.auc_raw.Gamma;
-
-            case 'Alpha_Peak'
-                val = M.peak.Alpha;
-            case 'Beta_Peak'
-                val = M.peak.Beta;
-            case 'Gamma_Peak'
-                val = M.peak.Gamma;
+        if isfield(M, type) && isfield(M.(type), band)
+            val = M.(type).(band);
         end
 
     catch

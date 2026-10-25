@@ -103,7 +103,3 @@ function plot_clustering_scores(CLUSTER_RESULTS, outDir)
         close(fig);
     end
 end
-
-function out = make_valid_fieldname(x)
-    out = matlab.lang.makeValidName(char(string(x)));
-end

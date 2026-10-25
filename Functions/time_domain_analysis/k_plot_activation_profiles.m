@@ -4,9 +4,7 @@
 % Bottom row = pooled cycle mean (exploratory)
 
 function k_plot_activation_profiles()
-    clc; clear; close all;
 
-    addpath(genpath(fullfile(pwd, 'Functions')));
 
     C   = config_emg();
     IO  = C.k_activation_profiles.io;
@@ -93,13 +91,6 @@ function k_plot_activation_profiles()
 
     fprintf('\nDone. Activation profile plots saved in:\n%s\n', IO.out_dir);
 
-    %% Example diagnostic call
-    % diagnose_random_activation_examples( ...
-    %     TD, ...
-    %     "EMG_TAprox_Concat", ...
-    %     10, ...
-    %     [1 2 3], ...
-    %     'seed', 1);
 end
 
 %% ===================== LOCAL FUNCTIONS =====================
@@ -346,18 +337,6 @@ function x = extract_profile_from_valid_cycles(VC, iC, P)
         x = VC.(char(sigName)){iC};
     end
 end
-
-function plot_mean_sem(ax, X, col, labelText, alphaVal)
-    if isempty(X), return; end
-
-    M = mean(X, 1, 'omitnan');
-    S = std(X, 0, 1, 'omitnan') ./ sqrt(size(X,1));
-    x = linspace(0, 100, numel(M));
-
-    fill(ax, [x fliplr(x)], [M-S fliplr(M+S)], col, 'FaceAlpha', alphaVal, 'EdgeColor', 'none', 'HandleVisibility', 'off');
-    plot(ax, x, M, 'LineWidth', 2, 'Color', col, 'DisplayName', labelText);
-end
-
 function format_activation_axis(ax, P)
     xlabel(ax, 'Gait cycle (%)');
     ylabel(ax, get_ylabel_text(P));
@@ -393,15 +372,6 @@ function ytxt = get_ylabel_text(P)
             error('Unknown normalization_mode: %s', modeName);
     end
 end
-
-function col = get_color_safe(colorStruct, fieldName, fallback)
-    if isfield(colorStruct, fieldName)
-        col = colorStruct.(fieldName);
-    else
-        col = fallback;
-    end
-end
-
 function plot_toeoff_line(ax, toeFrac)
     xline(ax, 100 * toeFrac, '--', 'Color', [0.3 0.3 0.3], 'HandleVisibility', 'off');
 end
@@ -606,170 +576,6 @@ function D = collect_profiles_merged(TD, subjFields, muscleName, condName, legNa
     D.subject_ids = subjectIDs;
 end
 
-function diagnose_random_activation_examples(TD, muscleName, nExamples, cycleIdxList, varargin)
-    p = inputParser;
-    addParameter(p, 'seed', 1);
-    parse(p, varargin{:});
-    seed = p.Results.seed;
-
-    rng(seed);
-
-    subjFields = fieldnames(TD);
-    candidates = {};
-
-    for iS = 1:numel(subjFields)
-        subjID = subjFields{iS};
-        condFields = fieldnames(TD.(subjID));
-
-        for ic = 1:numel(condFields)
-            cond = condFields{ic};
-            legFields = fieldnames(TD.(subjID).(cond));
-
-            for il = 1:numel(legFields)
-                leg = legFields{il};
-
-                if ~isfield(TD.(subjID).(cond).(leg), char(muscleName))
-                    continue;
-                end
-
-                S = TD.(subjID).(cond).(leg).(char(muscleName));
-                if ~isfield(S, 'valid_cycles') || isempty(S.valid_cycles) || isempty(S.valid_cycles.cycle_number)
-                    continue;
-                end
-
-                candidates(end+1,:) = {subjID, cond, leg}; %#ok<AGROW>
-            end
-        end
-    end
-
-    if isempty(candidates)
-        error('No candidates found for muscle %s.', muscleName);
-    end
-
-    nExamples = min(nExamples, size(candidates,1));
-    idxPick = randperm(size(candidates,1), nExamples);
-
-    for i = 1:nExamples
-        subjID = candidates{idxPick(i), 1};
-        cond   = candidates{idxPick(i), 2};
-        leg    = candidates{idxPick(i), 3};
-
-        fprintf('\nRandom example %d/%d: %s | %s | %s | %s\n', i, nExamples, subjID, cond, leg, muscleName);
-
-        diagnose_activation_profile_start( TD, subjID, cond, leg, char(muscleName), cycleIdxList);
-    end
-end
-
-function diagnose_activation_profile_start(TD, subjID, cond, leg, mf, cycleIdxList, varargin)
-
-    p = inputParser;
-    addParameter(p, 'zoom_fraction', 0.15);
-    parse(p, varargin{:});
-    zoom_fraction = p.Results.zoom_fraction;
-
-    assert(isfield(TD, subjID), 'Subject not found.');
-    assert(isfield(TD.(subjID), cond), 'Condition not found.');
-    assert(isfield(TD.(subjID).(cond), leg), 'Leg not found.');
-    assert(isfield(TD.(subjID).(cond).(leg), mf), 'Muscle not found.');
-
-    S = TD.(subjID).(cond).(leg).(mf);
-    assert(isfield(S,'valid_cycles') && ~isempty(S.valid_cycles), 'No valid cycles found.');
-
-    VC = S.valid_cycles;
-    nAvail = numel(VC.cycle_number);
-
-    nReq = numel(cycleIdxList);
-    nRows = nReq;
-    nCols = 4;
-
-    fig = figure('Color','w','Position',[100 100 1500 max(350,260*nRows)]);
-    tl = tiledlayout(nRows, nCols, 'TileSpacing','compact', 'Padding','compact');
-    title(tl, sprintf('Diagnostic | %s | %s | %s | %s', subjID, cond, leg, mf), 'Interpreter','none');
-
-    for i = 1:nReq
-        idx = cycleIdxList(i);
-        if idx < 1 || idx > nAvail
-            warning('Cycle index %d out of range. Skipping.', idx);
-            continue;
-        end
-
-        x_bp   = get_cell_field_or_empty(VC, 'bandpassed', idx);
-        x_rect = get_cell_field_or_empty(VC, 'rectified', idx);
-        x_env  = get_cell_field_or_empty(VC, 'envelope', idx);
-
-        x_tn_bp  = get_cell_field_or_empty(VC, 'time_normalized_bandpassed', idx);
-        x_tn_env = get_cell_field_or_empty(VC, 'time_normalized_envelope', idx);
-
-        toeFrac = get_toe_fraction_from_valid_cycles(VC, idx, 0.60);
-
-        ax = nexttile; hold(ax,'on');
-        if ~isempty(x_bp), plot(ax, x_bp, 'b', 'LineWidth', 1); end
-        title(ax, sprintf('Cycle %d | bandpassed', idx));
-        grid(ax,'on');
-
-        ax = nexttile; hold(ax,'on');
-        if ~isempty(x_rect), plot(ax, x_rect, 'Color', [0.6 0.6 0.6], 'LineWidth', 1); end
-        if ~isempty(x_env),  plot(ax, x_env,  'r', 'LineWidth', 2); end
-        title(ax, 'rectified + envelope');
-        legend_if_needed(ax, {'rectified','envelope'}, [~isempty(x_rect), ~isempty(x_env)]);
-        grid(ax,'on');
-
-        ax = nexttile; hold(ax,'on');
-        if ~isempty(x_tn_bp),  plot(ax, linspace(0,100,numel(x_tn_bp)),  x_tn_bp,  'b', 'LineWidth', 1); end
-        if ~isempty(x_tn_env), plot(ax, linspace(0,100,numel(x_tn_env)), x_tn_env, 'r', 'LineWidth', 2); end
-        xline(ax, 100*toeFrac, '--', 'Color', [0.4 0.4 0.4], 'HandleVisibility','off');
-        title(ax, 'time-normalized');
-        xlabel(ax, 'Cycle (%)');
-        legend_if_needed(ax, {'tn bandpassed','tn envelope'}, [~isempty(x_tn_bp), ~isempty(x_tn_env)]);
-        grid(ax,'on');
-
-        ax = nexttile; hold(ax,'on');
-        nZoom = max(5, round(zoom_fraction * get_max_len(x_bp, x_rect, x_env)));
-
-        if ~isempty(x_bp)
-            n1 = min(numel(x_bp), nZoom);
-            plot(ax, 1:n1, x_bp(1:n1), 'b', 'LineWidth', 1);
-        end
-        if ~isempty(x_rect)
-            n1 = min(numel(x_rect), nZoom);
-            plot(ax, 1:n1, x_rect(1:n1), 'Color', [0.6 0.6 0.6], 'LineWidth', 1);
-        end
-        if ~isempty(x_env)
-            n1 = min(numel(x_env), nZoom);
-            plot(ax, 1:n1, x_env(1:n1), 'r', 'LineWidth', 2);
-        end
-
-        title(ax, sprintf('start zoom (first %.0f%%)', 100*zoom_fraction));
-        legend_if_needed(ax, {'bp','rect','env'}, [~isempty(x_bp), ~isempty(x_rect), ~isempty(x_env)]);
-        grid(ax,'on');
-    end
-end
-
-function x = get_cell_field_or_empty(S, fn, idx)
-    if isfield(S, fn) && numel(S.(fn)) >= idx && ~isempty(S.(fn){idx})
-        x = S.(fn){idx}(:);
-    else
-        x = [];
-    end
-end
-
-function n = get_max_len(varargin)
-    lens = zeros(numel(varargin),1);
-    for i = 1:numel(varargin)
-        if ~isempty(varargin{i})
-            lens(i) = numel(varargin{i});
-        end
-    end
-    n = max(lens);
-    if n == 0, n = 10; end
-end
-
-function legend_if_needed(ax, labels, keepMask)
-    labels = labels(keepMask);
-    if ~isempty(labels)
-        legend(ax, labels, 'Location','best');
-    end
-end
 function fig = plot_activation_profile_all_pooled(TD, subjFields, muscleName, P, PLT)
 
     D = collect_profiles_merged(TD, subjFields, muscleName, "", "", "", P);
@@ -814,33 +620,6 @@ function fig = plot_activation_profile_all_pooled(TD, subjFields, muscleName, P,
         grid(ax2, 'on');
     end
 end
-
-function prettymuscleName = prettymuscle(muscleName)
-    % Convert internal muscle names to more readable format
-    % Take out EMG and Concat first
-    prettymuscleName = regexprep(muscleName, 'EMG_|_Concat', '');
-    % Replace underscores with spaces
-    prettymuscleName = strrep(prettymuscleName, '_', ' ');
-    %if contains TA replace by 'Tibialis Anterior'
-    if contains(prettymuscleName, 'TAdist')
-        prettymuscleName = strrep(prettymuscleName, 'TAdist', 'Tibialis Anterior dist');
-    elseif contains(prettymuscleName, 'TAprox')
-        prettymuscleName = strrep(prettymuscleName, 'TAprox', 'Tibialis Anterior prox');
-    elseif contains(prettymuscleName, 'SOL')
-        prettymuscleName = strrep(prettymuscleName, 'SOL', 'Soleus');
-    elseif contains(prettymuscleName, 'GMED')
-        prettymuscleName = strrep(prettymuscleName, 'GMED', 'Gluteus Medius');
-    elseif contains(prettymuscleName, 'GM')
-        prettymuscleName = strrep(prettymuscleName, 'GM', 'Gastrocnemius Medialis');
-    elseif contains(prettymuscleName, 'VL')
-        prettymuscleName = strrep(prettymuscleName, 'VL', 'Vastus Lateralis');
-    elseif contains(prettymuscleName, 'RF')
-        prettymuscleName = strrep(prettymuscleName, 'RF', 'Rectus Femoris');
-    elseif contains(prettymuscleName, 'ST')
-        prettymuscleName = strrep(prettymuscleName, 'ST', 'Semitendinosus');
-    end
-end
-
 function [Y, subjectIDs] = collect_subject_mean_envelopes(TD, subjFields, muscleName, condName, ageName)
 
     subjectMeans = {};
@@ -1005,51 +784,6 @@ function x = apply_profile_normalization(x, TD, subjID, muscleName, P)
             error('Unknown normalization_mode: %s', modeName);
     end
 end
-
-function T_out = keep_only_complete_subjects_for_conditions(T_in, conditionOrder)
-% Keep only subjects who have all requested conditions
-
-    T_out = T_in;
-
-    if isempty(T_in) || ~ismember('subject', T_in.Properties.VariableNames) || ~ismember('condition', T_in.Properties.VariableNames)
-        return;
-    end
-
-    reqConds = string(conditionOrder(:));
-    reqConds(reqConds == "") = [];
-
-    if isempty(reqConds)
-        return;
-    end
-
-    subjList = categories(removecats(T_in.subject));
-    keepSubs = strings(0,1);
-
-    for iS = 1:numel(subjList)
-        s = subjList{iS};
-        Ts = T_in(T_in.subject == s, :);
-
-        condsHere = categories(removecats(Ts.condition));
-        condsHere = string(condsHere(:));
-
-        if all(ismember(reqConds, condsHere))
-            keepSubs(end+1,1) = string(s); %#ok<AGROW>
-        end
-    end
-
-    if isempty(keepSubs)
-        T_out = T_in([]);
-        return;
-    end
-
-    T_out = T_in(ismember(string(T_in.subject), keepSubs), :);
-
-    if iscategorical(T_out.subject),   T_out.subject   = removecats(T_out.subject); end
-    if iscategorical(T_out.condition), T_out.condition = removecats(T_out.condition); end
-    if iscategorical(T_out.age_group), T_out.age_group = removecats(T_out.age_group); end
-    if iscategorical(T_out.pair_name), T_out.pair_name = removecats(T_out.pair_name); end
-end
-
 function refVal = get_subject_flat_percentile_reference(TD, subjID, muscleName, P)
 
     refVal = NaN;

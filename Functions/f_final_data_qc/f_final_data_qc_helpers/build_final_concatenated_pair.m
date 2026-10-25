@@ -1,4 +1,7 @@
-function [final_sig_1, final_sig_2, Tseg] = build_final_concatenated_pair(x1, x2, cycle_starts, cycle_ends, pair_cycle_keep)
+function [final_sig_1, final_sig_2, Tseg] = build_final_concatenated_pair(x1, x2, cycle_starts, cycle_ends, pair_cycle_keep, run_id, trial_id)
+% Optional run_id and trial_id (one per cycle, see get_pair_cycle_run_ids)
+% are copied into Tseg for the kept cycles, so stage g can tell a real
+% continuation from a glue point.
 
     final_sig_1 = [];
     final_sig_2 = [];
@@ -40,6 +43,12 @@ function [final_sig_1, final_sig_2, Tseg] = build_final_concatenated_pair(x1, x2
             'cycle_number','original_cycle_start_idx','original_cycle_end_idx','cycle_length_samples', ...
             'final_concat_start_idx_signal1','final_concat_end_idx_signal1', ...
             'final_concat_start_idx_signal2','final_concat_end_idx_signal2'});
+
+        if nargin >= 7 && ~isempty(run_id)
+            kept = Tseg.cycle_number(:);
+            Tseg.run_id   = run_id(kept);
+            Tseg.trial_id = trial_id(kept);
+        end
     else
         Tseg = table();
     end

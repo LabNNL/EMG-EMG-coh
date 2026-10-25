@@ -16,7 +16,6 @@ function add_spm_significance_bars_frequency(ax, spmi, freqRef, varargin)
     show_stars = p.Results.show_stars;
     star_font_size = p.Results.star_font_size;
 
-    fprintf('\n=== DEBUG add_spm_significance_bars_frequency ===\n');
 
     if isempty(spmi)
         fprintf('spmi is empty\n');

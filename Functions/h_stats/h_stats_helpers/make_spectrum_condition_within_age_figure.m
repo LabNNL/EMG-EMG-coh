@@ -32,6 +32,8 @@ function make_spectrum_condition_within_age_figure(Tp, pairName, freqRef, C, HC,
     legendHandlesList = cell(numel(ageLevelsAll), 1);
     legendLabelsList  = cell(numel(ageLevelsAll), 1);
 
+    HS = apply_followup_alpha_correction(HS, numel(ageLevelsAll));
+
     % ===================== PASS 1: plot curves only =====================
     for ia = 1:numel(ageLevelsAll)
 
@@ -77,7 +79,13 @@ function make_spectrum_condition_within_age_figure(Tp, pairName, freqRef, C, HC,
         spmInfo = [];
         if numel(condLevels) >= 2 && nSubjCC >= minN
             spmInfo = run_spm_condition_on_spectrum(Tag_cc, condLevels, freqRef, HS);
-            txt = sprintf('SPM n=%d complete-case', nSubjCC);
+            if spm_info_ok(spmInfo)
+                txt = sprintf('SPM n=%d complete-case', nSubjCC);
+            else
+                % Never caption a test that did not run as though it ran:
+                % a plot with no bars would otherwise read as a null result.
+                txt = sprintf('SPM FAILED: n=%d complete-case', nSubjCC);
+            end
         else
             txt = sprintf('SPM skipped: n=%d complete-case', nSubjCC);
         end
@@ -129,7 +137,7 @@ function make_spectrum_condition_within_age_figure(Tp, pairName, freqRef, C, HC,
         ylim(ax, [0 yTopCommon]);
     end
 
-    sgtitle(fig, sprintf('%s | condition effect within each age group | %s', string(pairName), get_pair_phase_text(pairName, C)), 'Interpreter', 'none');
+    sgtitle(fig, {sprintf('%s | condition effect within each age group | %s', string(pairName), get_pair_phase_text(pairName, C)), HS.followup_alpha_label}, 'Interpreter', 'none');
 
     outFile = fullfile(outDir, sprintf( 'SPECTRUM_CONDITION_WITHIN_AGE__%s__%s__%s.png', char(string(pairName)), lower(char(string(HS.scope))), lower(char(string(HS.spectrum_source)))));
 

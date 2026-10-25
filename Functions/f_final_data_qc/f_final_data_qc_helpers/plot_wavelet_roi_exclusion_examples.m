@@ -15,7 +15,7 @@ function plot_wavelet_roi_exclusion_examples(FINAL_PAIRED_SIGNALS, C, P)
         delete(fullfile(PLW.out_dir, '*.png'));
     end
 
-    bandList = ["overall", "Alpha", "Beta", "Gamma"];
+    bandList = ["overall", string(fieldnames(WCQ.freq_bands))'];
 
     for ib = 1:numel(bandList)
         band = bandList(ib);

@@ -53,7 +53,7 @@ function plot_histograms_by_group(T, featureVars, nbins, outDir, groupVar, group
             x = x(~isnan(x));
             if isempty(x), continue; end
 
-            thisColor = get_group_color(thisGroup, C);
+            thisColor = get_group_color_from_config(thisGroup, C);
 
             h = histogram(x, nbins, ...
                 'Normalization', 'probability', ...
@@ -81,7 +81,7 @@ function plot_histograms_by_group(T, featureVars, nbins, outDir, groupVar, group
 end
 
 
-function thisColor = get_group_color(groupName, C)
+function thisColor = get_group_color_from_config(groupName, C)
 
     groupName = string(groupName);
     fieldName = matlab.lang.makeValidName(char(groupName));

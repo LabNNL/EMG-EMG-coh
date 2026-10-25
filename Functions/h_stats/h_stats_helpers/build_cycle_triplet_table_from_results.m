@@ -1,5 +1,7 @@
 function T = build_cycle_triplet_table_from_results(COH, C, HC)
+% One row per signal with one <Band>_curve column per configured band
 
+    bandNames = fieldnames(C.shared_wavelet.FreqBands)';
     rows = {};
     ri = 0;
 
@@ -74,32 +76,15 @@ function T = build_cycle_triplet_table_from_results(COH, C, HC)
                         continue;
                     end
 
-                    alphaCurve = mean_band_over_time(M, freq, 'Alpha');
-                    betaCurve  = mean_band_over_time(M, freq, 'Beta');
-                    gammaCurve = mean_band_over_time(M, freq, 'Gamma');
+                    % one curve per configured band (C.shared_wavelet.FreqBands)
+                    curves = cellfun(@(bn) mean_band_over_time(M, freq, C.shared_wavelet.FreqBands.(bn)), bandNames, 'UniformOutput', false);
 
-                    if ~isfield(R, 'Time_percent') || isempty(R.Time_percent)
-                        fprintf('R.Time_percent missing or empty\n');
-                    end
-
-                    if ~any(isfinite(alphaCurve))
-                        fprintf('Alpha all non-finite\n');
-                    end
-
-                    if ~any(isfinite(betaCurve))
-                        fprintf('Beta all non-finite\n');
-                    end
-
-                    if ~any(isfinite(gammaCurve))
-                        fprintf('Gamma all non-finite\n');
-                    end
-
-                    if all(isnan(alphaCurve)) && all(isnan(betaCurve)) && all(isnan(gammaCurve))
+                    if all(cellfun(@(c) all(isnan(c)), curves))
                         continue;
                     end
 
                     ri = ri + 1;
-                    rows(ri,:) = { categorical(string(subjID)), categorical(string(age_group), C.plotting.age_order, C.plotting.age_order, 'Ordinal', true), categorical(string(cond), C.plotting.condition_order, C.plotting.condition_order, 'Ordinal', true), categorical(string(leg), C.design.legs, C.design.legs, 'Ordinal', true), categorical(string(pairName), HC.analysis.pairs_to_analyze, HC.analysis.pairs_to_analyze, 'Ordinal', true), nCycles, {tvec}, {alphaCurve}, {betaCurve}, {gammaCurve}, get_nested_field_or_nan(R, {'POI','start_pct'}), get_nested_field_or_nan(R, {'POI','end_pct'}) };
+                    rows(ri,:) = { categorical(string(subjID)), categorical(string(age_group), C.plotting.age_order, C.plotting.age_order, 'Ordinal', true), categorical(string(cond), C.plotting.condition_order, C.plotting.condition_order, 'Ordinal', true), categorical(string(leg), C.design.legs, C.design.legs, 'Ordinal', true), categorical(string(pairName), HC.analysis.pairs_to_analyze, HC.analysis.pairs_to_analyze, 'Ordinal', true), nCycles, {tvec}, cellfun(@(c) {c}, curves, 'UniformOutput', false), get_nested_field_or_nan(R, {'POI','start_pct'}), get_nested_field_or_nan(R, {'POI','end_pct'}) };
                 end
             end
         end
@@ -110,7 +95,8 @@ function T = build_cycle_triplet_table_from_results(COH, C, HC)
         return;
     end
 
-    T = cell2table(rows, 'VariableNames', { 'subject','age_group','condition','leg','pair_name','n_cycles_used', 'Time_percent','Alpha_curve','Beta_curve','Gamma_curve', 'POI_StartPercent','POI_EndPercent'});
+    rows = [rows(:,1:7), vertcat(rows{:,8}), rows(:,9:10)];
+    T = cell2table(rows, 'VariableNames', [{ 'subject','age_group','condition','leg','pair_name','n_cycles_used', 'Time_percent'}, strcat(bandNames, '_curve'), {'POI_StartPercent','POI_EndPercent'}]);
 end
 
 function val = get_nested_field_or_nan(S, fieldPath)
@@ -131,19 +117,8 @@ function val = get_nested_field_or_nan(S, fieldPath)
     end
 end
 
-function curve = mean_band_over_time(M, freq, bandName)
-
-    switch char(string(bandName))
-        case 'Alpha'
-            fr = [8 12];
-        case 'Beta'
-            fr = [13 30];
-        case 'Gamma'
-            fr = [31 150];
-        otherwise
-            curve = nan(1, size(M,2));
-            return;
-    end
+function curve = mean_band_over_time(M, freq, fr)
+% Mean coherence over the band fr = [fmin fmax] at each time point
 
     idxF = freq >= fr(1) & freq <= fr(2);
 

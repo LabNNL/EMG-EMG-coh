@@ -1,0 +1,155 @@
+===== config_double (4) =====
+  [warning] config/config_emg.m:1391
+             C.h_stats.analysis.correlation_pairs assigned 2 times (lines 1358, 1391); line 1391 wins
+  [warning] config/config_emg.m:1387
+             C.h_stats.analysis.dv_list assigned 2 times (lines 1356, 1387); line 1387 wins
+  [warning] config/config_emg.m:1388
+             C.h_stats.analysis.metric_type_for_plots assigned 2 times (lines 1357, 1388); line 1388 wins
+  [warning] config/config_emg.m:1394
+             C.h_stats.analysis.power_pairs assigned 2 times (lines 1359, 1394); line 1394 wins
+
+===== checkcode (0) =====
+
+===== config_dead (68) =====
+  [info   ] config/config_emg.m:30
+             C.physio.phase_windows_pct.TAprox_TAdist: leaf name "TAprox_TAdist" appears nowhere in the code
+  [info   ] config/config_emg.m:33
+             C.physio.phase_windows_pct.SOL_GM: leaf name "SOL_GM" appears nowhere in the code
+  [info   ] config/config_emg.m:36
+             C.physio.phase_windows_pct.VL_RF: leaf name "VL_RF" appears nowhere in the code
+  [info   ] config/config_emg.m:57
+             C.paths.functions_dir: leaf name "functions_dir" appears nowhere in the code
+  [info   ] config/config_emg.m:70
+             C.paths.old_data_dir: leaf name "old_data_dir" appears nowhere in the code
+  [info   ] config/config_emg.m:77
+             C.paths.features_dir: leaf name "features_dir" appears nowhere in the code
+  [info   ] config/config_emg.m:78
+             C.paths.clustering_dir: leaf name "clustering_dir" appears nowhere in the code
+  [info   ] config/config_emg.m:79
+             C.paths.rule_based_dir: leaf name "rule_based_dir" appears nowhere in the code
+  [info   ] config/config_emg.m:80
+             C.paths.burst_decision_dir: leaf name "burst_decision_dir" appears nowhere in the code
+  [info   ] config/config_emg.m:81
+             C.paths.final_signals_dir: leaf name "final_signals_dir" appears nowhere in the code
+  [info   ] config/config_emg.m:82
+             C.paths.coherence_dir: leaf name "coherence_dir" appears nowhere in the code
+  [info   ] config/config_emg.m:83
+             C.paths.stats_dir: leaf name "stats_dir" appears nowhere in the code
+  [info   ] config/config_emg.m:88
+             C.paths.raw_plot_dir: leaf name "raw_plot_dir" appears nowhere in the code
+  [info   ] config/config_emg.m:119
+             C.paths.toolboxes.btk: leaf name "btk" appears nowhere in the code
+  [info   ] config/config_emg.m:141
+             C.participants.jeunesEnfants: leaf name "jeunesEnfants" appears nowhere in the code
+  [info   ] config/config_emg.m:144
+             C.participants.enfants: leaf name "enfants" appears nowhere in the code
+  [info   ] config/config_emg.m:149
+             C.participants.adolescents: leaf name "adolescents" appears nowhere in the code
+  [info   ] config/config_emg.m:153
+             C.participants.adultes: leaf name "adultes" appears nowhere in the code
+  [info   ] config/config_emg.m:169
+             C.plotting.colors.JeunesEnfants: leaf name "JeunesEnfants" appears nowhere in the code
+  [info   ] config/config_emg.m:170
+             C.plotting.colors.Enfants: leaf name "Enfants" appears nowhere in the code
+  [info   ] config/config_emg.m:171
+             C.plotting.colors.Adolescents: leaf name "Adolescents" appears nowhere in the code
+  [info   ] config/config_emg.m:172
+             C.plotting.colors.Adultes: leaf name "Adultes" appears nowhere in the code
+  [info   ] config/config_emg.m:177
+             C.plotting.colors.Full: leaf name "Full" appears nowhere in the code
+  [info   ] config/config_emg.m:178
+             C.plotting.colors.Stance: leaf name "Stance" appears nowhere in the code
+  [info   ] config/config_emg.m:179
+             C.plotting.colors.Swing: leaf name "Swing" appears nowhere in the code
+  [info   ] config/config_emg.m:183
+             C.plotting.colors.HighBeta: leaf name "HighBeta" appears nowhere in the code
+  [info   ] config/config_emg.m:187
+             C.plotting.colors.Medium: leaf name "Medium" appears nowhere in the code
+  [info   ] config/config_emg.m:188
+             C.plotting.colors.High: leaf name "High" appears nowhere in the code
+  [info   ] config/config_emg.m:203
+             C.plotting.colors.exclude_visual: leaf name "exclude_visual" appears nowhere in the code
+  [info   ] config/config_emg.m:204
+             C.plotting.colors.exclude_signal_rule: leaf name "exclude_signal_rule" appears nowhere in the code
+  [info   ] config/config_emg.m:221
+             C.plotting.colors.EMG_TAprox_Concat: leaf name "EMG_TAprox_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:222
+             C.plotting.colors.EMG_TAdist_Concat: leaf name "EMG_TAdist_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:223
+             C.plotting.colors.EMG_SOL_Concat: leaf name "EMG_SOL_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:224
+             C.plotting.colors.EMG_GM_Concat: leaf name "EMG_GM_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:225
+             C.plotting.colors.EMG_VL_Concat: leaf name "EMG_VL_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:226
+             C.plotting.colors.EMG_RF_Concat: leaf name "EMG_RF_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:227
+             C.plotting.colors.EMG_ST_Concat: leaf name "EMG_ST_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:228
+             C.plotting.colors.EMG_GMED_Concat: leaf name "EMG_GMED_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:259
+             C.shared_wavelet.band_names: leaf name "band_names" appears nowhere in the code
+  [info   ] config/config_emg.m:340
+             C.a_extract_raw.channels.muscle_keywords.EMG_TAprox: leaf name "EMG_TAprox" appears nowhere in the code
+  [info   ] config/config_emg.m:341
+             C.a_extract_raw.channels.muscle_keywords.EMG_TAdist: leaf name "EMG_TAdist" appears nowhere in the code
+  [info   ] config/config_emg.m:342
+             C.a_extract_raw.channels.muscle_keywords.EMG_SOL: leaf name "EMG_SOL" appears nowhere in the code
+  [info   ] config/config_emg.m:343
+             C.a_extract_raw.channels.muscle_keywords.EMG_GM: leaf name "EMG_GM" appears nowhere in the code
+  [info   ] config/config_emg.m:344
+             C.a_extract_raw.channels.muscle_keywords.EMG_VL: leaf name "EMG_VL" appears nowhere in the code
+  [info   ] config/config_emg.m:345
+             C.a_extract_raw.channels.muscle_keywords.EMG_RF: leaf name "EMG_RF" appears nowhere in the code
+  [info   ] config/config_emg.m:346
+             C.a_extract_raw.channels.muscle_keywords.EMG_ST: leaf name "EMG_ST" appears nowhere in the code
+  [info   ] config/config_emg.m:347
+             C.a_extract_raw.channels.muscle_keywords.EMG_GMED: leaf name "EMG_GMED" appears nowhere in the code
+  [info   ] config/config_emg.m:567
+             C.d_cluster_manual.keep.muscle.EMG_GMED_Concat: leaf name "EMG_GMED_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:568
+             C.d_cluster_manual.keep.muscle.EMG_GM_Concat: leaf name "EMG_GM_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:569
+             C.d_cluster_manual.keep.muscle.EMG_RF_Concat: leaf name "EMG_RF_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:570
+             C.d_cluster_manual.keep.muscle.EMG_SOL_Concat: leaf name "EMG_SOL_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:571
+             C.d_cluster_manual.keep.muscle.EMG_ST_Concat: leaf name "EMG_ST_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:572
+             C.d_cluster_manual.keep.muscle.EMG_TAdist_Concat: leaf name "EMG_TAdist_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:573
+             C.d_cluster_manual.keep.muscle.EMG_TAprox_Concat: leaf name "EMG_TAprox_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:574
+             C.d_cluster_manual.keep.muscle.EMG_VL_Concat: leaf name "EMG_VL_Concat" appears nowhere in the code
+  [info   ] config/config_emg.m:577
+             C.d_cluster_manual.keep.age_group.JeunesEnfants: leaf name "JeunesEnfants" appears nowhere in the code
+  [info   ] config/config_emg.m:578
+             C.d_cluster_manual.keep.age_group.Enfants: leaf name "Enfants" appears nowhere in the code
+  [info   ] config/config_emg.m:579
+             C.d_cluster_manual.keep.age_group.Adolescents: leaf name "Adolescents" appears nowhere in the code
+  [info   ] config/config_emg.m:580
+             C.d_cluster_manual.keep.age_group.Adultes: leaf name "Adultes" appears nowhere in the code
+  [info   ] config/config_emg.m:584
+             C.d_cluster_manual.keep.condition.Medium: leaf name "Medium" appears nowhere in the code
+  [info   ] config/config_emg.m:585
+             C.d_cluster_manual.keep.condition.High: leaf name "High" appears nowhere in the code
+  [info   ] config/config_emg.m:920
+             C.f_final_signals.params.wavelet_contamination_qc.phase_windows_pct.TAprox_TAdist: leaf name "TAprox_TAdist" appears nowhere in the code
+  [info   ] config/config_emg.m:922
+             C.f_final_signals.params.wavelet_contamination_qc.phase_windows_pct.SOL_GM: leaf name "SOL_GM" appears nowhere in the code
+  [info   ] config/config_emg.m:924
+             C.f_final_signals.params.wavelet_contamination_qc.phase_windows_pct.VL_RF: leaf name "VL_RF" appears nowhere in the code
+  [info   ] config/config_emg.m:1719
+             C.j_time_domain.params.store_raw_cycle_segments: leaf name "store_raw_cycle_segments" appears nowhere in the code
+  [info   ] config/config_emg.m:1770
+             C.j_time_domain.params.pairwise_policy: leaf name "pairwise_policy" appears nowhere in the code
+  [info   ] config/config_emg.m:1771
+             C.j_time_domain.params.pairwise_policy.require_same_cycle_number: leaf name "require_same_cycle_number" appears nowhere in the code
+  [info   ] config/config_emg.m:1772
+             C.j_time_domain.params.pairwise_policy.use_harmonized_cycles: leaf name "use_harmonized_cycles" appears nowhere in the code
+
+===== summary =====
+  errors   : 0
+  warnings : 4
+  info     : 68
+  Code Analyzer messages across project files: 322

@@ -20,8 +20,8 @@ C.parameters_running.run_spm = false; % If true, run l_spm_envelope_analysis.m
 C.parameters_running.run_temporal_coherence_link = false; % If true, run i_temporal_coherence_link.m
 
 % Kinematics : main_kinematics_analysis.m
-C.parameters_running.run_kinematics_build = true;    % If true, run build_kinematics_for_coherence_cycles.m
-C.parameters_running.run_kinematics_analysis = true; % If true, run analyze_kinematics_for_coherence_cycles.m
+C.parameters_running.run_kinematics_build = false;    % If true, run build_kinematics_for_coherence_cycles.m
+C.parameters_running.run_kinematics_analysis = false; % If true, run analyze_kinematics_for_coherence_cycles.m
 
 %% ===================== PHYSIOLOGICAL CONSTANTS =====================
 
@@ -37,30 +37,23 @@ C.physio.phase_windows_pct.VL_RF = struct( ...
     'start_pct', 90, ...
     'end_pct', 30);
 
-% Gait cycle phases 
-C.physio.gait_phases = struct();
-C.physio.gait_phases.stance = struct('start_pct', 0, 'end_pct', 60);
-C.physio.gait_phases.swing = struct('start_pct', 60, 'end_pct', 100);
-C.physio.gait_phases.initial_contact = struct('start_pct', 0, 'end_pct', 100);
-C.physio.gait_phases.weight_acceptance = struct('start_pct', 0, 'end_pct', 10);
-C.physio.gait_phases.single_support = struct('start_pct', 10, 'end_pct', 50);
-C.physio.gait_phases.limb_advancement = struct('start_pct', 50, 'end_pct', 100);
-C.physio.gait_phases.loading_response = struct('start_pct', 0, 'end_pct', 10);
-C.physio.gait_phases.mid_stance = struct('start_pct', 10, 'end_pct', 30);
-C.physio.gait_phases.terminal_stance = struct('start_pct', 30, 'end_pct', 50);
-C.physio.gait_phases.pre_swing = struct('start_pct', 50, 'end_pct', 60);
-C.physio.gait_phases.initial_swing = struct('start_pct', 60, 'end_pct', 73);
-C.physio.gait_phases.mid_swing = struct('start_pct', 73, 'end_pct', 87);
-C.physio.gait_phases.terminal_swing = struct('start_pct', 87, 'end_pct', 100);
 
 %% ===================== PATHS =====================
 
-% !!!!!!!!!!!!!!!!!!!!!!!!!
-% UPDATE THE FOLLOWING PATHS TO YOUR FOLDER STRUCTURE
-% !!!!!!!!!!!!!!!!!!!!!!!!!
+% The data location is machine-specific and lives in config/local_paths.m,
+% which is git-ignored. Copy config/local_paths.template.m to create it.
+% The code directory is derived from this file's own location.
 
-C.paths.project_data_root = '/Users/liogr/Documents/MyDocuments/Etudes/Master/MA4_Internship_LNNL/Coherence'; %TODO: Update this to your project root directory
-C.paths.code_dir        = '/Users/liogr/Library/CloudStorage/OneDrive-Bibliothèquespartagées-UniversitedeMontreal/Yosra Cherni - Lio Grienenberger - MSc epfl/Codes/EMG-EMG-coh'; %TODO: Update this to your code directory
+if exist('local_paths', 'file') ~= 2
+    error('config_emg:missingLocalPaths', ...
+        ['config/local_paths.m not found.\n' ...
+         'Copy config/local_paths.template.m to config/local_paths.m ' ...
+         'and set project_data_root to your data folder.']);
+end
+
+LP = local_paths();
+C.paths.project_data_root = LP.project_data_root;
+C.paths.code_dir      = fileparts(fileparts(mfilename('fullpath')));
 C.paths.functions_dir = fullfile(C.paths.code_dir, 'Functions');
 
 if exist(C.paths.functions_dir, 'dir')
@@ -187,6 +180,7 @@ C.plotting.colors.Swing = [0.10 0.32 0.62];  % dark blue
 
 C.plotting.colors.Alpha = [0.98 0.84 0.40];   % warm yellow
 C.plotting.colors.Beta = [0.95 0.63 0.22];  % orange
+C.plotting.colors.HighBeta = [0.95 0.63 0.22];  % orange
 C.plotting.colors.Gamma = [0.82 0.42 0.08];   % dark orange
 
 C.plotting.colors.Flat = [0.95 0.66 0.66];   % light red
@@ -196,7 +190,7 @@ C.plotting.colors.High = [0.66 0.10 0.10];   % dark red
 C.plotting.age_order = ["JeunesEnfants", "Enfants", "Adolescents", "Adultes"];
 C.plotting.sex_order = ["Femmes", "Hommes"];
 C.plotting.phase_order = ["Full", "Stance", "Swing"];
-C.plotting.band_order = ["Alpha", "Beta", "Gamma"];
+C.plotting.band_order = ["HighBeta", "Gamma"];   % analysed bands, see C.shared_wavelet.FreqBands
 C.plotting.condition_order = ["Flat", "Medium", "High"];
 
 C.plotting.AlphaTransparency = 0.5; % 
@@ -219,6 +213,7 @@ C.plotting.colors.reason.abs_amp     = [0.85 0.20 0.65];  % magenta
 C.plotting.colors.reason.too_short   = [0.90 0.90 0.10];  % yellow
 C.plotting.colors.reason.too_long    = [0.55 0.27 0.07];  % brown
 C.plotting.colors.reason.bad_bounds  = [0.15 0.15 0.15];  % almost black
+C.plotting.colors.reason.exclude     = [0.40 0.40 0.40];  % grey: excluded by both methods
 C.plotting.colors.reason.signal_fail = [0.50 0.00 0.00];  % dark red
 C.plotting.colors.reason.flatline    = [0.60 0.60 0.60];  % gray
 C.plotting.colors.reason.other       = [0.60 0.60 0.60];  % fallback
@@ -250,12 +245,22 @@ C.general.fs_emg = 2000;   % Hz (default sampling rate for EMG, can be overridde
 %% ===================== SHARED COHERENCE / WAVELET SETTINGS =====================
 C.shared_wavelet = struct();
 C.shared_wavelet.WaveNumber = 7;
+% The analysed bands. Only >= 20 Hz is analysed (decided 2026-10-24): the
+% Delsys high-pass (10 or 20 Hz) cannot be confirmed for every participant,
+% and below 20 Hz cycle-locked movement artifact can inflate coherence
+% (docs/acquisition.md). Before 2026-10 the bands were Alpha [8 12],
+% Beta [13 30], Gamma [31 60]. Every stage loops over these names, so a
+% band is added or removed here only; names must start with a capital
+% letter and contain no underscore (they prefix column names such as
+% HighBeta_AUC_norm).
 C.shared_wavelet.FreqBands = struct( ...
-    'Alpha', [8 12], ...
-    'Beta',  [13 30], ...
-    'Gamma', [31 60]);
-C.shared_wavelet.FreqMin = C.shared_wavelet.FreqBands.Alpha(1); %8 Hz
-C.shared_wavelet.FreqMax = C.shared_wavelet.FreqBands.Gamma(2); %60 Hz
+    'HighBeta', [20 30], ...
+    'Gamma',    [31 60]);
+C.shared_wavelet.band_names = fieldnames(C.shared_wavelet.FreqBands)';
+bandEdges = struct2cell(C.shared_wavelet.FreqBands);
+bandEdges = vertcat(bandEdges{:});
+C.shared_wavelet.FreqMin = min(bandEdges(:,1)); % 20 Hz
+C.shared_wavelet.FreqMax = max(bandEdges(:,2)); % 60 Hz
 
 %% a_extract_raw_cycles_concat settings
 
@@ -286,13 +291,9 @@ C.a_extract_raw.files.recap_cycles_per_participant_age_csv = fullfile(C.a_extrac
 
 % TO DO : CHANGE THE FOLLOWING TO ADAPT TO YOUR FOLDER STRUCTURE AND NAMING CONVENTIONS
 C.a_extract_raw.input = struct();
-C.a_extract_raw.input.file_extension = '.c3d';
-C.a_extract_raw.input.search_recursively = true;
-C.a_extract_raw.input.filename_mode = 'regex'; 
 % 'regex', 'table', 'custom_function'
 C.a_extract_raw.input.filename_regex = ...
     '^(?<subjID>[^_]+_[^_]+)_(?<cond>Plat|Medium|High)_(?<ess>\d{2})(?:_NEW)?\.c3d$';
-C.a_extract_raw.input.allow_new_suffix = true;
 C.a_extract_raw.input.prefer_standard_over_new = false; % If true and multiple files match (e.g. both *_RAW_CYCLES_CONCAT.mat and *_RAW_CYCLES_CONCAT_NEW.mat exist), it will prefer the one without _NEW. Set to false if you want to prefer the _NEW version instead.
 C.a_extract_raw.input.ignore_unmatched_files = true;   % but log them
 C.a_extract_raw.design = struct();
@@ -320,32 +321,14 @@ C.a_extract_raw.events.to_fallback_ratio = 0.6;
 C.a_extract_raw.mapping = struct();
 C.a_extract_raw.mapping.mode = 'association_script';
 % 'association_script', 'fixed_names', 'mapping_table', 'custom_function'
-C.a_extract_raw.mapping.fixed_names.left = struct( ...
-    'EMG_TAprox', 'TA_L', ...
-    'EMG_SOL',    'SOL_L');
-C.a_extract_raw.mapping.fixed_names.right = struct( ...
-    'EMG_TAprox', 'TA_R', ...
-    'EMG_SOL',    'SOL_R');
 C.a_extract_raw.mapping.association_script = fullfile(C.paths.code_dir, 'Metadata', 'Association.m');
 
-C.a_extract_raw.mapping.fixed_names.left = struct();
+% Used only when mapping.mode is 'fixed_names'; filled in per project.
+C.a_extract_raw.mapping.fixed_names.left  = struct();
 C.a_extract_raw.mapping.fixed_names.right = struct();
 
-C.a_extract_raw.fallbacks = struct();
-
-C.a_extract_raw.fallbacks.skip_missing_files = true;
-C.a_extract_raw.fallbacks.skip_missing_leg_events = true;
-C.a_extract_raw.fallbacks.skip_missing_muscle_channels = true;
-C.a_extract_raw.fallbacks.allow_partial_leg_output = true;
-C.a_extract_raw.fallbacks.allow_partial_condition_output = true;
-C.a_extract_raw.fallbacks.continue_on_file_error = true;
 
 C.a_extract_raw.output = struct();
-C.a_extract_raw.output.save_segments = false;
-C.a_extract_raw.output.save_toe_off = true;
-C.a_extract_raw.output.save_trial_provenance = true;
-C.a_extract_raw.output.save_example_figure = true;
-C.a_extract_raw.output.inspect_one_mat_file = true;
 C.a_extract_raw.output.generate_example_figures = true; % If true, will generate example figures for each subject showing the raw signal with detected events and extracted cycles. Saved in RAW_PLOT_DIR.
 
 %% ===================== EMG CHANNEL DETECTION =====================
@@ -368,13 +351,10 @@ C.a_extract_raw.channels.left_keywords  = ["_L"," L","Left","left"];
 C.a_extract_raw.channels.right_keywords = ["_R"," R","Right","right"];
 
 % Behavior
-C.a_extract_raw.channels.allow_partial_mapping = true;
 C.a_extract_raw.missing = struct();
-C.a_extract_raw.missing.allow_missing_muscles = true;
 % Minimum required per muscle to keep it
 C.a_extract_raw.missing.min_cycles_per_muscle = 0; % set to 0 to keep all muscles regardless of number of cycles, or set to a higher number if you want to exclude muscles with too few cycles (e.g. due to missing channels)
 % Minimum required per pair (important later)
-C.a_extract_raw.missing.min_cycles_per_pair = 0;
 
 %% ===================== MARKER EXTRACTION =====================
 C.a_extract_raw.markers = struct();
@@ -402,13 +382,8 @@ C.b_preproc.plot_seconds = 10; % When plotting random examples for QC, how many 
 C.b_preproc.input_pattern = '*_RAW_CYCLES_CONCAT.mat';
 C.b_preproc.output_suffix = '_EMG_PREPROC.mat';
 
-C.b_preproc.overwrite = true;
 C.b_preproc.inspect_one_output = true;
 C.b_preproc.inspect_depth = 3;
-
-C.c_bursts.inspect = struct();
-C.c_bursts.inspect.inspect_one_output = true;
-C.c_bursts.inspect.inspect_depth = 3;
 
 C.b_preproc.time_domain = struct();
 C.b_preproc.time_domain.save_bandpassed = true;
@@ -522,7 +497,6 @@ C.d_clustering.io.cluster_dir = C.paths.clustering_dir;
 C.d_clustering.io.csv_dir = fullfile(C.paths.results_dir, 'd_a_clustering_cleaning', 'csv_clustering_results');
 C.d_clustering.io.plot_dir = fullfile(C.paths.plot_dir, 'd_a_clustering_cleaning', 'cluster_decision_plots');
 
-C.d_clustering.io.input_mat = 'BURST_FEATURES.mat';
 C.d_clustering.io.output_clustered_csv = 'BURST_FEATURES_WITH_CLUSTERS.csv';
 C.d_clustering.io.output_results_mat = 'CLUSTER_RESULTS.mat';
 
@@ -651,7 +625,6 @@ C.d_rule_based.params = struct();
 
 % Core checks
 C.d_rule_based.params.min_seconds_per_signal = 0; % Not activated right now, but if you want to exclude bursts from signals that have very little data (e.g. due to a lot of visual artifact rejection), you can set this to a positive number (e.g. 10 or 30 seconds) and it will exclude bursts from any signal that has less than that amount of data after all the cleaning steps.
-C.d_rule_based.params.min_cycles = 1; % Minimum number of cycles required for a burst to be included. If a burst has fewer than this number of cycles, it will be excluded. Set to 1 to include all bursts regardless of cycle count.
 C.d_rule_based.params.max_nan_frac = 0.001;
 
 % Flatline
@@ -680,31 +653,18 @@ C.d_rule_based.params.max_high_over_mid_warn = 0.7;
 C.d_rule_based.params.spectrum_fail = true;
 
 % Absolute amplitude
-C.d_rule_based.params.check_abs_amplitude = true;
 C.d_rule_based.params.units = "V";
-C.d_rule_based.params.max_p2p_mV = 10;
-C.d_rule_based.params.max_rms_mV = 1.5;
-C.d_rule_based.params.abs_amp_fail = true;
 
 % Whole-signal plotting behavior
-C.d_rule_based.params.plot_failed = true;
-C.d_rule_based.params.plot_warn = false;
 C.d_rule_based.params.plot_seconds = NaN;
-C.d_rule_based.params.max_fail_plots = 200;
 
 % Runner behavior
-C.d_rule_based.params.early_exit_fail = false;
-C.d_rule_based.params.check_saturation_plateau = true;
 
 % Plateau detection
 C.d_rule_based.params.plateau_eps_frac = 0.05;
-C.d_rule_based.params.max_plateau_frac_fail = 0.40;
-C.d_rule_based.params.max_plateau_frac_warn = 0.25;
 
 % Rail detection
 C.d_rule_based.params.rail_eps_frac = 0.005;
-C.d_rule_based.params.max_rail_frac_fail = 0.05;
-C.d_rule_based.params.max_rail_frac_warn = 0.02;
 
 % Flatline absolute thresholds
 C.d_rule_based.params.flatline_p2p_max = 1e-5;
@@ -738,7 +698,6 @@ C.d_rule_based.params.burst.rail_eps_frac = 0.005;
 C.d_rule_based.params.burst.rail_frac_fail = 0.10;
 
 C.d_rule_based.params.burst.spec = struct();
-C.d_rule_based.params.burst.spec.enable = true;
 C.d_rule_based.params.burst.spec_low = [0 5];
 C.d_rule_based.params.burst.spec_mid = [10 250];
 C.d_rule_based.params.burst.spec_high = [250 450];
@@ -755,7 +714,6 @@ C.d_rule_based.params.burst.abs.units = "V";
 C.d_rule_based.params.burst.abs.max_p2p_mV_fail = 8;
 C.d_rule_based.params.burst.abs.max_rms_mV_fail = 1.5;
 
-C.d_rule_based.params.burst.context_ms = 20;              % padding around burst for artifact checks
 
 %% e_final_burst_qc_combination
 
@@ -780,7 +738,6 @@ C.e_final_burst_qc.io.out_csv = fullfile(C.e_final_burst_qc.io.csv_dir, 'FINAL_B
 % ---------- Decision parameters ----------
 C.e_final_burst_qc.params = struct();
 C.e_final_burst_qc.params.decision_rule = "conservative";   % "conservative" | "inclusive"
-C.e_final_burst_qc.params.missing_cluster_policy = "bad";   % "bad" | "missing"
 C.e_final_burst_qc.params.use_visual_mapping = false; % If true, will use the Visual Mapping XLSM file to determine final burst decisions for bursts that are missing cluster-based QC results. If false, will use the missing_cluster_policy instead.
 
 % ---------- Plot settings ----------
@@ -842,30 +799,6 @@ C.f_final_signals.io.cycle_qc_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'CY
 C.f_final_signals.io.pair_cycle_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PAIR_CYCLE_QC_TABLE.xlsx');
 C.f_final_signals.io.signal_sum_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'FINAL_SIGNAL_SUMMARY.xlsx');
 
-C.f_final_signals.io.analyzable_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'ANALYZABLE_SIGNALS.xlsx');
-C.f_final_signals.io.recap_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_AGE.xlsx');
-C.f_final_signals.io.recap_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_CONDITION.xlsx');
-C.f_final_signals.io.recap_pair_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_age_cond_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_AGE_CONDITION.xlsx');
-
-C.f_final_signals.io.participant_summary_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY.xlsx');
-C.f_final_signals.io.recap_participants_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_AGE.xlsx');
-C.f_final_signals.io.recap_participants_by_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_CONDITION.xlsx');
-C.f_final_signals.io.recap_participants_by_age_cond_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.recap_signals_per_participant_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BY_AGE.xlsx');
-C.f_final_signals.io.recap_conditions_per_participant_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_AGE.xlsx');
-
-C.f_final_signals.io.recap_pair_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_pair_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_PAIR_CONDITION.xlsx');
-C.f_final_signals.io.recap_pair_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BY_PAIR_AGE_CONDITION.xlsx');
-
-C.f_final_signals.io.participant_summary_by_pair_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_participants_by_pair_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_participants_by_pair_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_participants_by_pair_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_CONDITION.xlsx');
-C.f_final_signals.io.recap_participants_by_pair_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_CONDITION.xlsx');
-C.f_final_signals.io.recap_signals_per_participant_by_pair_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_conditions_per_participant_by_pair_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_PAIR_AGE.xlsx');
 
 C.f_final_signals.io.excluded_burst_position_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'EXCLUDED_CYCLE_BURST_POSITION_TABLE.xlsx');
 C.f_final_signals.io.excluded_burst_position_plot_dir = fullfile(C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'excluded_burst_position_plots');
@@ -904,13 +837,10 @@ C.f_final_signals.params.cycle_policy.parameters.flatline_min_std = 1e-8;
 C.f_final_signals.params.cycle_policy.reject_if_flatline_fraction_over = true;
 C.f_final_signals.params.cycle_policy.parameters.max_flatline_fraction = 0.01;
 
-C.f_final_signals.params.cycle_policy.parameters.flatline_local_method = "diff";
 C.f_final_signals.params.cycle_policy.parameters.flatline_diff_thresh = 1e-8;
 C.f_final_signals.params.cycle_policy.parameters.flatline_min_run_samples = 20;
 
 % ---------- Pair policy ----------
-C.f_final_signals.params.pair_policy = struct();
-C.f_final_signals.params.pair_policy.require_same_valid_cycles = true; % DON'T CHANGE THIS WITHOUT THINKING CAREFULLY ABOUT THE IMPLICATIONS. This means that if a cycle is rejected in one signal of the pair, it will be rejected in the other signal as well, even if it would have been accepted based on its own quality. This is important for ensuring that the paired signals are truly comparable and that we are not introducing bias by including different sets of cycles for each signal. If you set this to false, then each signal will have its own set of valid cycles based on its own quality, which could lead to situations where you are comparing one signal with mostly good cycles to another signal with mostly bad cycles, which could bias your results and make it harder to interpret any differences you find between the signals.
 
 % ---------- Minimum valid cycles ----------
 C.f_final_signals.params.min_cycles_required = 10; % Minimum number of valid cycles required for a signal to be included in the final dataset. If a signal has fewer than this number of valid cycles after applying the cycle-level QC policies, it will be excluded from the final paired signals dataset.
@@ -979,7 +909,7 @@ C.f_final_signals.params.wavelet_contamination_qc.mode = "overall";
 C.f_final_signals.params.wavelet_contamination_qc.boundary_type = "classical_coi"; % "classical_coi or amplitude_based
 C.f_final_signals.params.wavelet_contamination_qc.amplitude_tol = 0.05;
 
-C.f_final_signals.params.wavelet_contamination_qc.overall_rule = "max_band"; % or "alpha", have to implement for the others if we want to have separate datasets for each band
+C.f_final_signals.params.wavelet_contamination_qc.overall_rule = "max_band"; % widest band boundary, i.e. that of the lowest band; "alpha" needs an Alpha band, have to implement for the others if we want to have separate datasets for each band
 C.f_final_signals.params.wavelet_contamination_qc.extra_buffer_sec = 0;
 
 C.f_final_signals.params.wavelet_contamination_qc.wave_number = C.shared_wavelet.WaveNumber;
@@ -1000,9 +930,6 @@ C.f_final_signals.plot.rebuilt_band.random_seed = [];
 C.f_final_signals.plot.rebuilt_band.out_dir = fullfile( ...
     C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'band_specific_rebuilt_examples');
 
-C.f_final_signals.io.analyzable_alpha_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'ANALYZABLE_SIGNALS_ALPHA.xlsx');
-C.f_final_signals.io.analyzable_beta_xlsx  = fullfile(C.f_final_signals.io.xlsx_dir, 'ANALYZABLE_SIGNALS_BETA.xlsx');
-C.f_final_signals.io.analyzable_gamma_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'ANALYZABLE_SIGNALS_GAMMA.xlsx');
 
 C.f_final_signals.plot.excluded_band = struct();
 C.f_final_signals.plot.excluded_band.enable = true;
@@ -1012,81 +939,20 @@ C.f_final_signals.plot.excluded_band.out_dir = fullfile( ...
     C.paths.plot_dir, 'f_cycle_level_qc_and_signal_rebuild', 'band_specific_excluded_examples');
 
 C.f_final_signals.io.out_mat_overall = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS_OVERALL.mat');
-C.f_final_signals.io.out_mat_alpha   = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS_ALPHA.mat');
-C.f_final_signals.io.out_mat_beta    = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS_BETA.mat');
-C.f_final_signals.io.out_mat_gamma   = fullfile(C.f_final_signals.io.out_dir, 'FINAL_PAIRED_SIGNALS_GAMMA.mat');
+% One export per band: FINAL_PAIRED_SIGNALS_<BAND>.mat
+C.f_final_signals.io.out_mat_band = struct();
+for bandName = C.shared_wavelet.band_names
+    C.f_final_signals.io.out_mat_band.(bandName{1}) = fullfile(C.f_final_signals.io.out_dir, ['FINAL_PAIRED_SIGNALS_' upper(bandName{1}) '.mat']);
+end
 
 % ---------- Signal recap per band ----------
-C.f_final_signals.io.recap_alpha_age_xlsx                = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_AGE.xlsx');
-C.f_final_signals.io.recap_alpha_condition_xlsx          = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_CONDITION.xlsx');
-C.f_final_signals.io.recap_alpha_pair_xlsx               = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_alpha_age_condition_xlsx      = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.recap_alpha_pair_age_xlsx           = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_alpha_pair_condition_xlsx     = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_PAIR_CONDITION.xlsx');
-C.f_final_signals.io.recap_alpha_pair_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_ALPHA_BY_PAIR_AGE_CONDITION.xlsx');
 
-C.f_final_signals.io.recap_beta_age_xlsx                = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_AGE.xlsx');
-C.f_final_signals.io.recap_beta_condition_xlsx          = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_CONDITION.xlsx');
-C.f_final_signals.io.recap_beta_pair_xlsx               = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_beta_age_condition_xlsx      = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.recap_beta_pair_age_xlsx           = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_beta_pair_condition_xlsx     = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_PAIR_CONDITION.xlsx');
-C.f_final_signals.io.recap_beta_pair_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_BETA_BY_PAIR_AGE_CONDITION.xlsx');
-
-C.f_final_signals.io.recap_gamma_age_xlsx                = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_AGE.xlsx');
-C.f_final_signals.io.recap_gamma_condition_xlsx          = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_CONDITION.xlsx');
-C.f_final_signals.io.recap_gamma_pair_xlsx               = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_PAIR.xlsx');
-C.f_final_signals.io.recap_gamma_age_condition_xlsx      = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.recap_gamma_pair_age_xlsx           = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_PAIR_AGE.xlsx');
-C.f_final_signals.io.recap_gamma_pair_condition_xlsx     = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_PAIR_CONDITION.xlsx');
-C.f_final_signals.io.recap_gamma_pair_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_GAMMA_BY_PAIR_AGE_CONDITION.xlsx');
 
 % ---------- Participant recap per band ----------
-C.f_final_signals.io.participant_summary_alpha_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_ALPHA.xlsx');
-C.f_final_signals.io.participants_alpha_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_ALPHA_BY_AGE.xlsx');
-C.f_final_signals.io.participants_alpha_by_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_ALPHA_BY_CONDITION.xlsx');
-C.f_final_signals.io.participants_alpha_by_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_ALPHA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.signals_per_participant_alpha_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_ALPHA_BY_AGE.xlsx');
-C.f_final_signals.io.conditions_per_participant_alpha_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_ALPHA_BY_AGE.xlsx');
 
-C.f_final_signals.io.participant_summary_beta_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_BETA.xlsx');
-C.f_final_signals.io.participants_beta_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BETA_BY_AGE.xlsx');
-C.f_final_signals.io.participants_beta_by_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BETA_BY_CONDITION.xlsx');
-C.f_final_signals.io.participants_beta_by_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BETA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.signals_per_participant_beta_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BETA_BY_AGE.xlsx');
-C.f_final_signals.io.conditions_per_participant_beta_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BETA_BY_AGE.xlsx');
-
-C.f_final_signals.io.participant_summary_gamma_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_GAMMA.xlsx');
-C.f_final_signals.io.participants_gamma_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_GAMMA_BY_AGE.xlsx');
-C.f_final_signals.io.participants_gamma_by_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_GAMMA_BY_CONDITION.xlsx');
-C.f_final_signals.io.participants_gamma_by_age_condition_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_GAMMA_BY_AGE_CONDITION.xlsx');
-C.f_final_signals.io.signals_per_participant_gamma_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_GAMMA_BY_AGE.xlsx');
-C.f_final_signals.io.conditions_per_participant_gamma_by_age_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_GAMMA_BY_AGE.xlsx');
 
 % ---------- Participant-by-pair recap per band ----------
-C.f_final_signals.io.participant_summary_by_pair_alpha_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_BY_PAIR_ALPHA.xlsx');
-C.f_final_signals.io.participants_by_pair_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_ALPHA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_ALPHA.xlsx');
-C.f_final_signals.io.participants_by_pair_condition_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_CONDITION_ALPHA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_condition_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_CONDITION_ALPHA.xlsx');
-C.f_final_signals.io.signals_per_participant_by_pair_age_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BY_PAIR_AGE_ALPHA.xlsx');
-C.f_final_signals.io.conditions_per_participant_by_pair_age_alpha_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_PAIR_AGE_ALPHA.xlsx');
 
-C.f_final_signals.io.participant_summary_by_pair_beta_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_BY_PAIR_BETA.xlsx');
-C.f_final_signals.io.participants_by_pair_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_BETA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_BETA.xlsx');
-C.f_final_signals.io.participants_by_pair_condition_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_CONDITION_BETA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_condition_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_CONDITION_BETA.xlsx');
-C.f_final_signals.io.signals_per_participant_by_pair_age_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BY_PAIR_AGE_BETA.xlsx');
-C.f_final_signals.io.conditions_per_participant_by_pair_age_beta_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_PAIR_AGE_BETA.xlsx');
-
-C.f_final_signals.io.participant_summary_by_pair_gamma_xlsx = fullfile(C.f_final_signals.io.xlsx_dir, 'PARTICIPANT_SUMMARY_BY_PAIR_GAMMA.xlsx');
-C.f_final_signals.io.participants_by_pair_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_GAMMA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_GAMMA.xlsx');
-C.f_final_signals.io.participants_by_pair_condition_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_CONDITION_GAMMA.xlsx');
-C.f_final_signals.io.participants_by_pair_age_condition_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_PARTICIPANTS_BY_PAIR_AGE_CONDITION_GAMMA.xlsx');
-C.f_final_signals.io.signals_per_participant_by_pair_age_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_SIGNALS_PER_PARTICIPANT_BY_PAIR_AGE_GAMMA.xlsx');
-C.f_final_signals.io.conditions_per_participant_by_pair_age_gamma_xlsx = fullfile(C.f_final_signals.io.recap_xlsx_dir, 'RECAP_CONDITIONS_PER_PARTICIPANT_BY_PAIR_AGE_GAMMA.xlsx');
 
 %% ---------- Cross-talk QC integration ----------
 C.f_final_signals.crosstalk = struct();
@@ -1096,19 +962,16 @@ C.f_final_signals.crosstalk.enable = true;
 % Run cross-talk QC on this/these modes.
 % If any checked mode is suspicious, the pair signal is excluded.
 C.f_final_signals.crosstalk.analysis_modes = ["overall"]; 
-% later possible: ["overall","Alpha","Beta","Gamma"]
+% later possible: "overall" plus band names of C.shared_wavelet.FreqBands
 
 C.f_final_signals.crosstalk.target_pairs = ["TAprox_TAdist"];
 C.f_final_signals.crosstalk.target_age_groups = "all";
 C.f_final_signals.crosstalk.target_conditions = "all";
 C.f_final_signals.crosstalk.target_legs = "all";
 
-C.f_final_signals.crosstalk.use_centered_raw = true;
-C.f_final_signals.crosstalk.use_rectified_for_similarity = true;
 
 C.f_final_signals.crosstalk.max_lag_ms = 300;
 C.f_final_signals.crosstalk.zero_lag_window_ms = 1;
-C.f_final_signals.crosstalk.narrow_peak_halfwidth_ms = 2;
 
 C.f_final_signals.crosstalk.central_spike = struct();
 C.f_final_signals.crosstalk.central_spike.broad_smooth_window_ms = 25;
@@ -1188,7 +1051,7 @@ C.g_coherence.params.WaveNumber = C.shared_wavelet.WaveNumber;         % comprom
 %   "cycle_bias_corrected" = coherence after correcting for bias due to different number of cycles, using a formula derived from simulations
 
 % C.g_coherence.params.metric_sources_to_save = ["raw", "equalized", "sig", "sig_equalized", "sig_common_threshold", "zcoh_bokil"];
-C.g_coherence.params.metric_sources_to_save = ["equalized"];
+C.g_coherence.params.metric_sources_to_save = ["equalized", "raw", "cycle_bias_corrected"]; % raw and cycle_bias_corrected feed the h sensitivity table
 
 % Which source is used by default for summary tables / group plots
 % Options: "raw", "equalized", "sig", "sig_equalized", "sig_common_threshold", "zcoh_bokil", "surrogate_delta"
@@ -1288,8 +1151,6 @@ C.g_coherence.params.qc_edge.enable = true;
 C.g_coherence.params.qc_edge.dir = fullfile(C.g_coherence.plot.dir, 'edge_effect_qc');
 C.g_coherence.params.qc_edge.csv_dir = fullfile(C.paths.results_dir, 'g_emg_emg_wavelet_coherence', 'edge_effect_qc');
 
-C.g_coherence.params.qc_edge.flag_prop_cycles_threshold = 0.20;
-C.g_coherence.params.qc_edge.flag_edge_ratio_threshold  = 1.50;
 
 % ===================== Frequency bands =====================
 C.g_coherence.params.FreqBands = C.shared_wavelet.FreqBands;
@@ -1299,7 +1160,6 @@ C.g_coherence.params.n_interp_time = 1000;   % chaque cycle est interpolé à 10
 
 % ===================== Significance =====================
 C.g_coherence.params.alpha = 0.05;           % alpha pour le seuil de significativité Rosenberg
-C.g_coherence.params.compute_significant_only = true; % true = les métriques scalaires sont calculées à partir de Coherence_sig
 C.g_coherence.params.store_raw_coherence = true;      % true = garde aussi la matrice de cohérence brute
 C.g_coherence.params.store_sig_coherence = true;      % true = garde aussi la cohérence thresholdée
 
@@ -1307,7 +1167,22 @@ C.g_coherence.params.store_sig_coherence = true;      % true = garde aussi la co
 C.g_coherence.params.use_toeoff_segmentation = true; % true = stance/swing basés sur toe-off moyen
 C.g_coherence.params.default_toeoff_percent = 60;    % utilisé si pas de toe-off disponible
 
-% ===================== Padding for wavelet edge effects =====================
+% ===================== Wavelet transform scope =====================
+% "per_trial"    = one transform per stretch of continuous recording, so the wavelet
+%                  never runs across the glue point between two kept cycles that
+%                  were not consecutive (trial boundary or rejected cycle in between)
+% "concatenated" = one transform over the glued kept cycles (results before 2026-10)
+C.g_coherence.params.transform_scope = "per_trial";
+% Rejected cycles kept as real context around kept ones:
+% "trial_run_safe" = only if they pass the general QC in both muscles and have no bad burst
+%                    within overall_contamination_half_width_sec of a kept sample
+% "kept_blocks"    = never;  "trial_run" = always (audit only)
+C.g_coherence.params.per_trial.context_policy = "trial_run_safe";
+% Minimum symmetric-extension padding at segment edges (s); 0.6 s = 3x the 8 Hz e-folding
+% time, kept when the lowest band moved to 20 Hz (more than needed there, harmless)
+C.g_coherence.params.per_trial.min_pad_sec = 0.6;
+
+% ===================== Padding for wavelet edge effects (transform_scope = "concatenated") =====================
 C.g_coherence.params.padding = struct();
 
 % Options: 'zero', 'cycle_wrap', 'mirror'
@@ -1317,7 +1192,6 @@ C.g_coherence.params.padding.mode = 'mirror';
 C.g_coherence.params.padding.n_cycles_each_side = 1;
 
 % Safety: require these fields in Tseg
-C.g_coherence.params.padding.use_signal1_cycle_bounds = true;
 
 % 
 C.g_coherence.params.store_final_concatenated_signals = true;
@@ -1351,23 +1225,21 @@ C.g_coherence.group_plot.enable = false;                                        
 C.g_coherence.group_plot.dir = fullfile(C.g_coherence.plot.dir, 'coherencegroup_plots');      % dossier plots de groupe
 C.g_coherence.group_plot.make_scalar_bars = true;                                              % true = barplots des métriques scalaires
 
+bandNames = C.shared_wavelet.band_names;
 C.g_coherence.group_plot.scalar_plot_sets = { ...
-    {'Alpha','Beta','Gamma'}, ...                                                               % moyennes significatives par bande
-    {'Alpha_AUC_norm','Beta_AUC_norm','Gamma_AUC_norm'} ...                                     % AUC normalisées par bande
+    bandNames, ...                                                                              % mean per band
+    strcat(bandNames, '_AUC_norm') ...                                                          % normalized AUC per band
 };
 
-C.g_coherence.group_plot.summaryScalarVars = { ...
-    'Alpha','Beta','Gamma', ...                                                                 % moyenne par bande
-    'Alpha_AUC_norm','Beta_AUC_norm','Gamma_AUC_norm', ...                                      % AUC normalisée par bande
-    'FullBand_Mean', 'FullBand_AUC_norm' ...                                                    % métriques full-band
-};
+C.g_coherence.group_plot.summaryScalarVars = [ ...
+    bandNames, strcat(bandNames, '_AUC_norm'), ...                                              % mean and normalized AUC per band
+    {'FullBand_Mean', 'FullBand_AUC_norm'}];                                                    % full-band metrics
 
 % ===================== Final comparison plots =====================
 C.g_coherence.final_plot = struct();
 C.g_coherence.final_plot.enable = true;                                                         % true = plots comparatifs finaux
 C.g_coherence.final_plot.dir = fullfile(C.g_coherence.group_plot.dir, 'final_comparison_plots'); % dossier des plots finaux
 C.g_coherence.final_plot.condition_order = C.plotting.condition_order;                            % ordre fixe des conditions
-C.g_coherence.final_plot.age_group_order = ["JeunesEnfants","Enfants","Adolescents","Adultes"]; % ordre fixe des groupes d'âge
 
 C.g_coherence.final_plot.make_raw_spectra = true;
 C.g_coherence.final_plot.make_sig_spectra = true;
@@ -1376,24 +1248,17 @@ C.g_coherence.final_plot.make_raw_maps = true;
 C.g_coherence.final_plot.make_sig_maps = true;
 
 % ---------- Input datasets for coherence ----------
-C.g_coherence.io.input_sets = { ...
-    struct( ...
-        'name', 'FULL', ...
-        'mat_file', fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS.mat'), ...
-        'enabled', true), ...
-    struct( ...
-        'name', 'ALPHA', ...
-        'mat_file', fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS_ALPHA.mat'), ...
-        'enabled', true), ...
-    struct( ...
-        'name', 'BETA', ...
-        'mat_file', fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS_BETA.mat'), ...
-        'enabled', true), ...
-    struct( ...
-        'name', 'GAMMA', ...
-        'mat_file', fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS_GAMMA.mat'), ...
-        'enabled', true) ...
-    };
+% FULL (all bands, overall cycle mask) plus one dataset per band (band-specific cycle mask)
+C.g_coherence.io.input_sets = {struct( ...
+    'name', 'FULL', ...
+    'mat_file', fullfile(C.paths.final_signals_dir, 'FINAL_PAIRED_SIGNALS.mat'), ...
+    'enabled', true)};
+for bandName = C.shared_wavelet.band_names
+    C.g_coherence.io.input_sets{end+1} = struct( ...
+        'name', upper(bandName{1}), ...
+        'mat_file', C.f_final_signals.io.out_mat_band.(bandName{1}), ...
+        'enabled', true);
+end
 
 C.g_coherence.params.exclude_edge_cycles_after_wavelet = false; % honestly unnecessary with good padding, but change in case, exclude the first and last cycle of each signal after wavelet transformation to avoid any residual edge effects
 C.g_coherence.params.n_edge_cycles_excluded_each_side = 1;
@@ -1463,6 +1328,7 @@ C.h_stats.io.models_dir = fullfile(C.h_stats.io.out_dir, 'models');
 C.h_stats.io.plots_dir = fullfile(C.paths.plot_dir, 'h_coherence_stats_pair_phase_main');
 C.h_stats.io.workspace_mat = fullfile(C.h_stats.io.mat_dir, 'COHERENCE_STATS_PAIR_PHASE_MAIN.mat');
 C.h_stats.io.band_triplet_dir = fullfile(C.h_stats.io.plots_dir, 'band_triplets');
+C.h_stats.io.archive_stale_outputs = true; % move tables/models/plots not rewritten by this run into _stale_<time>/ (never deletes)
 
 % ===================== ANALYSIS =====================
 C.h_stats.analysis = struct();
@@ -1473,9 +1339,9 @@ C.h_stats.analysis.pairs_to_analyze = {'TAprox_TAdist','SOL_GM'};
 
 % ===================== METRIC SELECTION =====================
 % Choose one or several scalar metric families for the whole h_stats script:
-%   "mean" = Alpha / Beta / Gamma
-%   "auc"  = Alpha_AUC_norm / Beta_AUC_norm / Gamma_AUC_norm
-%   "peak" = Alpha_Peak / Beta_Peak / Gamma_Peak
+%   "mean" = <Band>             e.g. HighBeta, Gamma
+%   "auc"  = <Band>_AUC_norm    e.g. HighBeta_AUC_norm
+%   "peak" = <Band>_Peak        (one DV per band of C.shared_wavelet.FreqBands)
 %
 % Examples:
 %   {'auc'}
@@ -1497,34 +1363,19 @@ for iMF = 1:numel(metricFamilies)
     mf = metricFamilies(iMF);
 
     switch mf
-
         case "mean"
-            thisDV = {'Alpha','Beta','Gamma'};
-            thisPlotType = {'mean'};
-            thisPairs = { ...
-                'Alpha', 'Alpha_LogPower'; ...
-                'Beta',  'Beta_LogPower'; ...
-                'Gamma', 'Gamma_LogPower'};
-
+            suffix = '';
         case "auc"
-            thisDV = {'Alpha_AUC_norm','Beta_AUC_norm','Gamma_AUC_norm'};
-            thisPlotType = {'auc'};
-            thisPairs = { ...
-                'Alpha_AUC_norm', 'Alpha_LogPower'; ...
-                'Beta_AUC_norm',  'Beta_LogPower'; ...
-                'Gamma_AUC_norm', 'Gamma_LogPower'};
-
+            suffix = '_AUC_norm';
         case "peak"
-            thisDV = {'Alpha_Peak','Beta_Peak','Gamma_Peak'};
-            thisPlotType = {'peak'};
-            thisPairs = { ...
-                'Alpha_Peak', 'Alpha_LogPower'; ...
-                'Beta_Peak',  'Beta_LogPower'; ...
-                'Gamma_Peak', 'Gamma_LogPower'};
-
+            suffix = '_Peak';
         otherwise
             error('Unknown scalar metric family: %s. Use "mean", "auc", or "peak".', mf);
     end
+
+    thisDV = strcat(C.shared_wavelet.band_names, suffix);
+    thisPlotType = {char(mf)};
+    thisPairs = [thisDV(:), strcat(C.shared_wavelet.band_names(:), '_LogPower')];
 
     C.h_stats.analysis.dv_list = [C.h_stats.analysis.dv_list, thisDV]; %#ok<AGROW>
     C.h_stats.analysis.metric_type_for_plots = [C.h_stats.analysis.metric_type_for_plots, thisPlotType]; %#ok<AGROW>
@@ -1555,8 +1406,6 @@ C.h_stats.analysis.coherence_source = "equalized";   % "sig" or "raw" or "sig_eq
 % false = main raw model without cycle covariate
 % true  = raw model controlling for log(n_cycles_used)
 C.h_stats.analysis.include_cycle_count_covariate = false;
-C.h_stats.analysis.cycle_count_covariate_name = "log_n_cycles";
-C.h_stats.analysis.cycle_count_covariate_source = "mean_cycles_used_across_legs";
 
 C.h_stats.analysis.include_cycle_count_in_correlations = false;
 
@@ -1572,10 +1421,8 @@ C.h_stats.plot.visible = 'off';
 C.h_stats.plot.cycle_triplets = struct();
 C.h_stats.plot.cycle_triplets.visible = 'off';
 C.h_stats.plot.cycle_triplets.show_sem = true;
-C.h_stats.plot.cycle_triplets.alpha_fill = 0.18;
 C.h_stats.plot.cycle_triplets.line_width = 2.2;
 C.h_stats.plot.cycle_triplets.poi_face_alpha = 0.08;
-C.h_stats.plot.cycle_triplets.poi_edge_alpha = 0.20;
 C.h_stats.plot.cycle_triplets.plots_dir = fullfile(C.h_stats.io.plots_dir, 'cycle_triplets');
 
 C.h_stats.analysis.make_cycle_triplets = false;
@@ -1587,7 +1434,6 @@ C.h_stats.analysis.cycle_triplet_source = C.h_stats.analysis.coherence_source;  
 C.h_stats.analysis.cycle_triplet_average_legs = true;
 
 % frequency bands used for cycle triplets
-C.h_stats.analysis.cycle_triplet_bands = {'Alpha','Beta','Gamma'};
 
 % Correlation plot y-axis control
 C.h_stats.plot.correlation_use_fixed_ylim = C.h_stats.plot.use_fixed_coherence_ylim;
@@ -1598,6 +1444,14 @@ C.h_stats.plot.correlation_ylim = C.h_stats.plot.coherence_ylim;
 
 % ===================== POST HOC =====================
 C.h_stats.posthoc = struct();
+% ===================== Mixed models (every fitlme in stage h goes through fit_h_lme) =====================
+% 'effects' coding: the age term is the age slope averaged over conditions, the
+% condition term is averaged over age. Under 'reference' coding (MATLAB's default)
+% the age term is the slope in the first condition (Flat) only.
+C.h_stats.lme.dummy_var_coding = 'effects';
+C.h_stats.lme.fit_method = 'REML';            % 'REML' | 'ML'
+C.h_stats.lme.df_method = 'satterthwaite';    % 'satterthwaite' | 'residual'
+
 C.h_stats.posthoc.mode = 'nonparametric';   % 'adaptive', 'parametric', 'nonparametric'
 C.h_stats.posthoc.min_n_parametric = 8;
 C.h_stats.posthoc.outlier_z_thresh = 3.5;
@@ -1608,9 +1462,11 @@ C.h_stats.posthoc.correction = 'fdr';       % 'holm' or 'fdr'
 % ===================== BAND-SPECIFIC DATASET SETTINGS =====================
 C.h_stats.analysis.use_band_specific_datasets = true;   % easy on/off switch
 
-C.h_stats.io.coh_mat_alpha = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_ALPHA.mat');
-C.h_stats.io.coh_mat_beta  = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_BETA.mat');
-C.h_stats.io.coh_mat_gamma = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_GAMMA.mat');
+% One g output per band: COHERENCE_RESULTS_<BAND>.mat
+C.h_stats.io.coh_mat_band = struct();
+for bandName = C.shared_wavelet.band_names
+    C.h_stats.io.coh_mat_band.(bandName{1}) = fullfile(C.paths.coherence_dir, ['COHERENCE_RESULTS_' upper(bandName{1}) '.mat']);
+end
 %% h_stats spectrum plots
 
 C.h_stats.spectrum = struct();
@@ -1618,7 +1474,7 @@ C.h_stats.spectrum = struct();
 % SPM / SnPM switch for all spectrum profile analyses
 C.h_stats.spectrum.use_nonparametric = true;
 C.h_stats.spectrum.nonparam_iterations = 5000;
-C.h_stats.spectrum.spm_alpha = 0.05;
+C.h_stats.spectrum.nonparam_seed = 0;             % seed of the SnPM permutations: a rerun reproduces the p-values
 C.h_stats.spectrum.two_tailed = true;
 
 C.h_stats.spectrum.enable = true;
@@ -1638,8 +1494,6 @@ C.h_stats.spectrum.require_complete_case_for_condition = true;
 C.h_stats.spectrum.min_subjects_per_group = 3;
 
 C.h_stats.spectrum.show_cluster_stars = true;
-C.h_stats.spectrum.shade_sig_regions = true;
-C.h_stats.spectrum.sig_patch_facealpha = 0.18;
 
 C.h_stats.spectrum.show_individual_lines = false;   % true/false
 C.h_stats.spectrum.show_sem = true;               % true/false
@@ -1661,6 +1515,7 @@ C.h_stats.spectrum.mixed_require_complete_case = true;
 % C.h_stats.spectrum.mixed_nonparam_iterations = 5000;
 
 C.h_stats.spectrum.make_followup_subplot_spm = true;
+C.h_stats.spectrum.followup_alpha_correction = 'bonferroni'; % follow-up SPM per stratum: 'bonferroni' (alpha / number of strata) or 'none'
 
 % Minimum unique subjects for running subplot SPM.
 % Plots are still shown if n is lower, but SPM is skipped.
@@ -1674,6 +1529,7 @@ C.h_stats.spectrum.fixed_ylim = [0 1];
 
 % Continuous-age LME sensitivity models
 C.h_stats.analysis.run_continuous_age_lme = true;
+C.h_stats.analysis.run_continuous_age_sensitivity = true; % SENSITIVITY_CONTINUOUS_AGE.csv: quadratic age, Fisher z, raw + log(n cycles), cycle-bias-corrected
 C.h_stats.analysis.run_categorical_age_lme = false;
 C.h_stats.analysis.run_power_control_models = false;
 C.h_stats.analysis.run_age_correlations = false;
@@ -1683,7 +1539,7 @@ C.h_stats.analysis.run_power_correlations = false;
 % If false: DV ~ AgeYears_z + condition
 C.h_stats.analysis.continuous_age_condition_interaction = true;
 
-% Add power covariate matching the band: Alpha_LogPower / Beta_LogPower / Gamma_LogPower
+% Add power covariate matching the band: <Band>_LogPower (e.g. HighBeta_LogPower)
 C.h_stats.analysis.continuous_age_include_power = false;
 
 % Add log_n_cycles using the same band-specific helper as main models
@@ -1737,18 +1593,16 @@ C.temporal_coherence_link.plots_dir  = fullfile(C.paths.plot_dir, 'i_temporal_co
 
 % ---------- Input coherence files ----------
 C.temporal_coherence_link.coh_mat_default = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_FULL.mat');
-C.temporal_coherence_link.coh_mat_alpha   = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_ALPHA.mat');
-C.temporal_coherence_link.coh_mat_beta    = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_BETA.mat');
-C.temporal_coherence_link.coh_mat_gamma   = fullfile(C.paths.coherence_dir, 'COHERENCE_RESULTS_GAMMA.mat');
+C.temporal_coherence_link.coh_mat_band = C.h_stats.io.coh_mat_band;
 
-% If true, Alpha/Beta/Gamma rows use the band-specific coherence files.
+% If true, band rows use the band-specific coherence files.
 % This is recommended if your coherence stats already use band-specific datasets.
 C.temporal_coherence_link.use_band_specific_datasets = true;
 
 % ---------- Analysis choices ----------
 % C.temporal_coherence_link.pairs_to_analyze = {'TAprox_TAdist','SOL_GM','VL_RF'};
 C.temporal_coherence_link.pairs_to_analyze = {'TAprox_TAdist','SOL_GM'};
-C.temporal_coherence_link.bands_to_analyze = {'Alpha','Beta','Gamma'};
+C.temporal_coherence_link.bands_to_analyze = C.shared_wavelet.band_names;
 
 % Recommended: POI, because your pair-specific interpretation is phase-dependent.
 C.temporal_coherence_link.metric_scope = "POI";
@@ -1941,30 +1795,6 @@ C.j_time_domain.params.extract_signals.bandpassed = true;
 C.j_time_domain.params.extract_signals.rectified  = true;
 C.j_time_domain.params.extract_signals.envelope   = true;
 
-C.j_time_domain.params.store_time_normalized_cycles = true;
-C.j_time_domain.params.n_normalized_points = 1000;
-
-
-%% j_single_muscle_feature_extraction
-C.j_single_features = struct();
-
-C.j_single_features.io = struct();
-C.j_single_features.io.in_mat  = fullfile(C.j_time_domain.io.out_dir, 'TIME_DOMAIN_DATA.mat');
-C.j_single_features.io.out_dir = fullfile(C.paths.mat_dir, 'mat_single_muscle_features');
-C.j_single_features.io.out_mat = fullfile(C.j_single_features.io.out_dir, 'SINGLE_MUSCLE_FEATURES.mat');
-
-C.j_single_features.io.csv_dir    = fullfile(C.paths.results_dir, 'j_single_muscle_features');
-C.j_single_features.io.cycle_csv  = fullfile(C.j_single_features.io.csv_dir, 'TD_SINGLE_CYCLE_FEATURES.csv');
-C.j_single_features.io.signal_csv = fullfile(C.j_single_features.io.csv_dir, 'TD_SINGLE_SIGNAL_FEATURES.csv');
-
-C.j_single_features.params = struct();
-C.j_single_features.params.signal_name = "envelope";      % "bandpassed" | "rectified" | "envelope"
-C.j_single_features.params.use_time_normalized = true;    % true = use time_normalized_envelope, etc.
-C.j_single_features.params.default_toeoff_fraction = 0.60;
-
-% threshold method
-C.j_single_features.params.activity_threshold_method = "fraction_of_peak"; % "fraction_of_peak" | "mean_plus_sd"
-C.j_single_features.params.activity_threshold_value  = 0.20;
 
 %% k_plot_activation_profiles
 C.k_activation_profiles = struct();
@@ -1990,14 +1820,12 @@ C.k_activation_profiles.params.show_participant_level_mean = true;
 C.k_activation_profiles.params.show_cycle_level_mean = false;
 
 C.k_activation_profiles.params.ylabel_text_raw = 'Envelope amplitude';
-C.k_activation_profiles.params.ylabel_text_normalized = 'Envelope amplitude (normalized to Flat mean peak)';
 
 C.k_activation_profiles.params.muscles_to_plot = C.design.muscleFields;
 
 C.k_activation_profiles.params.conditions_to_plot = C.plotting.condition_order;
 C.k_activation_profiles.params.age_groups_to_plot = C.plotting.age_order;
 C.k_activation_profiles.params.default_toeoff_fraction = 0.60;
-C.k_activation_profiles.params.ylabel_text = 'Envelope amplitude';
 
 %% l_spm_envelope_analysis
 C.l_spm = struct();
@@ -2065,7 +1893,6 @@ C.l_spm.params.nonparam_iterations = 5000; % use 1000 for quick tests, 5000+ for
 C.l_spm.params.show_sem = true;
 C.l_spm.params.default_toeoff_fraction = 0.60;
 C.l_spm.params.ylabel_text_raw = 'Envelope amplitude';
-C.l_spm.params.ylabel_text_normalized = 'Normalized envelope (% Flat max)';
 C.l_spm.params.ylabel_text_time_normalized = 'Time-normalized envelope amplitude';
 
 % symmetry
@@ -2077,7 +1904,6 @@ C.l_spm.io.symmetry_plot_dir = fullfile(C.l_spm.io.out_dir, 'symmetry_indices');
 C.l_spm.io.outlier_plot_dir = fullfile(C.paths.plot_dir, ...
     'l_spm_envelope_analysis', 'normalized_outlier_examples');
 
-C.l_spm.params.plot_normalized_outliers = false;
 C.l_spm.params.n_outlier_examples_to_plot = 10;
 C.l_spm.params.outlier_plot_selection = "top";   % "top" | "random"
 C.l_spm.params.outlier_plot_normalization_mode = "flat_percentile"; % or "subject_percentile" or "all"
@@ -2085,8 +1911,6 @@ C.l_spm.params.outlier_plot_normalization_mode = "flat_percentile"; % or "subjec
 C.l_spm.io.outlier_signal_plot_dir = fullfile( ...
     C.paths.plot_dir, 'l_spm_envelope_analysis', 'normalized_outlier_signal_examples');
 
-C.l_spm.params.plot_random_outlier_signal_examples = false;
-C.l_spm.params.n_random_outlier_signal_examples = 10;
 C.l_spm.params.outlier_signal_plot_random_seed = [];   % [] = random every run
 C.l_spm.params.outlier_signal_plot_mode = "all";       % "all" | "flat_percentile" | "subject_percentile"
 
@@ -2103,7 +1927,6 @@ C.l_spm.params.run_normalized_amplitude_qc = true;
 
 % "none" | "fixed" | "adaptive" | "both"
 C.l_spm.params.outlier_detection_mode = "adaptive";
-C.l_spm.params.amplitude_qc_exclusion_method = C.l_spm.params.outlier_detection_mode; % "adaptive" only for now
 
 % Fixed threshold QC
 C.l_spm.params.fixed_outlier_threshold_percent = 250;
@@ -2122,6 +1945,20 @@ C.l_spm.params.adaptive_outlier_mad_floor_frac = 0.20;  % was 0.10
 
 % signal-level rule after cycle exclusion
 C.l_spm.params.min_cycles_after_amplitude_qc = 7;
+
+%% analyze_kinematics_for_coherence_cycles
+
+% The analysis step used to read C.g2_kinematics_analysis, which was never
+% defined, so it always fell back to built-in defaults. These are those same
+% defaults, now visible and editable. Everything else the step needs
+% (statistical thresholds, metric lists) is still hard-coded in
+% analyze_kinematics_for_coherence_cycles.m.
+C.kinematics_analysis = struct();
+C.kinematics_analysis.io = struct();
+% The "g2_" prefix is historical: this branch was stage g2 at one point. The
+% folder name is kept so new results land beside the existing ones.
+C.kinematics_analysis.io.out_dir = fullfile( ...
+    C.paths.results_dir, 'g2_kinematics_coherence_analysis');
 
 %% kinematics_for_coherence_cycles
 
@@ -2156,7 +1993,6 @@ C.kinematics_coherence.markers.reference_candidates = ...
     ["SACR","Sacrum","PELO","Pelvis","LASI","RASI"];
 
 end
-
 
 
 %% -------- local helper (kept inside this file) --------

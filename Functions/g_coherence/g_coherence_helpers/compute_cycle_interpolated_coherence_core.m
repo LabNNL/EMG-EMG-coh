@@ -41,9 +41,11 @@ function core = compute_cycle_interpolated_coherence_core( ...
     % Per-cycle scalar summaries.
     % These are simple cycle-wise diagnostics, not the final coherence result.
     fullrange_by_cycle = nan(height(Tseg),1);
-    alpha_by_cycle = nan(height(Tseg),1);
-    beta_by_cycle  = nan(height(Tseg),1);
-    gamma_by_cycle = nan(height(Tseg),1);
+    bandNames = fieldnames(W.FreqBands);
+    band_by_cycle = struct();
+    for ib = 1:numel(bandNames)
+        band_by_cycle.(bandNames{ib}) = nan(height(Tseg),1);
+    end
 
     for iC = 1:height(Tseg)
 
@@ -97,24 +99,11 @@ function core = compute_cycle_interpolated_coherence_core( ...
             fullrange_by_cycle(iC) = mean(Coh_cyc(idx_full), 'omitnan');
         end
 
-        if isfield(W.FreqBands, 'Alpha')
-            idx_alpha = Freq >= W.FreqBands.Alpha(1) & Freq <= W.FreqBands.Alpha(2);
-            if any(idx_alpha)
-                alpha_by_cycle(iC) = mean(Coh_cyc(idx_alpha), 'omitnan');
-            end
-        end
-
-        if isfield(W.FreqBands, 'Beta')
-            idx_beta = Freq >= W.FreqBands.Beta(1) & Freq <= W.FreqBands.Beta(2);
-            if any(idx_beta)
-                beta_by_cycle(iC) = mean(Coh_cyc(idx_beta), 'omitnan');
-            end
-        end
-
-        if isfield(W.FreqBands, 'Gamma')
-            idx_gamma = Freq >= W.FreqBands.Gamma(1) & Freq <= W.FreqBands.Gamma(2);
-            if any(idx_gamma)
-                gamma_by_cycle(iC) = mean(Coh_cyc(idx_gamma), 'omitnan');
+        for ib = 1:numel(bandNames)
+            fr = W.FreqBands.(bandNames{ib});
+            idx_band = Freq >= fr(1) & Freq <= fr(2);
+            if any(idx_band)
+                band_by_cycle.(bandNames{ib})(iC) = mean(Coh_cyc(idx_band), 'omitnan');
             end
         end
 
@@ -207,9 +196,7 @@ function core = compute_cycle_interpolated_coherence_core( ...
     core.COI_freq_accum   = COI_freq_accum;
 
     core.fullrange_by_cycle = fullrange_by_cycle;
-    core.alpha_by_cycle = alpha_by_cycle;
-    core.beta_by_cycle  = beta_by_cycle;
-    core.gamma_by_cycle = gamma_by_cycle;
+    core.band_by_cycle = band_by_cycle;   % one field per band of W.FreqBands
 
     core.PowSpec_s1_real_outer = PowSpec_s1_real_outer;
     core.PowSpec_s2_real_outer = PowSpec_s2_real_outer;

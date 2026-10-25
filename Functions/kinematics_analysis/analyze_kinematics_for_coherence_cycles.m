@@ -14,7 +14,6 @@
 %   3) plots/stats use leg-averaged summaries.
 function analyze_kinematics_for_coherence_cycles()
     
-    addpath(genpath(fullfile(pwd, 'Functions')));
 
     C = config_emg();
     A = get_kinematics_analysis_config(C);
@@ -78,8 +77,8 @@ end
 function A = get_kinematics_analysis_config(C)
     A = struct();
 
-    if isfield(C, 'g2_kinematics_analysis')
-        A = C.g2_kinematics_analysis;
+    if isfield(C, 'kinematics_analysis')
+        A = C.kinematics_analysis;
     end
 
     A.io = ensure_field(A, 'io', struct());
@@ -608,7 +607,7 @@ function add_pairwise_significance_annotations(ax, T, Pplot, A)
         yy = baseY + (i-1) * stepY;
         plot(ax, [x1(i) x1(i) x2(i) x2(i)], [yy yy+tickH yy+tickH yy], 'k-', 'LineWidth', 1.0);
 
-        label = p_to_stars(sigRows.p_holm(i));
+        label = p_to_stars_label(sigRows.p_holm(i));
         text(ax, mean([x1(i), x2(i)]), yy + tickH + 0.01*yRange, label, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom', 'FontWeight', 'bold', 'FontSize', 11);
     end
 
@@ -626,7 +625,7 @@ function x = condition_to_x(cond, A)
     end
 end
 
-function label = p_to_stars(p)
+function label = p_to_stars_label(p)
     if isnan(p)
         label = "";
     elseif p < 0.001
@@ -694,25 +693,4 @@ end
 
 function out = sanitize_file_part(x)
     out = regexprep(char(string(x)), '[^a-zA-Z0-9_\\-]', '_');
-end
-
-function S = ensure_field(S, f, defaultVal)
-    if ~isfield(S, f) || isempty(S.(f))
-        S.(f) = defaultVal;
-    end
-end
-
-function val = get_nested_or_default(S, path, defaultVal)
-    val = defaultVal;
-    cur = S;
-    for i = 1:numel(path)
-        f = path{i};
-        if ~isstruct(cur) || ~isfield(cur, f)
-            return;
-        end
-        cur = cur.(f);
-    end
-    if ~isempty(cur)
-        val = cur;
-    end
 end

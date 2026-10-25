@@ -32,4 +32,10 @@ function P = make_spectrum_spm_params(HS)
     else
         P.nonparam_iterations = 5000;
     end
+
+    % Seed for the SnPM permutations, so a rerun gives the same p-values
+    P.nonparam_seed = 0;
+    if isfield(HS, 'nonparam_seed') && ~isempty(HS.nonparam_seed)
+        P.nonparam_seed = HS.nonparam_seed;
+    end
 end

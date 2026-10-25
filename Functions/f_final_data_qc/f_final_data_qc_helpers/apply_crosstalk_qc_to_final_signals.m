@@ -2,6 +2,7 @@ function [S, Tsum, CROSSTALK_QC_TABLE, CROSSTALK_QC_SUSPICIOUS] = ...
     apply_crosstalk_qc_to_final_signals(S, Tsum, C)
 
     XTK = C.f_final_signals.crosstalk;
+    bandSuffixes = lower(string(fieldnames(C.f_final_signals.params.wavelet_contamination_qc.freq_bands)))';
 
     if ~exist(XTK.out_dir, 'dir'), mkdir(XTK.out_dir); end
     if ~exist(XTK.plot_dir, 'dir'), mkdir(XTK.plot_dir); end
@@ -11,9 +12,9 @@ function [S, Tsum, CROSSTALK_QC_TABLE, CROSSTALK_QC_SUSPICIOUS] = ...
         Tsum.crosstalk_reason = repmat("", height(Tsum),1);
 
         Tsum.included_after_crosstalk = Tsum.included_for_analysis;
-        Tsum.included_after_crosstalk_alpha = Tsum.included_for_analysis_alpha;
-        Tsum.included_after_crosstalk_beta  = Tsum.included_for_analysis_beta;
-        Tsum.included_after_crosstalk_gamma = Tsum.included_for_analysis_gamma;
+        for b = bandSuffixes
+            Tsum.("included_after_crosstalk_" + b) = Tsum.("included_for_analysis_" + b);
+        end
     end
 
     ROWS = {};
@@ -164,9 +165,9 @@ function [S, Tsum, CROSSTALK_QC_TABLE, CROSSTALK_QC_SUSPICIOUS] = ...
                         Tsum.crosstalk_reason(idx) = reasonFinal;
 
                         Tsum.included_after_crosstalk(idx) = false;
-                        Tsum.included_after_crosstalk_alpha(idx) = false;
-                        Tsum.included_after_crosstalk_beta(idx)  = false;
-                        Tsum.included_after_crosstalk_gamma(idx) = false;
+                        for b = bandSuffixes
+                            Tsum.("included_after_crosstalk_" + b)(idx) = false;
+                        end
                     else
                         P.excluded_by_crosstalk = false;
                         P.crosstalk_reason = "";
@@ -341,7 +342,8 @@ function [x1, x2, ok, sourceNote] = get_signals_for_mode(P, analysis_mode)
                 sourceNote = "overall_final_concatenated";
             end
 
-        case {"Alpha","Beta","Gamma"}
+        otherwise
+            % one of the configured frequency bands
             band = char(analysis_mode);
 
             if ~isfield(P, 'band_specific') || ~isfield(P.band_specific, band)
@@ -360,9 +362,6 @@ function [x1, x2, ok, sourceNote] = get_signals_for_mode(P, analysis_mode)
             x2 = B.final_concatenated_signal_2;
             ok = true;
             sourceNote = string(band) + "_final_concatenated";
-
-        otherwise
-            error('Unknown analysis_mode: %s', analysis_mode);
     end
 end
 

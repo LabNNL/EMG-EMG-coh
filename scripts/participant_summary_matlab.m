@@ -351,54 +351,6 @@ end
 % 7) PLOTS
 % ==========================
 
-% % ------------------------------------------------------------
-% % A) Boxplot of AgeYears by AgeGroup
-% % ------------------------------------------------------------
-% if any(vars == "AgeGroup") && any(string(T.Properties.VariableNames) == "AgeYears")
-%     ageGroupStr = string(T.AgeGroup);
-
-%     availableGroups = AGE_ORDER(ismember(AGE_ORDER, unique(ageGroupStr)));
-%     x = [];
-%     g = strings(0);
-
-%     for k = 1:numel(availableGroups)
-%         thisGroup = availableGroups(k);
-%         vals = T.AgeYears(ageGroupStr == thisGroup);
-%         vals = vals(~isnan(vals));
-
-%         x = [x; vals]; %#ok<AGROW>
-%         g = [g; repmat(thisGroup, numel(vals), 1)]; %#ok<AGROW>
-%     end
-
-%     if ~isempty(x)
-%         fig = figure('Color','w','Position',[100 100 800 500]);
-%         boxplot(x, categorical(g, availableGroups, availableGroups), 'Symbol','k+');
-%         ax = gca;
-%         hold on;
-
-%         % Color boxes
-%         h = findobj(ax, 'Tag', 'Box');
-%         h = flipud(h); % boxplot returns reversed order visually
-
-%         for k = 1:min(numel(h), numel(availableGroups))
-%             patch(get(h(k), 'XData'), get(h(k), 'YData'), ...
-%                 AGEGROUP_COLORS.(availableGroups(k)), ...
-%                 'FaceAlpha', 0.8, 'EdgeColor', 'k', 'LineWidth', 1.2);
-%         end
-
-%         title("Âge par groupe d'âge");
-%         xlabel("Groupe d'âge");
-%         ylabel("Âge (années)");
-%         xtickangle(20);
-%         box off;
-%         set(gca, 'FontSize', 11, 'LineWidth', 1.1);
-%         hold off;
-
-%         exportgraphics(fig, fullfile(PLOT_DIR, "boxplot_age_by_agegroup.png"), 'Resolution', 300);
-%         close(fig);
-%     end
-% end
-
 % ------------------------------------------------------------
 % A) Boxplot of AgeYears by AgeGroup
 % ------------------------------------------------------------
@@ -427,7 +379,7 @@ if any(vars == "AgeGroup") && any(string(T.Properties.VariableNames) == "AgeYear
             x = categorical(string(T.AgeGroup(idx)), presentGroups, presentGroups, 'Ordinal', true);
             b = boxchart(ax, x, T.AgeYears(idx), 'DisplayName', char(gName));
 
-            apply_boxchart_color(b, AGEGROUP_COLORS.(matlab.lang.makeValidName(char(gName))));
+            apply_pretty_boxchart_color(b, AGEGROUP_COLORS.(matlab.lang.makeValidName(char(gName))));
             legendHandles(end+1) = b; %#ok<AGROW>
         end
 
@@ -593,7 +545,7 @@ end
 
 fprintf('\nPlots saved in: %s\n', PLOT_DIR);
 
-function apply_boxchart_color(b, baseColor)
+function apply_pretty_boxchart_color(b, baseColor)
 % Apply a "pretty MATLAB" boxchart style:
 % - darker edge / lines
 % - lighter fill

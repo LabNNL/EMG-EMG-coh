@@ -1,38 +1,18 @@
-function p = get_term_pvalue_from_lme_formula(T, formula, termName)
+function p = get_term_pvalue_from_lme_formula(T, formula, termName, HC)
+% p-value of one term of a model fitted with the stage-h settings
+% (fit_h_lme, get_lme_term_stats). Refits the model; when the model is
+% already fitted, call get_lme_term_stats on it instead.
+
+    if nargin < 4
+        C = config_emg();
+        HC = C.h_stats;
+    end
 
     p = NaN;
-
     try
-
-        lme = fitlme(T, formula);
-        A = anova(lme);
-
-        termStrings = string(cellstr(A.Term));
-        pValues = double(A.pValue);
-
-        target = normalize_term_name(termName);
-        termNorm = strings(size(termStrings));
-
-        for i = 1:numel(termStrings)
-            termNorm(i) = normalize_term_name(termStrings(i));
-        end
-
-        idx = find(termNorm == target, 1, 'first');
-        if ~isempty(idx)
-            p = pValues(idx);
-        end
+        st = get_lme_term_stats(fit_h_lme(T, formula, HC), HC, termName);
+        p = st.p;
     catch
         p = NaN;
-    end
-end
-
-function termOut = normalize_term_name(termIn)
-    termIn = string(strtrim(termIn));
-    if contains(termIn, ":")
-        parts = split(termIn, ":");
-        parts = sort(strtrim(parts));
-        termOut = strjoin(parts, ":");
-    else
-        termOut = termIn;
     end
 end

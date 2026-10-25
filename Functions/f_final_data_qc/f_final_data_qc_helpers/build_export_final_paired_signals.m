@@ -1,4 +1,12 @@
-function Sexp = build_export_final_paired_signals(Smaster, mode)
+function Sexp = build_export_final_paired_signals(Smaster, mode, bandNames)
+% mode = "overall" or one of bandNames (the configured frequency bands)
+
+    if nargin < 3
+        bandNames = {};
+    end
+    if string(mode) ~= "overall" && ~ismember(string(mode), string(bandNames))
+        error('Unknown export mode: %s', string(mode));
+    end
 
     Sexp = struct();
 
@@ -36,7 +44,7 @@ function Sexp = build_export_final_paired_signals(Smaster, mode)
                                 Q.included_after_crosstalk = Q.included_for_analysis && ~Q.excluded_by_crosstalk;
                             end
 
-                        case {"Alpha","Beta","Gamma"}
+                        otherwise
                             band = char(string(mode));
 
                             if ~isfield(P, 'band_specific') || ~isfield(P.band_specific, band)
@@ -98,8 +106,6 @@ function Sexp = build_export_final_paired_signals(Smaster, mode)
                             Q.muscle1_cycle_qc.cycle_reason = P.muscle1_cycle_qc.band_reason.(band);
                             Q.muscle2_cycle_qc.cycle_reason = P.muscle2_cycle_qc.band_reason.(band);
 
-                        otherwise
-                            error('Unknown export mode: %s', string(mode));
                     end
 
                     Sexp = ensure_pair_fields(Sexp, subjID, cond, leg);

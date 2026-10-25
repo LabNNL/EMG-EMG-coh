@@ -73,6 +73,9 @@ function spmInfo = run_spm_age_on_spectrum(T, ageLevels, freqRef, HS)
         spmInfo.clusters = [];
         spmInfo.spmi = [];
         spmInfo.nTimePoints = 0;
+        % Say so. Callers only read .spmi, so without this the failure is
+        % invisible and the figure looks like a null result.
+        warning('%s', spmInfo.label);
     end
 end
 

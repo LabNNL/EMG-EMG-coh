@@ -15,9 +15,7 @@
 %   The EMG QC output decides which cycles exist in the coherence analysis.
 %   This script only attaches kinematic metrics to those same cycles.
 function build_kinematics_for_coherence_cycles()
-    clc; clear; close all;
 
-    addpath(genpath(fullfile(pwd, 'Functions')));
 
     C = config_emg();
     K = get_kinematics_coherence_config(C);
@@ -475,12 +473,6 @@ function fs = get_marker_fs(M, K)
         fs = double(K.params.fs_marker_default);
     end
 end
-
-function frame = analog_sample_to_marker_frame(sampleIdx, fsAnalog, fsMarker)
-    frame = round((double(sampleIdx) - 1) / double(fsAnalog) * double(fsMarker)) + 1;
-    frame = max(1, frame);
-end
-
 function xyz = get_heel_marker(M, leg, K)
     xyz = [];
     if isempty(M), return; end
@@ -897,33 +889,4 @@ end
 
 function key = make_lookup_key(subjID, cond, leg, pairName)
     key = char(strjoin([string(subjID), string(cond), string(leg), string(pairName)], "|"));
-end
-
-function other = opposite_leg(leg)
-    if strcmpi(leg, 'left')
-        other = 'right';
-    else
-        other = 'left';
-    end
-end
-
-function S = ensure_field(S, f, defaultVal)
-    if ~isfield(S, f) || isempty(S.(f))
-        S.(f) = defaultVal;
-    end
-end
-
-function val = get_nested_or_default(S, path, defaultVal)
-    val = defaultVal;
-    cur = S;
-    for i = 1:numel(path)
-        f = path{i};
-        if ~isstruct(cur) || ~isfield(cur, f)
-            return;
-        end
-        cur = cur.(f);
-    end
-    if ~isempty(cur)
-        val = cur;
-    end
 end

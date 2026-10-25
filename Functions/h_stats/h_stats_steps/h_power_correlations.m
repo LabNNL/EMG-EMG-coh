@@ -1,0 +1,116 @@
+function h_power_correlations(T_subj, HC)
+% H_POWER_CORRELATIONS  Coherence vs band log-power correlations.
+% Runs when HC.analysis.run_power_correlations.
+
+    %% ===================== COHERENCE-POWER CORRELATIONS =====================
+
+    runPowerCorrelations = ...
+        isfield(HC.analysis, 'run_power_correlations') && ...
+        HC.analysis.run_power_correlations;
+
+    % Initialize for robustness
+    CORR_TABLE = table();
+
+    if runPowerCorrelations
+
+        fprintf('\nRunning coherence-power correlations...\n');
+
+        corrOutDir = fullfile(HC.io.tables_dir, 'power_correlations');
+        if ~exist(corrOutDir, 'dir')
+            mkdir(corrOutDir);
+        end
+
+        corrPairs = HC.analysis.correlation_pairs;
+
+        CORR_ROWS = {};
+        riC = 0;
+
+        for ip = 1:numel(HC.analysis.pairs_to_analyze)
+
+            pairName = string(HC.analysis.pairs_to_analyze{ip});
+            Tp = T_subj(T_subj.pair_name == pairName, :);
+
+            if isempty(Tp)
+                continue;
+            end
+
+            for im = 1:size(corrPairs,1)
+
+                dv = corrPairs{im,1};
+                powVar = corrPairs{im,2};
+
+                if ~ismember(dv, Tp.Properties.VariableNames) || ...
+                        ~ismember(powVar, Tp.Properties.VariableNames)
+                    continue;
+                end
+
+                Tm = Tp(~isnan(Tp.(dv)) & ~isnan(Tp.(powVar)), :);
+
+                if height(Tm) < 5
+                    continue;
+                end
+
+                x = Tm.(powVar);
+                y = Tm.(dv);
+
+                [rPearson, pPearson] = corr( ...
+                    x, y, ...
+                    'Type', 'Pearson', ...
+                    'Rows', 'complete');
+
+                [rSpearman, pSpearman] = corr( ...
+                    x, y, ...
+                    'Type', 'Spearman', ...
+                    'Rows', 'complete');
+
+                riC = riC + 1;
+
+                CORR_ROWS(riC,:) = { ...
+                    pairName, ...
+                    string(dv), ...
+                    string(powVar), ...
+                    height(Tm), ...
+                    rPearson, ...
+                    pPearson, ...
+                    rSpearman, ...
+                    pSpearman ...
+                    };
+            end
+        end
+
+        if isempty(CORR_ROWS)
+
+            warning( ...
+                'No coherence-power correlations computed. Power variables may be unavailable for metric_scope = %s.', ...
+                string(HC.analysis.metric_scope));
+
+        else
+
+            CORR_TABLE = cell2table( ...
+                CORR_ROWS, ...
+                'VariableNames', { ...
+                    'pair_name', ...
+                    'coherence_metric', ...
+                    'power_metric', ...
+                    'n', ...
+                    'r_pearson', ...
+                    'p_pearson', ...
+                    'rho_spearman', ...
+                    'p_spearman' ...
+                    });
+
+            writetable( ...
+                CORR_TABLE, ...
+                fullfile( ...
+                    corrOutDir, ...
+                    'COHERENCE_POWER_CORRELATIONS.csv'));
+
+            disp(CORR_TABLE);
+        end
+
+    else
+
+        fprintf('\nCoherence-power correlations are disabled.\n');
+
+    end
+end

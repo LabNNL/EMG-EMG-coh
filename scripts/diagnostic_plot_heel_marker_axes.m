@@ -17,7 +17,7 @@ addpath(genpath(fullfile(C.paths.code_dir, 'Functions')));
 subjID = 'CTL_01';
 leg = 'left';                      % 'left' or 'right'
 pairName = 'TAprox_TAdist';         % 'TAprox_TAdist' or 'SOL_GM'
-band = 'OVERALL';                  % 'OVERALL', 'Alpha', 'Beta', 'Gamma'
+band = 'OVERALL';                  % 'OVERALL' or a band of C.shared_wavelet.FreqBands, e.g. 'HighBeta'
 conditions_to_plot = {'Flat','Medium','High'};
 
 use_coherence_kept_cycles = true;   % true = exact cycles used in coherence after f_
@@ -388,18 +388,5 @@ function fs = get_fs_emg_default(C)
         fs = double(C.general.fs_emg);
     else
         fs = 2000;
-    end
-end
-
-function frame = analog_sample_to_marker_frame(sampleIdx, fsAnalog, fsMarker)
-    frame = round((double(sampleIdx) - 1) / double(fsAnalog) * double(fsMarker)) + 1;
-    frame = max(1, frame);
-end
-
-function other = opposite_leg(leg)
-    if strcmpi(leg, 'left')
-        other = 'right';
-    else
-        other = 'left';
     end
 end

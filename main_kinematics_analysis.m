@@ -17,4 +17,4 @@ stages = {
     R.run_kinematics_analysis, F.kinematics_analysis, 'analyze_kinematics_for_coherence_cycles', 'analyze kinematics (condition effects)'
 };
 
-run_pipeline_stages(stages, 'Kinematics branch');
+run_pipeline_stages(stages, 'Kinematics branch', {C.paths.results_dir, C.paths.mat_dir});
