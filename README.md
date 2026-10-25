@@ -326,6 +326,8 @@ Runs once per input dataset: `FULL` (20–60 Hz) and one per band (`HIGHBETA`, `
 
 ### h: Coherence statistics (`h_coherence_stats`)
 
+`h_coherence_stats` runs one function per step, in `Functions/h_stats/h_stats_steps/`: `h_build_tables` → `h_age_correlations` → `h_continuous_age_models` → `h_power_correlations` → `h_sample_recap` → `h_descriptives_and_categorical_models` → `h_power_control_models` → `h_band_triplet_figures` → `h_spectrum_curves_and_spm` → `h_cycle_triplets`, then saves the workspace. Optional steps check their own switch in `C.h_stats`.
+
 - **Primary analysis.** For each pair separately and each band, the DV is the bandwidth-normalized AUC in the POI of the `equalized` coherence. Each band's value comes from its own band-specific dataset, and legs are averaged per participant. The model:
 
   ```
