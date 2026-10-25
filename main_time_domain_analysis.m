@@ -19,4 +19,4 @@ stages = {
     R.run_temporal_coherence_link,             F.time_domain_analysis, 'i_temporal_coherence_link',             'i  temporal-coherence link'
 };
 
-run_pipeline_stages(stages, 'Time-domain branch');
+run_pipeline_stages(stages, 'Time-domain branch', {C.paths.results_dir, C.paths.mat_dir});

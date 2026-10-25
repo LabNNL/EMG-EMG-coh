@@ -15,6 +15,10 @@ How to regenerate the coherence results from the recordings, and how to check th
 2. Start MATLAB in the repository root so that `startup.m` runs, or `cd` there and run `startup`.
 3. Run `check_repo`. The `shadowed` check must be empty. A copy of an older version of this project on your saved MATLAB path will otherwise run instead of these files; remove it with `pathtool`.
 
+## Pause OneDrive while it runs
+
+The repository, and with it `Results/`, sits in a OneDrive folder. The pipeline rewrites the same tables and figures on every run, and when OneDrive syncs a file while MATLAB is writing it, it can leave the file empty and keep the content as a copy named `<name> 2.csv`. Pause syncing before a run (OneDrive menu > Pause syncing) and resume after. `main_*` prints a reminder, and `check_against_baseline` flags empty tables and such copies.
+
 ## Which stages to run
 
 Every stage reads the previous stage's `.mat` files from `mat_data/`, so you only rerun from the first stage whose inputs or code changed. The switches are `C.parameters_running.run_*` at the top of `config/config_emg.m`; then run `main_coherence_analysis`.
