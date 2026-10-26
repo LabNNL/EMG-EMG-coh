@@ -61,7 +61,7 @@ Results: `Results/bands_<set>/h_coherence_stats_pair_phase_main/tables/CONTINUOU
 
 `tables/SENSITIVITY_CONTINUOUS_AGE.csv` refits the same model with quadratic age, log(age), Fisher-z coherence, raw coherence plus log(number of cycles), and cycle-bias-corrected coherence. A conclusion that only holds in the primary row should be reported with that caveat.
 
-Figures: the band-triplet and continuous-age plots print the Holm-adjusted p-values of the primary model and name it in a footer. Age groups in the boxplots are for display only. The pairwise bars are Mann-Whitney or Wilcoxon tests with FDR correction, on one value per participant. The spectrum SPM follow-ups (condition within each age group, age within each condition) are Bonferroni-corrected over the strata of each figure.
+Figures: the band-triplet, continuous-age and main-effect plots (`main_effects/`; age continuous, age groups, condition) print the Holm-adjusted p-values of the primary model and name it in a footer. Age groups in the boxplots are for display only. The pairwise bars are Mann-Whitney or Wilcoxon tests with FDR correction, on one value per participant. The spectrum SPM follow-ups (condition within each age group, age within each condition) are Bonferroni-corrected over the strata of each figure.
 
 ## Checking a rerun
 

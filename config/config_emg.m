@@ -1588,6 +1588,10 @@ C.h_stats.plot.continuous_age_lmm.ylim = [0 0.40];   % utilisé seulement si use
 
 % ===================== Continuous-age LMM 3-band plots =====================
 C.h_stats.plot.continuous_age_lmm_3bands.enable = true;
+
+% Main-effect figures (h_main_effect_figures): age continuous, age groups, condition
+C.h_stats.plot.main_effects.enable = true;
+C.h_stats.plot.main_effects.show_log_age = true;   % dashed log(age) fit on the continuous-age figure
 C.h_stats.plot.continuous_age_lmm_3bands.visible = C.h_stats.plot.visible;
 
 C.h_stats.plot.continuous_age_lmm_3bands.n_grid = 100;

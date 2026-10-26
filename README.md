@@ -337,7 +337,7 @@ Runs once per input dataset: `FULL` (all bands of the set, e.g. 20–60 Hz) and 
 
 ### h: Coherence statistics (`h_coherence_stats`)
 
-`h_coherence_stats` runs one function per step, in `Functions/h_stats/h_stats_steps/`: `h_build_tables` → `h_age_correlations` → `h_continuous_age_models` → `h_power_correlations` → `h_sample_recap` → `h_descriptives_and_categorical_models` → `h_power_control_models` → `h_band_triplet_figures` → `h_spectrum_curves_and_spm` → `h_cycle_triplets`, then saves the workspace. Optional steps check their own switch in `C.h_stats`.
+`h_coherence_stats` runs one function per step, in `Functions/h_stats/h_stats_steps/`: `h_build_tables` → `h_age_correlations` → `h_continuous_age_models` → `h_power_correlations` → `h_sample_recap` → `h_descriptives_and_categorical_models` → `h_power_control_models` → `h_band_triplet_figures` → `h_main_effect_figures` → `h_spectrum_curves_and_spm` → `h_cycle_triplets`, then saves the workspace. Optional steps check their own switch in `C.h_stats`.
 
 - **Primary analysis.** For each pair separately and each band, the DV is the bandwidth-normalized AUC in the POI of the `equalized` coherence. Each band's value comes from its own band-specific dataset, and legs are averaged per participant. The model:
 
@@ -361,7 +361,7 @@ Runs once per input dataset: `FULL` (all bands of the set, e.g. 20–60 Hz) and 
   - in `Results/bands_<set>/h_coherence_stats_pair_phase_main/`:
     - `tables/`: row- and subject-level tables, descriptives, `CONTINUOUS_AGE_LME_TABLE__<TAG>.csv`, spectrum tables
     - `models/`: text reports of the models
-  - figures in `Results/bands_<set>/png_visualisation/h_coherence_stats_pair_phase_main/`: band triplets, continuous-age LMM plots, spectrum curves. The figures print the primary model's Holm-adjusted p-values and never fit a model of their own; age groups in boxplots are for display, and the age post hoc uses one value per participant.
+  - figures in `Results/bands_<set>/png_visualisation/h_coherence_stats_pair_phase_main/`: band triplets, continuous-age LMM plots, spectrum curves, and three main-effect summaries in `main_effects/` (`MAIN_EFFECT_AGE_CONTINUOUS.png`: participant means against age with the model's slope and 95% CI, dashed log(age) model; `MAIN_EFFECT_AGE_GROUPS.png`: the same data by age group, group means with 95% CI; `MAIN_EFFECT_CONDITION.png`: model estimate per condition at the mean age, with each participant's profile). The figures print the primary model's Holm-adjusted p-values and never fit a model of their own; age groups in boxplots are for display, and the age post hoc uses one value per participant.
   - tables, models and figures that a run did not rewrite are moved to `attic/ResultsArchive/<same path>/_stale_<time>/` (with a `MANIFEST.csv`), so `Results/` holds only what the last run wrote
   - workspaces in `mat_stats_data/bands_<set>/`
   - `TAG` encodes the source, scope, metric family and covariate, e.g. `equalized_poi_auc_nocyclecov`.

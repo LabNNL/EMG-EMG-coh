@@ -63,6 +63,7 @@ function h_coherence_stats()
     [DESCRIPTIVE_ALL, OMNIBUS_TABLE, POSTHOC_TABLE] = h_descriptives_and_categorical_models(T_row, T_subj, C, HC, ANALYSIS_TAG);
     h_power_control_models(T_subj, HC, ANALYSIS_TAG);
     h_band_triplet_figures(T_subj, C, HC, CONTINUOUS_AGE_LME_TABLE);
+    h_main_effect_figures(T_subj, C, HC, CONTINUOUS_AGE_LME_TABLE);
     h_spectrum_curves_and_spm(COH_DEFAULT, allCoh, subjects, C, HC);
     h_cycle_triplets(COH_DEFAULT, C, HC);
 
