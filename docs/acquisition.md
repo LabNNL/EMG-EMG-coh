@@ -316,8 +316,12 @@ the 4 models (`CONTINUOUS_AGE_LME_TABLE.csv`):
 | SOL_GM | Gamma | 0.91 | 0.41 | 0.55 |
 
 `SENSITIVITY_CONTINUOUS_AGE.csv` refits each model with quadratic age,
-Fisher-z coherence, raw coherence plus log(number of cycles), and
-cycle-bias-corrected coherence:
+log(age) instead of age, Fisher-z coherence, raw coherence plus log(number
+of cycles), and cycle-bias-corrected coherence. Quadratic age and log(age)
+test the straight-line assumption in two ways: the quadratic lets the age
+effect bend once (one extra parameter); log(age) has the typical
+developmental shape, fast change in childhood that levels off (no extra
+parameter).
 
 - **TAprox_TAdist HighBeta age** holds in every variant (Holm p ≤ 0.01). Its
   residuals are not normal (Lilliefors p = 0.001), but the Fisher-z variant,
@@ -325,8 +329,9 @@ cycle-bias-corrected coherence:
 - **TAprox_TAdist Gamma condition** holds in every variant (Holm p ≤ 0.002).
   The Gamma age effect is borderline in two variants (raw + log cycles 0.06,
   cycle-bias-corrected 0.07).
-- **SOL_GM HighBeta age** loses significance with a quadratic age term (Holm
-  p = 0.08). Treat it as fragile.
+- **SOL_GM HighBeta age** holds with log(age) (Holm p = 0.025) but not with
+  a quadratic age term (p = 0.08). It depends on how the age curve is
+  modelled; report it with that caveat.
 
 #### How these differ from the earlier results
 
@@ -381,13 +386,13 @@ What the comparison shows:
 
 - **TAprox_TAdist, age.** The decrease with age is clearest at 20–30 Hz
   (p = 0.0005, robust in every sensitivity variant). Over 13–30 Hz it is
-  weaker (0.029–0.036) and does not survive quadratic age, raw coherence
-  with log(cycles), or cycle-bias correction.
+  weaker (0.029–0.036): it holds with log(age) (0.038–0.051) but not with
+  quadratic age, raw coherence with log(cycles), or cycle-bias correction.
 - **TAprox_TAdist Gamma** (age and condition) is the same in all sets.
 - **SOL_GM, age.** The increase with age appears in Beta 13–30, HighBeta
-  20–30 and Alpha 8–12 (Holm 0.019–0.036). None of these is robust: each
-  loses significance in at least one sensitivity variant (quadratic age in
-  all three).
+  20–30 and Alpha 8–12 (Holm 0.019–0.036). All three hold with log(age)
+  (0.012–0.051) and all three fail with quadratic age (0.067–0.22), so they
+  depend on how the age curve is modelled.
 - **Alpha** shows no TAprox_TAdist effect. The earlier TAprox Alpha
   condition effect (uncorrected p = 0.043) is gone (Holm 0.68).
 

@@ -59,7 +59,7 @@ Rerun f → g → h (21 min) verified:
 Results (Holm):
 - TA HighBeta age p = 0.0005.
 - TA Gamma age p = 0.028 and condition p = 0.0006.
-- SOL_GM HighBeta age p = 0.028, which does not survive quadratic age.
+- SOL_GM HighBeta age p = 0.028: holds with log(age) (0.025), not with quadratic age (0.08).
 - No interactions.
 
 `Results/` holds only current outputs; everything older is in `attic/ResultsArchive/` (git-ignored, with MANIFEST.csv). Previous outputs are in `mat_data/_archive_before_20hz_2026-10/` and `attic/ResultsArchive/_archive_before_20hz_2026-10/` (and the older `_archive_before_junction_fix_2026-10/`, `_archive_before_correctness_round/`).

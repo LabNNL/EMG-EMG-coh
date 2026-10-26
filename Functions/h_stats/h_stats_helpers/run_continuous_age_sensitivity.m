@@ -4,6 +4,8 @@ function S = run_continuous_age_sensitivity(T_subj, HC, outCsv)
 % HC.analysis.dv_list:
 %   primary          DV ~ AgeYears_z * condition + (1|subject)
 %   quadratic_age    + AgeYears_z2
+%   log_age          log(age) instead of age (AgeLog_z): fast change in
+%                    childhood that levels off; one age parameter, like primary
 %   fisher_z         atanh(sqrt(DV)) as the outcome (variance-stabilised coherence)
 %   raw_logcycles    raw (non-equalized) coherence + log(n cycles)
 %   cycle_bias_corr  cycle-bias-corrected coherence
@@ -11,8 +13,15 @@ function S = run_continuous_age_sensitivity(T_subj, HC, outCsv)
 % primary table). p-values are Holm-adjusted within each variant across the
 % pair x DV models, as in CONTINUOUS_AGE_LME_TABLE.
 
-    variants = ["primary", "quadratic_age", "fisher_z", "raw_logcycles", "cycle_bias_corr"];
+    variants = ["primary", "quadratic_age", "log_age", "fisher_z", "raw_logcycles", "cycle_bias_corr"];
     rows = {};
+
+    % log(age), standardized with one value per participant over all
+    % participants, like AgeYears_z (h_build_tables)
+    [~, iu] = unique(T_subj.subject);
+    logAge = log(T_subj.AgeYears);
+    ok = isfinite(logAge(iu));
+    T_subj.AgeLog_z = (logAge - mean(logAge(iu(ok)))) ./ std(logAge(iu(ok)));
 
     for pairName = string(HC.analysis.pairs_to_analyze)
         Tp = T_subj(T_subj.pair_name == pairName, :);
@@ -27,10 +36,13 @@ function S = run_continuous_age_sensitivity(T_subj, HC, outCsv)
                 T = Tp;
                 y = dv;
                 extra = "";
+                ageVar = "AgeYears_z";
                 switch v
                     case "quadratic_age"
                         T.AgeYears_z2 = T.AgeYears_z .^ 2;
                         extra = " + AgeYears_z2";
+                    case "log_age"
+                        ageVar = "AgeLog_z";
                     case "fisher_z"
                         y = dv + "__fisher_z";
                         T.(y) = atanh(sqrt(min(max(T.(dv), 0), 1 - 1e-12)));
@@ -45,29 +57,32 @@ function S = run_continuous_age_sensitivity(T_subj, HC, outCsv)
                 end
                 if ~ismember(y, string(T.Properties.VariableNames)), continue; end
 
-                ok = isfinite(T.(y)) & isfinite(T.AgeYears_z);
+                ok = isfinite(T.(y)) & isfinite(T.(ageVar));
                 if contains(extra, "log_n_cycles"), ok = ok & isfinite(T.log_n_cycles); end
                 T = T(ok, :);
                 if height(T) < 10, continue; end
 
-                formula = sprintf('%s ~ AgeYears_z * condition%s + (1|subject)', y, extra);
+                formula = sprintf('%s ~ %s * condition%s + (1|subject)', y, ageVar, extra);
                 try
                     lme = fit_h_lme(T, formula, HC);
                 catch ME
                     warning('Sensitivity model failed (%s | %s | %s): %s', pairName, dv, v, ME.message);
                     continue;
                 end
-                a = get_lme_term_stats(lme, HC, 'AgeYears_z');
+                a = get_lme_term_stats(lme, HC, char(ageVar));
                 c = get_lme_term_stats(lme, HC, 'condition');
-                i = get_lme_term_stats(lme, HC, 'AgeYears_z:condition');
+                i = get_lme_term_stats(lme, HC, char(ageVar + ":condition"));
 
-                rows(end+1, :) = {pairName, dv, v, string(formula), height(T), numel(unique(T.subject)), ...
+                ageScale = "years";
+                if ageVar == "AgeLog_z", ageScale = "log(years)"; end
+
+                rows(end+1, :) = {pairName, dv, v, ageScale, string(formula), height(T), numel(unique(T.subject)), ...
                     a.estimate, a.ci_low, a.ci_high, a.p, c.p, i.p}; %#ok<AGROW>
             end
         end
     end
 
-    S = cell2table(rows, 'VariableNames', {'pair_name','metric','variant','model_formula','n_rows','n_subjects', ...
+    S = cell2table(rows, 'VariableNames', {'pair_name','metric','variant','age_scale','model_formula','n_rows','n_subjects', ...
         'est_age_per_sd','ci_low_age_per_sd','ci_high_age_per_sd','p_age_linear','p_condition','p_age_condition'});
 
     for pv = ["p_age_linear", "p_condition", "p_age_condition"]
